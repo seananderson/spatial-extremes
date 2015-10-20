@@ -8,8 +8,8 @@ if (!file.exists("generated-data/rf-haul-2003-2014.rds")) {
   names(haul) <- sub(" ", "_", names(haul))
   haul <- mutate(haul, yr = as.numeric(sub("Cycle ", "", survey_cycle))) %>%
     rename(
-      haul_latitude = `haul_latitude (decimal degrees)`,
-      haul_longitude = `haul_longitude (decimal degrees)`,
+      haul_latitude_dd = `haul_latitude (decimal degrees)`,
+      haul_longitude_dd = `haul_longitude (decimal degrees)`,
       haul_depth = `haul_depth (meters)`,
       trawl_duration = `trawl_duration (hours)`,
       area_swept = `area_swept by the net (hectares)`)
@@ -22,6 +22,9 @@ if (!file.exists("generated-data/rf-ind-2003-2014.rds")) {
     as.data.frame()
   names(ind) <- tolower(names(ind))
   ind <-  mutate(ind, yr = as.numeric(sub("Cycle ", "", project_cycle)))
+  ind <- left_join(ind,
+    select(haul, survey, yr, haul_identifier, trawl_date, haul_latitude_dd,
+      haul_longitude_dd, trawl_duration, area_swept))
   saveRDS(ind, file = "generated-data/rf-ind-2003-2014.rds")
 }
 
