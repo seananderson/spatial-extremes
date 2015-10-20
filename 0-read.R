@@ -23,7 +23,7 @@ if (!file.exists("generated-data/rf-ind-2003-2014.rds")) {
   names(ind) <- tolower(names(ind))
   ind <-  mutate(ind, yr = as.numeric(sub("Cycle ", "", project_cycle)))
   ind <- left_join(ind,
-    select(haul, survey, yr, haul_identifier, trawl_date, haul_latitude_dd,
+    select(haul, yr, haul_identifier, trawl_date, haul_latitude_dd,
       haul_longitude_dd, trawl_duration, area_swept))
   saveRDS(ind, file = "generated-data/rf-ind-2003-2014.rds")
 }
