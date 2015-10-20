@@ -1,0 +1,12 @@
+.Rproj.user
+*.Rhistory
+*.Rapp.history
+*.fls
+*.log
+*.aux
+*.fdb_latexmk
+*.xlsx
+*.dvi
+*.gz(busy)
+*.rtf
+*.tex.latexmain
