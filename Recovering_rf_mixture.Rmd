@@ -10,6 +10,8 @@ The objective of these simulations are to examine whether mixture parameters are
 ```{r}
 library(cluster)
 library(mvtnorm)
+library(R2jags)
+library(fields)
 ```
 
 ```{r}
@@ -34,12 +36,12 @@ Initially, we'll assume all data is observed in the same year, so there'll just 
 ```{r}
 # distance matrix of knots
 distKnots = as.matrix(dist(knots))
-distKnots2 = distKnots^2 # squared distances
+distKnotsSq = distKnots^2 # squared distances
 # note: shape parameter scaled to distance matrix
 gp_scale = 0.001
 sigma.norm = 0.001
 sigma.fat = 0.002
-corKnots = exp(-gp_scale*distKnots2)
+corKnots = exp(-gp_scale*distKnotsSq)
 Sigma.normal = corKnots * sigma.norm * sigma.norm
 Sigma.fat = corKnots * sigma.fat * sigma.fat
 ```
@@ -48,10 +50,10 @@ Calculate distance matrix from stations to knots, and covariance matrices,
 ```{r}
 # Calculate distance from knots to grid
 distAll = as.matrix(dist(rbind(grid, knots)))^2
-dist21 = t(distAll[1:nKnots, -c(1:nKnots)])
+distKnots21Sq = t(distAll[1:nKnots, -c(1:nKnots)])
 
-Sigma21.normal = exp(-gp_scale*dist21) * sigma.norm * sigma.norm
-Sigma21.fat = exp(-gp_scale*dist21) * sigma.fat * sigma.fat
+Sigma21.normal = exp(-gp_scale*distKnots21Sq) * sigma.norm * sigma.norm
+Sigma21.fat = exp(-gp_scale*distKnots21Sq) * sigma.fat * sigma.fat
 
 ```
 
@@ -62,7 +64,7 @@ re.fat = rmvnorm(1, mean = rep(0, nKnots), Sigma.fat)
 ```
 
 Project to the station / grid locations, and combine the random fields using some proportion of 'fat-tailed' events. Initially, we'll use 0.05. 
-```{r}
+```{r projectToGrid}
 # take inverse
 invSigmaKnots.norm = solve(Sigma.normal) 
 invSigmaKnots.fat = solve(Sigma.fat)
@@ -78,7 +80,7 @@ proj = (1-pfat)*proj.norm + pfat*proj.fat
 
 Next, we'll simulate 3 kinds of data from the spatial mixture: gaussian, binomial, and poisson counts. 
 
-```{r}
+```{r simulateData}
 nPoints = 100
 indices = sample(seq(1,nLocs), size=nPoints, replace=T)
 
@@ -89,7 +91,199 @@ y.gaussian = proj[indices,1]
 y.binomial = rbinom(nPoints, size=1, prob=plogis(proj[indices,1]))
 
 y.poisson = rpois(nPoints, lambda = exp(proj[indices,1]))
+
+diagKnots = diag(nKnots)
+muZeros = rep(0, nKnots)
+```
+
+## Estimating normal mixture
+
+The most important parameter we're interested in trying to recover is the contribution of the mixtures, and secondarily it's important to recover the variances scaling how extreme those events are. 
+
+As a first pass, we'll do it in JAGS, and we'll switch to TMB for the faster models linked with INLA.
+
+```{r jagsGaussianChunk}
+jagsscript = cat("
+model {	
+   # priors on parameters for gaussian process
+   gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_scale <- 1/gp_scaleInv;
+   gp_sigmaSqInv_fat ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_sigmaSq_fat <- 1/gp_sigmaSqInv_fat;  	
+   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm;  	
+   gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
+   gp_jitterSq <- 1/gp_jitterSqInv;
+
+   # This builds the 2 cov matrices needed
+   # SigmaKnots is the COV matrix btween knots
+   # SigmaOffDiag is the COV matrix between new locations and knots, e.g. it's (100 x 10)   
+   for(i in 1:nKnots) {
+   	for(j in 1:nKnots) {
+     # this adds some jitter to the diagonal but not the off-diags
+  	 SigmaKnotsNorm[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_norm * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_norm);	
+  	 SigmaKnotsFat[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_fat * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_fat);
+  	}
+   }
+   for(i in 1:nLocs) {
+   	for(j in 1:nKnots) {
+  	 SigmaOffDiagNorm[i,j] <- gp_sigmaSq_norm * exp(-gp_scale * distKnots21Sq[i,j]);
+  	 SigmaOffDiagFat[i,j] <- gp_sigmaSq_fat * exp(-gp_scale * distKnots21Sq[i,j]);
+   	}
+   }	
+   invSigmaKnotsNorm <- inverse(SigmaKnotsNorm[,]); # inverse of matrix for projection and mvn distribution
+   invSigmaKnotsFat <- inverse(SigmaKnotsFat[,]); # inverse of matrix for projection and mvn distribution
+
+   # mixture contribution of fat tailed events
+   pfat ~ dunif(0,0.3);
+
+   # Spatial random effects
+   spatialEffectsKnotsNorm[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
+   spatialEffectsKnotsFat[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsFat);
+   spatialEffects[1:nLocs,1] <- (1-pfat)*((SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1]) + pfat*((SigmaOffDiagFat %*% invSigmaKnotsFat) %*% spatialEffectsKnotsFat[1:nKnots,1]);
+   
+   # evaluate the likelihood
+   resid.tau ~ dgamma(0.001,0.001);
+
+   for(i in 1:nPoints) {
+       pred[i] <- spatialEffects[indices[i], 1];
+       y.gaussian[i] ~ dnorm(pred[i], resid.tau);
+   }    
+   
+}  ",file="recover_rf_gaussian.txt")
+
+```
+
+Run the model,
+
+```{r runJagsGaussianChunk, cache=TRUE}
+jags.data = list("nLocs","nKnots", "y.gaussian", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
+   jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
+jagsmodel.gaussian = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_gaussian.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
 ```
 
 
+## Estimating binomial mixture
+
+We can also extend this to the binomial distribution by changing a single line in the JAGS script. 
+
+```{r jagsBinomialChunk}
+jagsscript = cat("
+model {	
+   # priors on parameters for gaussian process
+   gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_scale <- 1/gp_scaleInv;
+   gp_sigmaSqInv_fat ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_sigmaSq_fat <- 1/gp_sigmaSqInv_fat;  	
+   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm;  	
+   gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
+   gp_jitterSq <- 1/gp_jitterSqInv;
+
+   # This builds the 2 cov matrices needed
+   # SigmaKnots is the COV matrix btween knots
+   # SigmaOffDiag is the COV matrix between new locations and knots, e.g. it's (100 x 10)   
+   for(i in 1:nKnots) {
+   	for(j in 1:nKnots) {
+     # this adds some jitter to the diagonal but not the off-diags
+  	 SigmaKnotsNorm[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_norm * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_norm);	
+  	 SigmaKnotsFat[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_fat * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_fat);
+  	}
+   }
+   for(i in 1:nLocs) {
+   	for(j in 1:nKnots) {
+  	 SigmaOffDiagNorm[i,j] <- gp_sigmaSq_norm * exp(-gp_scale * distKnots21Sq[i,j]);
+  	 SigmaOffDiagFat[i,j] <- gp_sigmaSq_fat * exp(-gp_scale * distKnots21Sq[i,j]);
+   	}
+   }	
+   invSigmaKnotsNorm <- inverse(SigmaKnotsNorm[,]); # inverse of matrix for projection and mvn distribution
+   invSigmaKnotsFat <- inverse(SigmaKnotsFat[,]); # inverse of matrix for projection and mvn distribution
+
+   # mixture contribution of fat tailed events
+   pfat ~ dunif(0,0.3);
+
+   # Spatial random effects
+   spatialEffectsKnotsNorm[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
+   spatialEffectsKnotsFat[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsFat);
+   spatialEffects[1:nLocs,1] <- (1-pfat)*((SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1]) + pfat*((SigmaOffDiagFat %*% invSigmaKnotsFat) %*% spatialEffectsKnotsFat[1:nKnots,1]);
+   
+   # evaluate the likelihood
+   for(i in 1:nPoints) {
+       logit(pred[i]) <- spatialEffects[indices[i], 1];
+       y.binomial[i] ~ dbern(pred[i]);
+   }    
+   
+}  ",file="recover_rf_binomial.txt")
+
+```
+
+Run the model,
+
+```{r runJagsBinomialChunk, cache=TRUE}
+jags.data = list("nLocs","nKnots", "y.gaussian", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
+   jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
+jagsmodel.binomial = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_binomial.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
+```
+
+
+## Estimating Poisson mixture
+
+We can also extend this to the Poisson distribution by changing a single line in the JAGS script. 
+
+```{r jagsPoissonChunk}
+jagsscript = cat("
+model {	
+   # priors on parameters for gaussian process
+   gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_scale <- 1/gp_scaleInv;
+   gp_sigmaSqInv_fat ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_sigmaSq_fat <- 1/gp_sigmaSqInv_fat;  	
+   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm;  	
+   gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
+   gp_jitterSq <- 1/gp_jitterSqInv;
+
+   # This builds the 2 cov matrices needed
+   # SigmaKnots is the COV matrix btween knots
+   # SigmaOffDiag is the COV matrix between new locations and knots, e.g. it's (100 x 10)   
+   for(i in 1:nKnots) {
+   	for(j in 1:nKnots) {
+     # this adds some jitter to the diagonal but not the off-diags
+  	 SigmaKnotsNorm[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_norm * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_norm);	
+  	 SigmaKnotsFat[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_fat * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_fat);
+  	}
+   }
+   for(i in 1:nLocs) {
+   	for(j in 1:nKnots) {
+  	 SigmaOffDiagNorm[i,j] <- gp_sigmaSq_norm * exp(-gp_scale * distKnots21Sq[i,j]);
+  	 SigmaOffDiagFat[i,j] <- gp_sigmaSq_fat * exp(-gp_scale * distKnots21Sq[i,j]);
+   	}
+   }	
+   invSigmaKnotsNorm <- inverse(SigmaKnotsNorm[,]); # inverse of matrix for projection and mvn distribution
+   invSigmaKnotsFat <- inverse(SigmaKnotsFat[,]); # inverse of matrix for projection and mvn distribution
+
+   # mixture contribution of fat tailed events
+   pfat ~ dunif(0,0.3);
+
+   # Spatial random effects
+   spatialEffectsKnotsNorm[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
+   spatialEffectsKnotsFat[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsFat);
+   spatialEffects[1:nLocs,1] <- (1-pfat)*((SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1]) + pfat*((SigmaOffDiagFat %*% invSigmaKnotsFat) %*% spatialEffectsKnotsFat[1:nKnots,1]);
+   
+   # evaluate the likelihood
+   for(i in 1:nPoints) {
+       y.poisson[i] ~ dpois(exp(spatialEffects[indices[i], 1]));
+   }    
+   
+}  ",file="recover_rf_poisson.txt")
+
+```
+
+Run the model,
+
+```{r runJagsPoissonChunk, cache=TRUE}
+jags.data = list("nLocs","nKnots", "y.gaussian", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
+   jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
+jagsmodel.poisson = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_poisson.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
+```
 
