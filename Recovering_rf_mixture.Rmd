@@ -173,9 +173,9 @@ model {
    # priors on parameters for gaussian process
    gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
    gp_scale <- 1/gp_scaleInv;
-   gp_sigmaSqInv_fat ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_sigmaSqInv_fat ~ dgamma(0.01,0.01); # not shared btw normal/fat
    gp_sigmaSq_fat <- 1/gp_sigmaSqInv_fat;  	
-   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # not shared btw normal/fat
    gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm;  	
    gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
    gp_jitterSq <- 1/gp_jitterSqInv;
@@ -209,7 +209,7 @@ model {
    
    # evaluate the likelihood
    for(i in 1:nPoints) {
-       logit(pred[i]) <- spatialEffects[indices[i], 1];
+       logit(pred[i]) <- min(max(spatialEffects[indices[i], 1],-20),20);
        y.binomial[i] ~ dbern(pred[i]);
    }    
    
@@ -220,7 +220,7 @@ model {
 Run the model,
 
 ```{r runJagsBinomialChunk, cache=TRUE}
-jags.data = list("nLocs","nKnots", "y.gaussian", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
+jags.data = list("nLocs","nKnots", "y.binomial", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
    jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
 jagsmodel.binomial = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_binomial.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
 ```
@@ -282,7 +282,7 @@ model {
 Run the model,
 
 ```{r runJagsPoissonChunk, cache=TRUE}
-jags.data = list("nLocs","nKnots", "y.gaussian", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
+jags.data = list("nLocs","nKnots", "y.poisson", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
    jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
 jagsmodel.poisson = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_poisson.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
 ```
