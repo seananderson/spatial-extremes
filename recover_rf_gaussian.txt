@@ -32,11 +32,12 @@ model {
 
    # mixture contribution of fat tailed events
    pfat ~ dunif(0,0.3);
+   mufat.norm ~ dnorm(0,1)T(,0); # constrain mean to be negative
 
    # Spatial random effects
    spatialEffectsKnotsNorm[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
    spatialEffectsKnotsFat[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsFat);
-   spatialEffects[1:nLocs,1] <- (1-pfat)*((SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1]) + pfat*((SigmaOffDiagFat %*% invSigmaKnotsFat) %*% spatialEffectsKnotsFat[1:nKnots,1]);
+   spatialEffects[1:nLocs,1] <- (1-pfat)*((SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1]) + pfat*(mufat.norm + (SigmaOffDiagFat %*% invSigmaKnotsFat) %*% spatialEffectsKnotsFat[1:nKnots,1]);
    
    # evaluate the likelihood
    resid.tau ~ dgamma(0.001,0.001);
