@@ -189,7 +189,7 @@ The inverse logit transformation impacts how large the variance of the fat-taile
 
 Extreme negative events in the mixture will make the distribution of occurrences zero-inflated; extreme positive events will make the occurrences bimodal. 
 
-```{r}
+```{r, fig.pos="placeHere", fig.cap = "Distribution of simulated data (single replicate)"}
 # distance matrix of knots
 distKnots = as.matrix(dist(knots))
 distKnotsSq = distKnots^2 # squared distances
@@ -228,6 +228,7 @@ nPoints = nLocs
 indices = seq(1,nPoints)
 x = grid[indices,]
 y.binomial = rbinom(nPoints, size=1, prob=plogis(proj[indices,1]))
+hist(y.binomial, 40, col="grey", xlab="Simulated data", main="")
 ```
 
 ```{r, fig.pos="placeHere",fig.cap="Simulated mixture distribution of occurence probabilities"}
@@ -298,7 +299,7 @@ jagsmodel.binomial = jags.parallel(jags.data, inits=NULL, parameters.to.save=jag
 
 The Poisson simulated data has the same problem as the binomial -- negative events make the distribution zero-inflated, and positive will make variance > mean. 
 
-```{r}
+```{r, fig.pos="placeHere", fig.cap="Simulated Poisson data (single replicate)"}
 # distance matrix of knots
 distKnots = as.matrix(dist(knots))
 distKnotsSq = distKnots^2 # squared distances
@@ -337,6 +338,7 @@ nPoints = nLocs
 indices = seq(1,nPoints)
 x = grid[indices,]
 y.poisson = rpois(nPoints, lambda=exp(proj[indices,1]))
+hist(y.poisson, 40, col="grey", xlab="Simulated data", main="")
 ```
 
 ```{r jagsPoissonChunk}
