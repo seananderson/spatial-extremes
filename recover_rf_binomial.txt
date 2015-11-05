@@ -3,10 +3,11 @@ model {
    # priors on parameters for gaussian process
    gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
    gp_scale <- 1/gp_scaleInv;
-   gp_sigmaSqInv_fat ~ dgamma(0.01,0.01); # not shared btw normal/fat
-   gp_sigmaSq_fat <- 1/gp_sigmaSqInv_fat;  	
-   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # not shared btw normal/fat
-   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm;  	
+   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # prior on normal var parameter
+   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm; 
+   gp_sigmaSq_offset ~ dnorm(0,1)T(0,); # offset making fat tail > normal 
+   gp_sigmaSq_fat <- gp_sigmaSq_norm + gp_sigmaSq_offset;  	
+ 	 gp_sigmaSqInv_fat <- 1/gp_sigmaSq_fat;  	
    gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
    gp_jitterSq <- 1/gp_jitterSqInv;
 

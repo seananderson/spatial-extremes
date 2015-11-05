@@ -7,11 +7,12 @@ output:
 
 The objective of these simulations are to examine whether mixture parameters are recoverable with spatial data. We'll start by simulating some data on a grid from two gaussian random fields. We will initially assume that the fields have the same shape/scale parameters of the gaussian covariance function, but the variances are different -- this allows one field to be normal, and the other fat-tailed. 
 
-```{r}
+```{r,warning=FALSE,message=FALSE}
 library(cluster)
 library(mvtnorm)
 library(R2jags)
 library(fields)
+library(ggplot2)
 ```
 
 ```{r}
@@ -21,7 +22,7 @@ nLocs = dim(grid)[1]
 
 ## Approximating data with spatial random field
 We could use RandomField, or other packages to do this. Initially we'll just simulate data using the estimation model. Use pam() to choose a number of knots on the grid. We'll specify 20 initially. We'll also jitter them slightly so knot locations don't fall exactly on stations.  
-```{r}
+```{r,warning=FALSE,message=FALSE}
 nKnots = 20
 knots = jitter(pam(grid,nKnots)$medoids)
 ```
@@ -33,21 +34,21 @@ points(knots,col="red")
 
 ## Approximating data with spatial random field
 Initially, we'll assume all data is observed in the same year, so there'll just be a single random effect field for normal years, and a single effect for catastrophic / abnormal years. 
-```{r}
+```{r,warning=FALSE,message=FALSE}
 # distance matrix of knots
 distKnots = as.matrix(dist(knots))
 distKnotsSq = distKnots^2 # squared distances
 # note: shape parameter scaled to distance matrix
 gp_scale = 0.001
 sigma.norm = 0.001
-sigma.fat = 0.002
+sigma.fat = 0.004
 corKnots = exp(-gp_scale*distKnotsSq)
 Sigma.normal = corKnots * sigma.norm * sigma.norm
 Sigma.fat = corKnots * sigma.fat * sigma.fat
 ```
 
 Calculate distance matrix from stations to knots, and covariance matrices,
-```{r}
+```{r,warning=FALSE,message=FALSE}
 # Calculate distance from knots to grid
 distAll = as.matrix(dist(rbind(grid, knots)))^2
 distKnots21Sq = t(distAll[1:nKnots, -c(1:nKnots)])
@@ -57,14 +58,30 @@ Sigma21.fat = exp(-gp_scale*distKnots21Sq) * sigma.fat * sigma.fat
 
 ```
 
+Plot the covariance of both models as a function of distance,
+```{r, fig.pos="placeHere",fig.cap="Gaussian covariance as function of distance for normal and fat-tailed distribution"}
+x = seq(0,max(distAll),length.out=100)
+cov.norm = exp(-gp_scale*x)*(sigma.norm^2)
+cov.fat = exp(-gp_scale*x)*(sigma.fat^2)
+plot(sqrt(x), cov.norm ,xlab="Distance", ylab="Covariance", type="l", lwd=3, col="black", ylim=range(c(cov.norm,cov.fat)))
+lines(sqrt(x), cov.fat ,lwd=3,lty=2)
+```
+
+Another way to visualize the normal v fat-tailed distribution is looking at the densities,
+```{r, fig.pos="placeHere",fig.cap="Normal and fat tailed distribution of the random effects"}
+dat <- data.frame(type = factor(rep(c("normal","fat"), each=10000)), 
+                   y = c(rnorm(10000,0,sigma.norm), rnorm(10000,0,sigma.fat)))
+ggplot(dat, aes(x=y, colour=type)) + geom_density()
+```
+
 Generate single MVN field for each of the normal and 'fat-tailed' distributions. 
-```{r}
+```{r,warning=FALSE,message=FALSE}
 re.norm = rmvnorm(1, mean = rep(0, nKnots), Sigma.normal)
 re.fat = rmvnorm(1, mean = rep(0, nKnots), Sigma.fat)
 ```
 
 Project to the station / grid locations, and combine the random fields using some proportion of 'fat-tailed' events. Initially, we'll use 0.05. 
-```{r projectToGrid}
+```{r projectToGrid,warning=FALSE,message=FALSE}
 # take inverse
 invSigmaKnots.norm = solve(Sigma.normal) 
 invSigmaKnots.fat = solve(Sigma.fat)
@@ -80,7 +97,7 @@ proj = (1-pfat)*proj.norm + pfat*proj.fat
 
 Next, we'll simulate 3 kinds of data from the spatial mixture: gaussian, binomial, and poisson counts. 
 
-```{r simulateData}
+```{r simulateData,warning=FALSE,message=FALSE}
 nPoints = nLocs
 #indices = sample(seq(1,nLocs), size=nPoints, replace=T)
 indices = seq(1,nPoints)
@@ -102,16 +119,17 @@ The most important parameter we're interested in trying to recover is the contri
 
 As a first pass, we'll do it in JAGS, and we'll switch to TMB for the faster models linked with INLA.
 
-```{r jagsGaussianChunk}
+```{r jagsGaussianChunk,warning=FALSE,message=FALSE}
 jagsscript = cat("
 model {	
    # priors on parameters for gaussian process
    gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
    gp_scale <- 1/gp_scaleInv;
-   gp_sigmaSqInv_fat ~ dgamma(0.01,0.01); # shared btw normal/fat
-   gp_sigmaSq_fat <- 1/gp_sigmaSqInv_fat;  	
-   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # shared btw normal/fat
-   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm;  	
+   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # prior on normal var parameter
+   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm; 
+   gp_sigmaSq_offset ~ dnorm(0,1)T(0,); # offset making fat tail > normal 
+   gp_sigmaSq_fat <- gp_sigmaSq_norm + gp_sigmaSq_offset;  	
+ 	 gp_sigmaSqInv_fat <- 1/gp_sigmaSq_fat;
    gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
    gp_jitterSq <- 1/gp_jitterSqInv;
 
@@ -156,10 +174,10 @@ model {
 
 Run the model,
 
-```{r runJagsGaussianChunk, cache=TRUE}
+```{r runJagsGaussianChunk, cache=TRUE,warning=FALSE,message=FALSE}
 jags.data = list("nLocs","nKnots", "y.gaussian", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
    jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
-jagsmodel.gaussian = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_gaussian.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
+jagsmodel.gaussian = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_gaussian.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE)
 ```
 
 
@@ -167,16 +185,17 @@ jagsmodel.gaussian = jags.parallel(jags.data, inits=NULL, parameters.to.save=jag
 
 We can also extend this to the binomial distribution by changing a single line in the JAGS script. 
 
-```{r jagsBinomialChunk}
+```{r jagsBinomialChunk,warning=FALSE,message=FALSE}
 jagsscript = cat("
 model {	
    # priors on parameters for gaussian process
    gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
    gp_scale <- 1/gp_scaleInv;
-   gp_sigmaSqInv_fat ~ dgamma(0.01,0.01); # not shared btw normal/fat
-   gp_sigmaSq_fat <- 1/gp_sigmaSqInv_fat;  	
-   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # not shared btw normal/fat
-   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm;  	
+   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # prior on normal var parameter
+   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm; 
+   gp_sigmaSq_offset ~ dnorm(0,1)T(0,); # offset making fat tail > normal 
+   gp_sigmaSq_fat <- gp_sigmaSq_norm + gp_sigmaSq_offset;  	
+ 	 gp_sigmaSqInv_fat <- 1/gp_sigmaSq_fat;  	
    gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
    gp_jitterSq <- 1/gp_jitterSqInv;
 
@@ -219,7 +238,7 @@ model {
 
 Run the model,
 
-```{r runJagsBinomialChunk, cache=TRUE}
+```{r runJagsBinomialChunk, cache=TRUE,warning=FALSE,message=FALSE}
 jags.data = list("nLocs","nKnots", "y.binomial", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
    jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
 jagsmodel.binomial = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_binomial.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
@@ -230,16 +249,17 @@ jagsmodel.binomial = jags.parallel(jags.data, inits=NULL, parameters.to.save=jag
 
 We can also extend this to the Poisson distribution by changing a single line in the JAGS script. 
 
-```{r jagsPoissonChunk}
+```{r jagsPoissonChunk,warning=FALSE,message=FALSE}
 jagsscript = cat("
 model {	
    # priors on parameters for gaussian process
    gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
    gp_scale <- 1/gp_scaleInv;
-   gp_sigmaSqInv_fat ~ dgamma(0.01,0.01); # shared btw normal/fat
-   gp_sigmaSq_fat <- 1/gp_sigmaSqInv_fat;  	
-   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # shared btw normal/fat
-   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm;  	
+   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # prior on normal var parameter
+   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm; 
+   gp_sigmaSq_offset ~ dnorm(0,1)T(0,); # offset making fat tail > normal 
+   gp_sigmaSq_fat <- gp_sigmaSq_norm + gp_sigmaSq_offset;  	
+ 	 gp_sigmaSqInv_fat <- 1/gp_sigmaSq_fat;  	
    gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
    gp_jitterSq <- 1/gp_jitterSqInv;
 
@@ -281,18 +301,31 @@ model {
 
 Run the model,
 
-```{r runJagsPoissonChunk, cache=TRUE}
+```{r runJagsPoissonChunk, cache=TRUE,warning=FALSE,message=FALSE}
 jags.data = list("nLocs","nKnots", "y.poisson", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
    jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
 jagsmodel.poisson = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_poisson.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
 ```
 
-```{r plots}
+```{r plots, fig.pos="placeHere", fig.cap="Estimates of contribution of fat-tailed distribution to mixture"}
 par(mfrow=c(2,2),mgp=c(2,1,0),mai=c(0.5,0.5,0.3,0.1))
-attach.jags(jagsmodel.gaussian)
-hist(pfat,40,col="grey",main="Gaussian",xlab="P(fat tail)")
-attach.jags(jagsmodel.binomial)
-hist(pfat,40,col="grey",main="Binomial",xlab="P(fat tail)")
-attach.jags(jagsmodel.poisson)
-hist(pfat,40,col="grey",main="Poisson",xlab="P(fat tail)")
+attach.jags(jagsmodel.gaussian, overwrite=TRUE)
+hist(pfat, 40, col="grey",main="Gaussian",xlab="P(fat tail)")
+attach.jags(jagsmodel.binomial, overwrite=TRUE)
+hist(pfat, 40, col="grey",main="Binomial",xlab="P(fat tail)")
+attach.jags(jagsmodel.poisson, overwrite=TRUE)
+hist(pfat, 40, col="grey",main="Poisson",xlab="P(fat tail)")
+```
+
+```{r varPlots, fig.pos="placeHere", fig.cap="Estimates of contribution of fat-tailed distribution to mixture"}
+attach.jags(jagsmodel.gaussian, overwrite=TRUE)
+sd.gaussian = sqrt(c(gp_sigmaSq_norm, gp_sigmaSq_fat))
+n.mcmc = length(gp_sigmaSq_norm)
+attach.jags(jagsmodel.binomial, overwrite=TRUE)
+sd.binomial = sqrt(c(gp_sigmaSq_norm, gp_sigmaSq_fat))
+
+attach.jags(jagsmodel.gaussian, overwrite=TRUE)
+sd.poisson = sqrt(c(gp_sigmaSq_norm, gp_sigmaSq_fat))
+
+boxplot(c(sd.gaussian, sd.binomial, sd.poisson) ~ sort(rep(1:6, n.mcmc)), outline = FALSE, names = c("G.norm", "G.fat", "B.norm", "B.fat", "P.norm", "P.fat"), col = rep(c("white","grey"),3))
 ```
