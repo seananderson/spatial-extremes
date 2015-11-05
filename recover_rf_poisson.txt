@@ -32,11 +32,13 @@ model {
 
    # mixture contribution of fat tailed events
    pfat ~ dunif(0,0.3);
-   mufat ~ dnorm(0,1)T(,0);
+   mufat.norm ~ dunif(0.00000001,1); # change this upper bound later
+   mufat.log <- log(mufat.norm);
+
    # Spatial random effects
    spatialEffectsKnotsNorm[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
    spatialEffectsKnotsFat[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsFat);
-   spatialEffects[1:nLocs,1] <- (1-pfat)*((SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1]) + pfat*(mufat + (SigmaOffDiagFat %*% invSigmaKnotsFat) %*% spatialEffectsKnotsFat[1:nKnots,1]);
+   spatialEffects[1:nLocs,1] <- (1-pfat)*((SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1]) + pfat*(mufat.log + (SigmaOffDiagFat %*% invSigmaKnotsFat) %*% spatialEffectsKnotsFat[1:nKnots,1]);
    
    # evaluate the likelihood
    for(i in 1:nPoints) {
