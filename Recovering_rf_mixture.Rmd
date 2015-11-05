@@ -7,12 +7,14 @@ output:
 
 The objective of these simulations are to examine whether mixture parameters are recoverable with spatial data. We'll start by simulating some data on a grid from two gaussian random fields. We will initially assume that the fields have the same shape/scale parameters of the gaussian covariance function, but the variances are different -- this allows one field to be normal, and the other fat-tailed. 
 
-```{r,warning=FALSE,message=FALSE}
+```{r chunkSet, cache=FALSE, echo=FALSE,warning=FALSE,message=FALSE}
 library(cluster)
 library(mvtnorm)
 library(R2jags)
 library(fields)
 library(ggplot2)
+library(knitr)
+opts_chunk$set(tidy=TRUE, message=FALSE,warning=FALSE)
 ```
 
 ```{r}
@@ -22,7 +24,7 @@ nLocs = dim(grid)[1]
 
 ## Approximating data with spatial random field
 We could use RandomField, or other packages to do this. Initially we'll just simulate data using the estimation model. Use pam() to choose a number of knots on the grid. We'll specify 20 initially. We'll also jitter them slightly so knot locations don't fall exactly on stations.  
-```{r,warning=FALSE,message=FALSE}
+```{r}
 nKnots = 20
 knots = jitter(pam(grid,nKnots)$medoids)
 ```
@@ -34,7 +36,7 @@ points(knots,col="red")
 
 ## Approximating data with spatial random field
 Initially, we'll assume all data is observed in the same year, so there'll just be a single random effect field for normal years, and a single effect for catastrophic / abnormal years. 
-```{r,warning=FALSE,message=FALSE}
+```{r}
 # distance matrix of knots
 distKnots = as.matrix(dist(knots))
 distKnotsSq = distKnots^2 # squared distances
@@ -48,7 +50,7 @@ Sigma.fat = corKnots * sigma.fat * sigma.fat
 ```
 
 Calculate distance matrix from stations to knots, and covariance matrices,
-```{r,warning=FALSE,message=FALSE}
+```{r}
 # Calculate distance from knots to grid
 distAll = as.matrix(dist(rbind(grid, knots)))^2
 distKnots21Sq = t(distAll[1:nKnots, -c(1:nKnots)])
@@ -75,7 +77,7 @@ ggplot(dat, aes(x=y, colour=type)) + geom_density()
 ```
 
 Generate single MVN field for each of the normal and 'fat-tailed' distributions. 
-```{r,warning=FALSE,message=FALSE}
+```{r}
 re.norm = rmvnorm(1, mean = rep(0, nKnots), Sigma.normal)
 re.fat = rmvnorm(1, mean = rep(0, nKnots), Sigma.fat)
 
@@ -85,7 +87,7 @@ re.fat = re.norm-mean(re.fat)
 ```
 
 Project to the station / grid locations, and combine the random fields using some proportion of 'fat-tailed' events. Initially, we'll use 0.05. 
-```{r projectToGrid,warning=FALSE,message=FALSE}
+```{r projectToGrid}
 # take inverse
 invSigmaKnots.norm = solve(Sigma.normal) 
 invSigmaKnots.fat = solve(Sigma.fat)
@@ -101,15 +103,13 @@ proj = (1-pfat)*proj.norm + pfat*proj.fat
 
 Next, we'll simulate 3 kinds of data from the spatial mixture: gaussian, binomial, and poisson counts. 
 
-```{r simulateData,warning=FALSE,message=FALSE}
+```{r simulateData}
 nPoints = nLocs
 #indices = sample(seq(1,nLocs), size=nPoints, replace=T)
 indices = seq(1,nPoints)
 # assume no observation error, so observed/simulated gaussian data are same
 x = grid[indices,]
 y.gaussian = proj[indices,1]
-
-y.poisson = rpois(nPoints, lambda = exp(proj[indices,1]))
 
 diagKnots = diag(nKnots)
 muZeros = rep(0, nKnots)
@@ -121,7 +121,7 @@ The most important parameter we're interested in trying to recover is the contri
 
 As a first pass, we'll do it in JAGS, and we'll switch to TMB for the faster models linked with INLA.
 
-```{r jagsGaussianChunk,warning=FALSE,message=FALSE}
+```{r jagsGaussianChunk}
 jagsscript = cat("
 model {	
    # priors on parameters for gaussian process
@@ -177,9 +177,9 @@ model {
 
 Run the model,
 
-```{r runJagsGaussianChunk, cache=TRUE,warning=FALSE,message=FALSE}
-jags.data = list("nLocs","nKnots", "y.gaussian", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
-   jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
+```{r runJagsGaussianChunk, cache=TRUE}
+jags.data = list("nLocs", "nKnots", "y.gaussian", "distKnotsSq",  "distKnots21Sq", "diagKnots", "muZeros", "indices", "nPoints")
+   jags.params=c("pfat", "gp_sigmaSq_fat", "gp_sigmaSq_norm", "spatialEffectsKnotsNorm", "spatialEffectsKnotsFat")
 jagsmodel.gaussian = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_gaussian.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
 ```
 
@@ -231,10 +231,10 @@ y.binomial = rbinom(nPoints, size=1, prob=plogis(proj[indices,1]))
 ```
 
 ```{r, fig.pos="placeHere",fig.cap="Simulated mixture distribution of occurence probabilities"}
-hist(plogis(proj), xlab = "Mixture of Pr(occurrence)", col = "grey")
+hist(plogis(proj), xlab = "Mixture of Pr(occurrence)", col = "grey", main="")
 ```
 
-```{r jagsBinomialChunk,warning=FALSE,message=FALSE}
+```{r jagsBinomialChunk}
 jagsscript = cat("
 model {	
    # priors on parameters for gaussian process
@@ -288,9 +288,9 @@ model {
 
 Run the model,
 
-```{r runJagsBinomialChunk, cache=TRUE,warning=FALSE,message=FALSE}
-jags.data = list("nLocs","nKnots", "y.binomial", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
-   jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
+```{r runJagsBinomialChunk, cache=TRUE}
+jags.data = list("nLocs", "nKnots", "y.binomial", "distKnotsSq", "distKnots21Sq", "diagKnots", "muZeros", "indices", "nPoints")
+   jags.params=c("pfat", "gp_sigmaSq_fat", "gp_sigmaSq_norm", "spatialEffectsKnotsNorm", "spatialEffectsKnotsFat")
 jagsmodel.binomial = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_binomial.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE)  
 ```
 
@@ -339,7 +339,7 @@ x = grid[indices,]
 y.poisson = rpois(nPoints, lambda=exp(proj[indices,1]))
 ```
 
-```{r jagsPoissonChunk,warning=FALSE,message=FALSE}
+```{r jagsPoissonChunk}
 jagsscript = cat("
 model {	
    # priors on parameters for gaussian process
@@ -384,7 +384,7 @@ model {
    
    # evaluate the likelihood
    for(i in 1:nPoints) {
-       y.poisson[i] ~ dpois(exp(spatialEffects[indices[i], 1]));
+       y.poisson[i] ~ dpois(exp(min(20, spatialEffects[indices[i], 1])));
    }    
    
 }  ",file="recover_rf_poisson.txt")
@@ -393,9 +393,9 @@ model {
 
 Run the model,
 
-```{r runJagsPoissonChunk, cache=TRUE,warning=FALSE,message=FALSE}
-jags.data = list("nLocs","nKnots", "y.poisson", "distKnotsSq", "distKnots21Sq","diagKnots","muZeros","indices","nPoints")
-   jags.params=c("pfat","gp_sigmaSq_fat","gp_sigmaSq_norm","spatialEffectsKnotsNorm","spatialEffectsKnotsFat")
+```{r runJagsPoissonChunk, cache=TRUE}
+jags.data = list("nLocs", "nKnots", "y.poisson", "distKnotsSq", "distKnots21Sq", "diagKnots", "muZeros", "indices", "nPoints")
+   jags.params=c("pfat", "gp_sigmaSq_fat","gp_sigmaSq_norm", "spatialEffectsKnotsNorm", "spatialEffectsKnotsFat")
 jagsmodel.poisson = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_poisson.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE)  
 ```
 
@@ -421,3 +421,125 @@ sd.poisson = sqrt(c(gp_sigmaSq_norm, gp_sigmaSq_fat))
 
 boxplot(c(sd.gaussian, sd.binomial, sd.poisson) ~ sort(rep(1:6, n.mcmc)), outline = FALSE, names = c("G.norm", "G.fat", "B.norm", "B.fat", "P.norm", "P.fat"), col = rep(c("white","grey"),3))
 ```
+
+## Spatial replication
+
+It may be possible to improve estimation of the catastrophic mixture parameters if we include spatial replication. In the context of the fish datasets we're working with, these are like combining samples from multiple years (the underlying gaussian random field is assumed to be constant and not changing over time).
+
+We'll initially explore this with the binomial and Poisson distributions, and simulating 5 years of data 
+
+### Binomial
+```{r}
+# distance matrix of knots
+distKnots = as.matrix(dist(knots))
+distKnotsSq = distKnots^2 # squared distances
+# note: shape parameter scaled to distance matrix
+gp_scale = 0.001
+sigma.norm = 0.001
+sigma.fat = 0.1
+corKnots = exp(-gp_scale*distKnotsSq)
+Sigma.normal = corKnots * sigma.norm * sigma.norm
+Sigma.fat = corKnots * sigma.fat * sigma.fat
+# Calculate distance from knots to grid
+distAll = as.matrix(dist(rbind(grid, knots)))^2
+distKnots21Sq = t(distAll[1:nKnots, -c(1:nKnots)])
+Sigma21.normal = exp(-gp_scale*distKnots21Sq) * sigma.norm * sigma.norm
+Sigma21.fat = exp(-gp_scale*distKnots21Sq) * sigma.fat * sigma.fat
+re.norm = rmvnorm(1, mean = rep(0, nKnots), Sigma.normal)
+re.fat = rmvnorm(1, mean = rep(0, nKnots), Sigma.fat)
+# Scale
+re.norm = re.norm-mean(re.norm)
+re.fat = re.norm-mean(re.fat)
+# take inverse
+invSigmaKnots.norm = solve(Sigma.normal) 
+invSigmaKnots.fat = solve(Sigma.fat)
+
+# Project
+proj.norm = Sigma21.normal %*% invSigmaKnots.norm %*% matrix(re.norm,ncol=1)
+proj.fat = Sigma21.fat %*% invSigmaKnots.fat %*% matrix(re.fat,ncol=1)
+
+# Combine to single RF
+pfat = 0.1
+mufat = 0
+proj = (1-pfat)*proj.norm + pfat*(mufat + proj.fat)
+
+# Simulate binary data,
+nPoints = nLocs * 5
+indices = rep(seq(1,nLocs), 5)
+x = grid[indices,]
+y.binomial = rbinom(nPoints, size=1, prob=plogis(proj[indices,1]))
+```
+
+```{r runJagsBinomialChunkRep, cache=TRUE}
+jags.data = list("nLocs", "nKnots", "y.binomial", "distKnotsSq", "distKnots21Sq", "diagKnots", "muZeros", "indices", "nPoints")
+   jags.params=c("pfat", "gp_sigmaSq_fat", "gp_sigmaSq_norm", "spatialEffectsKnotsNorm", "spatialEffectsKnotsFat")
+jagsmodel.binomial.rep = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_binomial.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE)
+```
+
+Compare the densities of the estimated fat-tailed contribution between the model with a single replicate, and 5 years of data
+```{r, fig.pos="placeHere",fig.cap="Estimated contribution of wider tailed distribution for binomial data"}
+attach.jags(jagsmodel.binomial, overwrite=TRUE)
+par(mfrow = c(2,1), mgp=c(2,1,0), mai=c(0.5,0.6,0.4,0.05))
+hist(pfat,40,col="grey",main="Single replicate")
+attach.jags(jagsmodel.binomial.rep, overwrite=TRUE)
+hist(pfat,40,col="grey",main="Multiple replicates")
+```
+
+
+### Poisson
+```{r}
+# distance matrix of knots
+distKnots = as.matrix(dist(knots))
+distKnotsSq = distKnots^2 # squared distances
+# note: shape parameter scaled to distance matrix
+gp_scale = 0.001
+sigma.norm = 0.001
+sigma.fat = 0.002
+corKnots = exp(-gp_scale*distKnotsSq)
+Sigma.normal = corKnots * sigma.norm * sigma.norm
+Sigma.fat = corKnots * sigma.fat * sigma.fat
+# Calculate distance from knots to grid
+distAll = as.matrix(dist(rbind(grid, knots)))^2
+distKnots21Sq = t(distAll[1:nKnots, -c(1:nKnots)])
+Sigma21.normal = exp(-gp_scale*distKnots21Sq) * sigma.norm * sigma.norm
+Sigma21.fat = exp(-gp_scale*distKnots21Sq) * sigma.fat * sigma.fat
+re.norm = rmvnorm(1, mean = rep(0, nKnots), Sigma.normal)
+re.fat = rmvnorm(1, mean = rep(0, nKnots), Sigma.fat)
+# Scale
+re.norm = re.norm-mean(re.norm)
+re.fat = re.norm-mean(re.fat)
+# take inverse
+invSigmaKnots.norm = solve(Sigma.normal) 
+invSigmaKnots.fat = solve(Sigma.fat)
+
+# Project
+proj.norm = Sigma21.normal %*% invSigmaKnots.norm %*% matrix(re.norm,ncol=1)
+proj.fat = Sigma21.fat %*% invSigmaKnots.fat %*% matrix(re.fat,ncol=1)
+
+# Combine to single RF
+pfat = 0.1
+mufat = 0
+proj = (1-pfat)*proj.norm + pfat*(mufat + proj.fat)
+
+# Simulate poisson data,
+nPoints = nLocs * 5
+indices = rep(seq(1,nLocs), 5)
+x = grid[indices,]
+y.poisson = rpois(nPoints, lambda=exp(proj[indices,1]))
+```
+
+```{r runJagsPoissonChunkRep, cache=TRUE}
+jags.data = list("nLocs", "nKnots", "y.poisson", "distKnotsSq", "distKnots21Sq", "diagKnots", "muZeros", "indices", "nPoints")
+jags.params=c("pfat", "gp_sigmaSq_fat", "gp_sigmaSq_norm", "spatialEffectsKnotsNorm", "spatialEffectsKnotsFat")
+jagsmodel.poisson.rep = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_poisson.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE)
+```
+
+Compare the densities of the estimated fat-tailed contribution between the model with a single replicate, and 5 years of data
+```{r, fig.pos="placeHere",fig.cap="Estimated contribution of wider tailed distribution for Poisson data"}
+attach.jags(jagsmodel.poisson, overwrite=TRUE)
+par(mfrow = c(2,1), mgp=c(2,1,0), mai=c(0.5,0.6,0.4,0.05))
+hist(pfat,40,col="grey",main="Single replicate")
+attach.jags(jagsmodel.poisson.rep, overwrite=TRUE)
+hist(pfat,40,col="grey",main="Multiple replicates")
+```
+

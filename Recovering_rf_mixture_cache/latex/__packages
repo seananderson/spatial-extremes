@@ -1,0 +1,11 @@
+base
+cluster
+mvtnorm
+coda
+rjags
+R2jags
+spam
+maps
+fields
+ggplot2
+knitr
