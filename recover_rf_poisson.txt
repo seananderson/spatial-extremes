@@ -1,0 +1,45 @@
+
+model {	
+   # priors on parameters for gaussian process
+   gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_scale <- 1/gp_scaleInv;
+   gp_sigmaSqInv_fat ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_sigmaSq_fat <- 1/gp_sigmaSqInv_fat;  	
+   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm;  	
+   gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
+   gp_jitterSq <- 1/gp_jitterSqInv;
+
+   # This builds the 2 cov matrices needed
+   # SigmaKnots is the COV matrix btween knots
+   # SigmaOffDiag is the COV matrix between new locations and knots, e.g. it's (100 x 10)   
+   for(i in 1:nKnots) {
+   	for(j in 1:nKnots) {
+     # this adds some jitter to the diagonal but not the off-diags
+  	 SigmaKnotsNorm[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_norm * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_norm);	
+  	 SigmaKnotsFat[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_fat * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_fat);
+  	}
+   }
+   for(i in 1:nLocs) {
+   	for(j in 1:nKnots) {
+  	 SigmaOffDiagNorm[i,j] <- gp_sigmaSq_norm * exp(-gp_scale * distKnots21Sq[i,j]);
+  	 SigmaOffDiagFat[i,j] <- gp_sigmaSq_fat * exp(-gp_scale * distKnots21Sq[i,j]);
+   	}
+   }	
+   invSigmaKnotsNorm <- inverse(SigmaKnotsNorm[,]); # inverse of matrix for projection and mvn distribution
+   invSigmaKnotsFat <- inverse(SigmaKnotsFat[,]); # inverse of matrix for projection and mvn distribution
+
+   # mixture contribution of fat tailed events
+   pfat ~ dunif(0,0.3);
+
+   # Spatial random effects
+   spatialEffectsKnotsNorm[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
+   spatialEffectsKnotsFat[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsFat);
+   spatialEffects[1:nLocs,1] <- (1-pfat)*((SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1]) + pfat*((SigmaOffDiagFat %*% invSigmaKnotsFat) %*% spatialEffectsKnotsFat[1:nKnots,1]);
+   
+   # evaluate the likelihood
+   for(i in 1:nPoints) {
+       y.poisson[i] ~ dpois(exp(spatialEffects[indices[i], 1]));
+   }    
+   
+}  

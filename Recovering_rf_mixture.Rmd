@@ -81,9 +81,9 @@ proj = (1-pfat)*proj.norm + pfat*proj.fat
 Next, we'll simulate 3 kinds of data from the spatial mixture: gaussian, binomial, and poisson counts. 
 
 ```{r simulateData}
-nPoints = 100
-indices = sample(seq(1,nLocs), size=nPoints, replace=T)
-
+nPoints = nLocs
+#indices = sample(seq(1,nLocs), size=nPoints, replace=T)
+indices = seq(1,nPoints)
 # assume no observation error, so observed/simulated gaussian data are same
 x = grid[indices,]
 y.gaussian = proj[indices,1]
@@ -287,3 +287,12 @@ jags.data = list("nLocs","nKnots", "y.poisson", "distKnotsSq", "distKnots21Sq","
 jagsmodel.poisson = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_poisson.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
 ```
 
+```{r plots}
+par(mfrow=c(2,2),mgp=c(2,1,0),mai=c(0.5,0.5,0.3,0.1))
+attach.jags(jagsmodel.gaussian)
+hist(pfat,40,col="grey",main="Gaussian",xlab="P(fat tail)")
+attach.jags(jagsmodel.binomial)
+hist(pfat,40,col="grey",main="Binomial",xlab="P(fat tail)")
+attach.jags(jagsmodel.poisson)
+hist(pfat,40,col="grey",main="Poisson",xlab="P(fat tail)")
+```
