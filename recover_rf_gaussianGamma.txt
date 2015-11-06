@@ -1,0 +1,38 @@
+
+model {	
+   # priors on parameters for gaussian process
+   gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
+   gp_scale <- 1/gp_scaleInv;
+   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # prior on normal var parameter
+   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm; 
+   gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
+   gp_jitterSq <- 1/gp_jitterSqInv;
+
+   # This builds the 2 cov matrices needed
+   # SigmaKnots is the COV matrix btween knots
+   # SigmaOffDiag is the COV matrix between new locations and knots, e.g. it's (100 x 10)   
+   for(i in 1:nKnots) {
+   	for(j in 1:nKnots) {
+     # this adds some jitter to the diagonal but not the off-diags
+  	 SigmaKnotsNorm[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_norm * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_norm);	
+  	}
+   }
+   for(i in 1:nLocs) {
+   	for(j in 1:nKnots) {
+  	 SigmaOffDiagNorm[i,j] <- gp_sigmaSq_norm * exp(-gp_scale * distKnots21Sq[i,j]);
+   	}
+   }	
+   invSigmaKnotsNorm <- inverse(SigmaKnotsNorm[,]); # inverse of matrix for projection and mvn distribution
+
+   # Spatial random effects
+   spatialEffectsKnotsNorm[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
+   spatialEffects[1:nLocs,1] <- (SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1];
+   
+   # evaluate the likelihood
+   gamma.a ~ dgamma(0.001,0.001); # basically CV
+   for(i in 1:nPoints) {
+       pred[i] <- exp(min(max(spatialEffects[indices[i], 1], -20), 20));
+       y.gamma[i] ~ dgamma(gamma.a, gamma.a/pred[i]);
+   }    
+   
+}  
