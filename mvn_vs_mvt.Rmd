@@ -15,6 +15,7 @@ library(fields)
 library(ggplot2)
 library(knitr)
 library(MASS)
+library(rstan)
 opts_chunk$set(tidy=TRUE, message=FALSE,warning=FALSE)
 ```
 
@@ -339,3 +340,65 @@ plot(re.norm, mvt.est, xlab = "true REs @ knots", ylab = "estimates", main = "mv
 plot(mvn.est, mvt.est, xlab = "MVN estimates @ knots", ylab = "MVT estimates @ knots")
 abline(0, 1, col="red")
 ```
+
+## Comparing MVN and MVT random effects with Poisson model (STAN)
+
+```{r stan_gaussPois, cache=TRUE}
+# Named list of data
+spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.poisson, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq")
+
+# init function
+init_fun <- function() { list(gp_scale = runif(1,0,0.1), gp_sigmaSq = runif(1,0,0.1), jitter_sq = runif(1, 0, 0.001)) } 
+
+# fit the model
+stanMod_gaussianPoisson = stan(file = 'stan_gaussianPoisson.r',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
+```
+
+
+```{r stan_mvtPois, cache=TRUE}
+# Named list of data
+spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.poisson, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq")
+
+# init function
+init_fun <- function() { list(gp_scale = runif(1,0,0.1), gp_sigmaSq = runif(1,0,0.1), jitter_sq = runif(1, 0, 0.001)) }
+
+# fit the model
+stanMod_mvtPoisson = stan(file = 'stan_mvtPoisson.r',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
+```
+
+## Comparing MVN and MVT random effects with Gamma model (STAN)
+
+```{r stan_gaussGamma, cache=TRUE}
+# Named list of data
+spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq")
+
+# init function
+init_fun <- function() { list(gp_scale = runif(1,0,0.1), gp_sigmaSq = runif(1,0,0.1), jitter_sq = runif(1, 0, 0.001)) } 
+
+# fit the model
+stanMod_gaussianGamma = stan(file = 'stan_gaussianGamma.r',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
+```
+
+
+```{r stan_mvtGamma, cache=TRUE}
+# Named list of data
+spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "scaledf")
+
+# init function
+init_fun <- function() { list(gp_scale = runif(1,0,0.1), gp_sigmaSq = runif(1,0,0.1), jitter_sq = runif(1, 0, 0.001), scaledf = runif(1,1,2)) }
+
+# fit the model
+stanMod_mvtGamma = stan(file = 'stan_mvtGamma.r',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
+```
+
+   
+
+
