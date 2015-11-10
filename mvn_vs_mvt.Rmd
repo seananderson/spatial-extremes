@@ -360,10 +360,10 @@ spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y
 spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq")
 
 # init function
-init_fun <- function() { list(gp_scale = runif(1,0,0.1), gp_sigmaSq = runif(1,0,0.1), jitter_sq = runif(1, 0, 0.001)) } 
+init_fun <- function() { list(gp_scale = runif(1,0,0.1), gp_sigmaSq = runif(1,0,0.1), jitter_sq = runif(1, 0, 0.001)) }
 
 # fit the model
-stanMod_gaussianPoisson = stan(file = 'stan_gaussianPoisson.r',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
+stanMod_gaussianPoisson = stan(file = 'stan_gaussianPoisson.stan',data = spatglm_data, verbose = TRUE, chains = 1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
 ```
 
 
@@ -377,7 +377,7 @@ spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq")
 init_fun <- function() { list(gp_scale = runif(1,0,0.1), gp_sigmaSq = runif(1,0,0.1), jitter_sq = runif(1, 0, 0.001)) }
 
 # fit the model
-stanMod_mvtPoisson = stan(file = 'stan_mvtPoisson.r',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
+stanMod_mvtPoisson = stan(file = 'stan_mvtPoisson.stan',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
 ```
 
 ## Comparing MVN and MVT random effects with Gamma model (STAN)
@@ -389,10 +389,10 @@ spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y
 spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq")
 
 # init function
-init_fun <- function() { list(gp_scale = runif(1,0,0.1), gp_sigmaSq = runif(1,0,0.1), jitter_sq = runif(1, 0, 0.001)) } 
+init_fun <- function() { list(gp_scale = runif(1,0,0.1), gp_sigmaSq = runif(1,0,0.1), jitter_sq = runif(1, 0, 0.001)) }
 
 # fit the model
-stanMod_gaussianGamma = stan(file = 'stan_gaussianGamma.r',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
+stanMod_gaussianGamma = stan(file = 'gaussianGamma.stan',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
 ```
 
 
@@ -406,9 +406,5 @@ spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "
 init_fun <- function() { list(gp_scale = runif(1,0,0.1), gp_sigmaSq = runif(1,0,0.1), jitter_sq = runif(1, 0, 0.001), scaledf = runif(1,1,2)) }
 
 # fit the model
-stanMod_mvtGamma = stan(file = 'stan_mvtGamma.r',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
+stanMod_mvtGamma = stan(file = 'mvtGamma.stan',data = spatglm_data, verbose = TRUE, chains =1, thin = 1, warmup = 5000, iter = 10000, pars = spatglm_pars, init = init_fun)
 ```
-
-   
-
-
