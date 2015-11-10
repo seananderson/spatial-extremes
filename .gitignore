@@ -10,3 +10,11 @@
 *.gz(busy)
 *.rtf
 *.tex.latexmain
+
+stan_gaussianPoisson.rda
+
+gaussianGamma.rda
+
+mvtGamma.rda
+
+visualize-t-rf.html
