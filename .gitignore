@@ -18,3 +18,5 @@ gaussianGamma.rda
 mvtGamma.rda
 
 visualize-t-rf.html
+
+*.rda
