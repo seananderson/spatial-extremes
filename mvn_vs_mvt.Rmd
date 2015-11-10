@@ -46,7 +46,7 @@ Sigma.normal = corKnots * sigma.norm * sigma.norm
 invSigmaKnots.norm = solve(Sigma.normal)
 # Calculate distance from knots to grid
 distAll = as.matrix(dist(rbind(grid, knots)))^2
-distKnots21Sq = t(distAll[1:nKnots, -c(1:nKnots)])
+distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
 Sigma21.normal = exp(-gp_scale*distKnots21Sq) * sigma.norm * sigma.norm
 # Generate vector of random effects
 re.norm = rmvt(1, sigma = Sigma.normal, df = 2)
@@ -59,6 +59,14 @@ diagKnots = diag(nKnots)
 nPoints = length(proj.norm)
 muZeros = rep(0, nKnots)
 indices = seq(1,nPoints)
+```
+
+```{r check-projection}
+k <- data.frame(knots, v = 1 * t(re.norm), type = "knots")
+p <- data.frame(grid, v = t(proj.norm), type = "projection")
+d <- rbind(k, p)
+ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
+  geom_point(size=6) + scale_colour_gradient2()
 ```
 
 ### Simulating data with Gamma observation model
