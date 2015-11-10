@@ -17,6 +17,8 @@ library(knitr)
 library(MASS)
 library(rstan)
 opts_chunk$set(tidy=TRUE, message=FALSE,warning=FALSE)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
 ```
 
 ## Spatial data simulation 
