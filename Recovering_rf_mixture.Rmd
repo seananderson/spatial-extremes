@@ -53,8 +53,7 @@ Calculate distance matrix from stations to knots, and covariance matrices,
 ```{r}
 # Calculate distance from knots to grid
 distAll = as.matrix(dist(rbind(grid, knots)))^2
-distKnots21Sq = t(distAll[1:nKnots, -c(1:nKnots)])
-
+distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
 Sigma21.normal = exp(-gp_scale*distKnots21Sq) * sigma.norm * sigma.norm
 Sigma21.fat = exp(-gp_scale*distKnots21Sq) * sigma.fat * sigma.fat
 
@@ -99,6 +98,14 @@ proj.fat = Sigma21.fat %*% invSigmaKnots.fat %*% matrix(re.fat,ncol=1)
 # Combine to single RF
 pfat = 0.1
 proj = (1-pfat)*proj.norm + pfat*proj.fat 
+```
+
+```{r}
+k <- data.frame(knots, v = 1 * t(re.norm), type = "knots")
+p <- data.frame(grid, v = (proj.norm), type = "projection")
+d <- rbind(k, p)
+ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
+  geom_point(size=6) + scale_colour_gradient2()
 ```
 
 Next, we'll simulate 3 kinds of data from the spatial mixture: gaussian, binomial, and poisson counts. 
