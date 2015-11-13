@@ -1,0 +1,177 @@
+---
+title: "mvn_mvt_inlaTMB"
+output: pdf_document
+---
+
+# Overview
+This markdown file will implement the INLA / TMB approach to the spatial models. We'll leave this as a separate document for now so that all of the other models don't have to be run in JAGS or STAN. These code blocks are copied over from JAGS/STAN markdown file. 
+
+The only major differences are that TMB and INLA both have to be installed. INLA can be installed by running the line source("http://www.math.ntnu.no/inla/givemeINLA.R"). TMB can be installed from GitHub (install_github("kaskr/adcomp/TMB")) or from CRAN ("TMB").  
+
+```{r chunkSet, cache=FALSE, echo=FALSE,warning=FALSE,message=FALSE}
+library(cluster)
+library(mvtnorm)
+library(R2jags)
+library(fields)
+library(ggplot2)
+library(knitr)
+library(MASS)
+library(rstan)
+library(INLA)
+library(TMB)
+opts_chunk$set(tidy=TRUE, message=FALSE,warning=FALSE)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+## Spatial data simulation 
+
+We'll start and set the seed,
+```{r}
+set.seed(3)
+```
+
+```{r}
+# Simulate data on grid
+grid = as.matrix(expand.grid("lon" = seq(5,15,1), "lat" = seq(5,15,1)))
+grid[,1] = jitter(grid[,1])
+grid[,2] = jitter(grid[,2])
+nLocs = dim(grid)[1]
+
+nKnots = 20 # Dimension of random effects
+knots = pam(grid,nKnots)$medoids
+distKnots = as.matrix(dist(knots))
+distKnotsSq = distKnots^2 # squared distances
+# note: shape parameter scaled to distance matrix
+gp_scale = 0.01
+sigma.norm = 0.01
+corKnots = exp(-gp_scale*distKnotsSq)
+Sigma.normal = corKnots * sigma.norm * sigma.norm
+invSigmaKnots.norm = solve(Sigma.normal)
+# Calculate distance from knots to grid
+distAll = as.matrix(dist(rbind(grid, knots)))^2
+distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
+Sigma21.normal = exp(-gp_scale*distKnots21Sq) * sigma.norm * sigma.norm
+# Generate vector of random effects
+re.norm = rmvt(1, sigma = Sigma.normal, df = 2)
+re.norm = re.norm-mean(re.norm)# Scale
+
+# Project random effects to locations of the data
+proj.norm = t((Sigma21.normal %*% invSigmaKnots.norm) %*% t(re.norm))
+
+diagKnots = diag(nKnots)
+nPoints = length(proj.norm)
+muZeros = rep(0, nKnots)
+indices = seq(1,nPoints)
+```
+
+```{r check-projection}
+k <- data.frame(knots, v = 1 * t(re.norm), type = "knots")
+p <- data.frame(grid, v = t(proj.norm), type = "projection")
+d <- rbind(k, p)
+ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
+  geom_point(size=6) + scale_colour_gradient2()
+```
+
+### Simulating data with Gamma observation model
+
+```{r, fig.pos="placeHere",fig.cap="Simulated gamma data, using MVT random effects."}
+# Include observation error
+# Use same gamma parameterization as JAGS
+gamma.a = 0.03
+gamma.b = gamma.a/exp(proj.norm)
+# simulate observed data on grid
+y.gamma = rgamma(length(proj.norm), shape = gamma.a, rate = gamma.b)  
+
+hist(y.gamma, 40, col="grey", xlab="Simulated data", main="")
+```
+  
+### Simulating data with Poisson observation model
+
+```{r, fig.pos="placeHere",fig.cap="Simulated Poisson data, using MVT random effects."}
+# Include observation error
+# simulate observed data on grid
+y.poisson = rpois(length(proj.norm), exp(proj.norm))  
+
+hist(y.poisson, 40, col="grey", xlab="Simulated data", main="")
+```
+
+# Using INLA to calculate matrices
+
+We'll make this example slighty more complicated than before by including data from several years.  
+```{r}
+  n_years = 3
+  n_stations = nLocs
+  n_data = n_stations*n_years
+  Ymat = matrix(0, nLocs, n_years)
+  for(yr in 1:n_years) {
+    #Ymat[,yr] = rgamma(nLocs, shape = gamma.a, rate = gamma.b)
+    Ymat[,yr] = rpois(length(proj.norm), exp(proj.norm))  
+  }
+  
+  Site = as.vector(row(Ymat))
+  Year = as.vector(col(Ymat))
+  # simulate some NAs 
+  Y = c(Ymat)
+  Y[sample(seq(1,length(Y)), size = 40, replace=F)] = NA
+  X = matrix(1, ncol = length(Y))
+  NAindicator = as.integer(ifelse(is.na(Y),1,0))
+```
+
+## Build SPDE object using INLA
+  
+```{r}
+  # These are just some default options. Very specific to this simulation
+  mesh = inla.mesh.create( grid, plot.delay=NULL, extend=list(n=4,offset=-0.2), refine=list(min.angle=26), cutoff = 1.2 )
+  plot(mesh)
+  points(grid, col="red")
+  
+  print(mesh$n) # number of knots
+```
+
+## Create the SPDE/GMRF model 
+Matern covariance function
+  
+```{r}
+spde = inla.spde2.matern(mesh,alpha=2)
+```
+
+## Compile model
+```{r}
+    # Run spatial model
+  compile( "TMB/spatial_inlaTMB.cpp" )
+  dyn.load( dynlib("TMB/spatial_inlaTMB") )
+```
+
+## 
+```{r}
+    # Data list
+    # G0, G1, and G2 are the 3 key matrices that we needed to get from INLA
+    Data = list(n_data = n_stations*n_years, Y = Y, NAind = NAindicator, n_stations = n_stations, meshidxloc = mesh$idx$loc-1, n_years = n_years, X = X, G0 = spde$param.inla$M0, G1 = spde$param.inla$M1, G2 = spde$param.inla$M2)
+    Parameters = list(alpha=c(0.0), phi=0.0, log_tau_E=0.0, log_tau_O=0.0, log_kappa=0.0,	rho=0.5, Epsilon_input=matrix(rnorm(spde$n.spde*n_years),nrow=spde$n.spde,ncol=n_years), Omega_input=rnorm(spde$n.spde))
+    Random = c("Epsilon_input","Omega_input")
+    # MakeADFun is TMB function to make obj functions
+    obj <- MakeADFun(data=Data, parameters=Parameters, random=Random, hessian=FALSE)
+    obj$fn(obj$par)
+```{r}
+
+  # Settings
+  newtonOption(smartsearch=TRUE)
+
+
+
+
+    # Run optimizer
+    obj$control <- list(trace=1,parscale=rep(1,13),REPORT=1,reltol=1e-12,maxit=100)
+    opt = nlminb(obj$par, obj$fn, obj$gr, lower=c(rep(-20,2),rep(-10,3),-0.999), upper=c(rep(20,2),rep(10,3),0.999), control=list(eval.max=1e4, iter.max=1e4))
+    SD = try( sdreport(obj) )
+    Report = obj$report()
+
+  # Range of correlation (Lindgren and Rue 2013, immediately before Eq. 4)
+    Nu = 1
+    sqrt(8*Nu)/exp(opt$par['log_kappa'])
+  # Marginal Standard Deviation  (Lindgren and Rue 2013 Eq. 2)
+    1 / sqrt(4*pi*exp(2*opt$par['log_tau_E'])*exp(2*opt$par['log_kappa']))
+
+
+
