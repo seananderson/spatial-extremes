@@ -10,3 +10,4 @@ fields
 ggplot2
 knitr
 MASS
+rstan

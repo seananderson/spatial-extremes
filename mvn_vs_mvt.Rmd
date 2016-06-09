@@ -78,7 +78,7 @@ gamma.a = 0.03
 gamma.b = gamma.a/exp(proj.norm)
 # simulate observed data on grid
 y.gamma = rgamma(length(proj.norm), shape = gamma.a, rate = gamma.b)  
-
+y.norm = rnorm(length(proj.norm), 3, sd= 0.1)  
 hist(y.gamma, 40, col="grey", xlab="Simulated data", main="")
 ```
   
@@ -407,4 +407,21 @@ spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "
 stanMod_mvtGamma = stan(file = 'mvtGamma.stan',data = spatglm_data, 
   verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
   pars = spatglm_pars)
+```
+
+```{r stan_mvtGamma, cache=TRUE}
+# Named list of data
+spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "scaledf")
+
+# fit the model
+stanMod_mvtGamma = stan(file = 'mvtGamma_0616.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 2000, iter = 4000, 
+  pars = spatglm_pars)
+
+extract(stanMod_mvtGamma, permuted = TRUE)
+
+est.means = apply(extract(stanMod_mvtGamma, permuted = TRUE)[[2]][,1,], 2, mean)
+plot(re.norm, est.means - mean(est.means))
 ```
