@@ -16,6 +16,7 @@ parameters {
   real<lower=0> scaledf;
   vector[nKnots] spatialEffectsKnots[nT];
   real<lower=0> sigma;
+  #real<lower=0> DF;
   #real<lower=0> gammaA;
 }
 transformed parameters {
@@ -35,6 +36,14 @@ model {
   vector[nLocs] spatialEffects[nT];
   matrix[nKnots, nKnots] invSigmaKnots;
 
+  # priors on parameters for covariances, etc
+  gp_scale ~ cauchy(0.00000001,5);
+  gp_sigmaSq ~ cauchy(0.00000001,5);
+  jitter_sq ~ cauchy(0.00000001,5);
+  #gammaA ~ cauchy(0,5);
+  sigma ~ cauchy(0,5);
+  DF <- 8; #~ cauchy(0,5);
+
   SigmaKnots <- gp_sigmaSq * exp(-gp_scale * distKnotsSq);# cov matrix between knots
   SigmaOffDiag <- gp_sigmaSq * exp(-gp_scale * distKnots21Sq);# cov matrix between knots and projected locs
   for (i in 1:nKnots) {
@@ -53,16 +62,9 @@ model {
   #DF <- 2;
   #scaledf ~ chi_square(DF);
   #spatialEffects[1] <- SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] * sqrt(DF/scaledf));
-  DF <- 5;
+  #DF <- 5;
   spatialEffectsKnots ~ multi_student_t(DF, muZeros, SigmaKnots);
   spatialEffects[1] <- SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1]);
-
-  # priors on parameters for covariances, etc
-  gp_scale ~ cauchy(0.00000001,5);
-  gp_sigmaSq ~ cauchy(0.00000001,5);
-  jitter_sq ~ cauchy(0.00000001,5);
-  #gammaA ~ cauchy(0,5);
-  sigma ~ cauchy(0,5);
 
   for(n in 1:N) {
 	#y[n] ~ gamma(gammaA, gammaA/exp(spatialEffects[1, location[n]]));

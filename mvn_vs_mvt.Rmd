@@ -31,16 +31,18 @@ set.seed(3)
 
 ```{r}
 # Simulate data on grid
-grid = as.matrix(expand.grid("lon" = seq(5,15,1), "lat" = seq(5,15,1)))
+#grid = as.matrix(expand.grid("lon" = seq(5,15,1), "lat" = seq(5,15,1)))
+
+grid = cbind("lon" = runif(1000, 5, 15), "lat" = runif(1000, 5, 15))
 nLocs = dim(grid)[1]
 
-nKnots = 20 # Dimension of random effects
+nKnots = 50 # Dimension of random effects
 knots = jitter(pam(grid,nKnots)$medoids)
 distKnots = as.matrix(dist(knots))
 distKnotsSq = distKnots^2 # squared distances
 # note: shape parameter scaled to distance matrix
-gp_scale = 0.01
-sigma.norm = 0.01
+gp_scale = 0.3
+sigma.norm = 0.15
 corKnots = exp(-gp_scale*distKnotsSq)
 Sigma.normal = corKnots * sigma.norm * sigma.norm
 invSigmaKnots.norm = solve(Sigma.normal)
@@ -66,7 +68,7 @@ k <- data.frame(knots, v = 1 * t(re.norm), type = "knots")
 p <- data.frame(grid, v = t(proj.norm), type = "projection")
 d <- rbind(k, p)
 ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
-  geom_point(size=6) + scale_colour_gradient2()
+  geom_point(size=3) + scale_colour_gradient2()
 ```
 
 ### Simulating data with Gamma observation model
@@ -78,7 +80,7 @@ gamma.a = 0.03
 gamma.b = gamma.a/exp(proj.norm)
 # simulate observed data on grid
 y.gamma = rgamma(length(proj.norm), shape = gamma.a, rate = gamma.b)  
-y.norm = rnorm(length(proj.norm), 3, sd= 0.1)  
+y.norm = rnorm(length(proj.norm), 3, sd= 0.3)  
 hist(y.gamma, 40, col="grey", xlab="Simulated data", main="")
 ```
   
@@ -417,10 +419,10 @@ spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "
 
 # fit the model
 stanMod_mvtGamma = stan(file = 'mvtGamma_0616.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 4, thin = 1, warmup = 2000, iter = 4000, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
   pars = spatglm_pars)
 
-extract(stanMod_mvtGamma, permuted = TRUE)
+#extract(stanMod_mvtGamma, permuted = FALSE)
 
 est.means = apply(extract(stanMod_mvtGamma, permuted = TRUE)[[2]][,1,], 2, mean)
 plot(re.norm, est.means - mean(est.means))
