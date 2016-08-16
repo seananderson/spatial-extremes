@@ -52,7 +52,7 @@ Spatial_List = Spatial_Information_Fn( grid_size_km=grid_size_km, n_x=n_x,
 
 Data_Geostat = cbind( Data_Geostat, Spatial_List$loc_UTM, "knot_i"=Spatial_List$knot_i )
 
-# Make TMB data list
+# Make TMB data list -- EW added depth as quadratic term in catchability
 TmbData = Data_Fn("Version"=Version, "FieldConfig"=FieldConfig, "RhoConfig"=RhoConfig,
   "ObsModel"=ObsModel, "b_i"=Data_Geostat[,'Catch_KG'], "a_i"=Data_Geostat[,'AreaSwept_km2'],
   "Q_ik" = as.matrix(Data_Geostat[,c('Depth','Depth2')]),
