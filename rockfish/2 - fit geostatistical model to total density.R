@@ -49,3 +49,22 @@ Spatial_List = Spatial_Information_Fn( grid_size_km=grid_size_km, n_x=n_x,
 Data_Geostat = cbind( Data_Geostat, Spatial_List$loc_UTM, "knot_i"=Spatial_List$knot_i )
 
 
+# Make TMB data list
+TmbData = Data_Fn("Version"=Version, "FieldConfig"=FieldConfig, "RhoConfig"=RhoConfig,
+  "ObsModel"=ObsModel, "b_i"=Data_Geostat[,'Catch_KG'], "a_i"=Data_Geostat[,'AreaSwept_km2'],
+  "v_i"=as.numeric(Data_Geostat[,'Vessel'])-1, "s_i"=Data_Geostat[,'knot_i']-1,
+  "t_i"=Data_Geostat[,'Year'], "a_xl"=Spatial_List$a_xl, "MeshList"=Spatial_List$MeshList,
+  "GridList"=Spatial_List$GridList, "Method"=Spatial_List$Method )
+# Make TMB object
+TmbList = Build_TMB_Fn("TmbData"=TmbData, "RunDir"=DateFile, "Version"=Version,
+  "RhoConfig"=RhoConfig, "VesselConfig"=VesselConfig, "loc_x"=Spatial_List$loc_x)
+Obj = TmbList[["Obj"]]
+
+# Run model
+Opt = TMBhelper::Optimize( obj=Obj, lower=TmbList[["Lower"]], upper=TmbList[["Upper"]],
+  getsd=TRUE, savedir=DateFile, bias.correct=TRUE )
+Report = Obj$report()
+
+# Save stuff
+Save = list("Opt"=Opt, "Report"=Report, "ParHat"=Obj$env$parList(Opt$par), "TmbData"=TmbData)
+save(Save, file=paste0(DateFile,"Save.RData"))
