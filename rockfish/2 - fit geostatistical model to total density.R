@@ -52,10 +52,12 @@ Spatial_List = Spatial_Information_Fn( grid_size_km=grid_size_km, n_x=n_x,
 
 Data_Geostat = cbind( Data_Geostat, Spatial_List$loc_UTM, "knot_i"=Spatial_List$knot_i )
 "X_xj" = as.matrix(Data_Geostat[,c('Depth')]),
-# Make TMB data list
+
+# Make TMB data list -- EW added depth as quadratic in catchability model
 TmbData = Data_Fn("Version"=Version, "FieldConfig"=FieldConfig, "RhoConfig"=RhoConfig,
   "ObsModel"=ObsModel, "b_i"=Data_Geostat[,'Catch_KG'], "a_i"=Data_Geostat[,'AreaSwept_km2'],
   "v_i"=as.numeric(Data_Geostat[,'Vessel'])-1, "s_i"=Data_Geostat[,'knot_i']-1,
+  "Q_ik" = as.matrix(Data_Geostat[,c('Depth','Depth2')]),
   "t_i"=Data_Geostat[,'Year'], "a_xl"=Spatial_List$a_xl, "MeshList"=Spatial_List$MeshList,
   "GridList"=Spatial_List$GridList, "Method"=Spatial_List$Method )
 
