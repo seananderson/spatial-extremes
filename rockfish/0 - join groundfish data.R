@@ -18,9 +18,10 @@ tri$HAUL_LONGITUDE_DD = (tri[,"END_LONGITUDE"] + tri[,"START_LONGITUDE"])/2
 tri_haul$HAUL_LATITUDE_DD = (tri_haul[,"END_LATITUDE"] + tri_haul[,"START_LATITUDE"])/2
 tri_haul$HAUL_LONGITUDE_DD = (tri_haul[,"END_LONGITUDE"] + tri_haul[,"START_LONGITUDE"])/2
 
-# sex, age, year, depth, weight, length
 annual$YEAR = as.numeric(substr(annual$PROJECT_CYCLE, 7, 10))
-annual_haul$YEAR = as.numeric(substr(annual_haul$PROJECT_CYCLE, 7, 10))
+annual_haul$YEAR = as.numeric(substr(annual_haul$Survey.Cycle, 7, 10))
+
+# sex, age, year, depth, weight, length
 annual = dplyr::rename(annual, AREA_SWEPT_HA = Area.Swept.by.the.Net..hectares.)
 tri = dplyr::rename(tri, AGE_YRS = AGE, SEX = SEX_DETERMINATION, YEAR = CRUISE_YR,
   DEPTH_M = BOTTOM_DEPTH)
@@ -42,8 +43,12 @@ tri_haul$DATE = mdy(unlist(lapply(strsplit(as.character(tri_haul$START_TIME), " 
 annual_haul = dplyr::rename(annual_haul, darkblotched.rockfish = Sebastes.crameri,
   HAUL_LATITUDE_DD = Haul.Latitude..decimal.degrees.,
   HAUL_LONGITUDE_DD = Haul.Longitude..decimal.degrees.,
-  DEPTH_M = Haul.Depth..meters.,
-  AREA_SWEPT = Area.Swept.by.the.Net..hectares.)
+  BOTTOM_DEPTH = Haul.Depth..meters.,
+  AREA_SWEPT_HA = Area.Swept.by.the.Net..hectares.)
+vars = c("YEAR", "HAUL_LATITUDE_DD", "HAUL_LONGITUDE_DD", "BOTTOM_DEPTH", "AREA_SWEPT_HA", "darkblotched.rockfish")
+joined = bind_rows(tri_haul[,vars],annual_haul[,vars])
+names(joined) = tolower(names(joined))
+saveRDS(joined, "rockfish/data/darkblotched_joined.rds")
 
 
 # Create output for age - length - weight data for all species
@@ -54,6 +59,6 @@ annual = annual[,c("YEAR","DATE","AREA_SWEPT_HA","HAUL_LATITUDE_DD",
 
 joined = bind_rows(tri,annual)
 names(joined) = tolower(names(joined))
-saveRDS(joined, "data/triennial_annual_joined.rds")
+saveRDS(joined, "rockfish/data/triennial_annual_joined.rds")
 
 
