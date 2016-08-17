@@ -31,7 +31,7 @@ $message
 [1] "relative convergence (4)"
 
 $run_time
-Time difference of 15.60728 mins
+Time difference of 15.89036 mins
 
 $number_of_coefficients
  Total  Fixed Random 
