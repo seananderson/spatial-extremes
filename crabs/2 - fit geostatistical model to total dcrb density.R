@@ -16,7 +16,7 @@ if(!exists(DateFile)) dir.create(DateFile)
 Version = "geo_index_v4a"
 Method = c("Grid", "Mesh")[2]
 grid_size_km = 10
-n_x = c(100, 250, 500, 1000, 2000)[1] # Number of stations
+n_x = 300 # Number of stations
 FieldConfig = c("Omega1"=1, "Epsilon1"=1, "Omega2"=1, "Epsilon2"=1) # 1=Presence-absence; 2=Density given presence; #Epsilon=Spatio-temporal; #Omega=Spatial
 RhoConfig = c("Beta1"=0, "Beta2"=0, "Epsilon1"=2, "Epsilon2"=2) # Structure for beta or epsilon over time: 0=None (default); 1=WhiteNoise; 2=RandomWalk; 3=Constant
 VesselConfig = c("Vessel"=0, "VesselYear"=0)
@@ -83,7 +83,7 @@ save(Save, file=paste0(DateFile,"Save.RData"))
 #Years2Include = which( Year_Set %in% sort(unique(Data_Geostat[,'Year'])))
 #Dim = c( "Nrow"=ceiling(sqrt(length(Years2Include))), "Ncol"=ceiling(length(Years2Include)/ceiling(sqrt(length(Years2Include)))) )
 #par( mfrow=Dim )
-#MapDetails_List = MapDetails_Fn( "Region"=Region, "NN_Extrap"=Spatial_List$PolygonList$NN_Extrap, "Extrapolation_List"=Extrapolation_List )
+MapDetails_List = MapDetails_Fn( "Region"=Region, "NN_Extrap"=Spatial_List$PolygonList$NN_Extrap, "Extrapolation_List"=Extrapolation_List )
 #PlotResultsOnMap_Fn(plot_set=3, MappingDetails=MapDetails_List[["MappingDetails"]], Report=Report, PlotDF=MapDetails_List[["PlotDF"]], MapSizeRatio=MapDetails_List[["MapSizeRatio"]], Xlim=MapDetails_List[["Xlim"]], Ylim=MapDetails_List[["Ylim"]], FileName=paste0(DateFile,"Field_"), Year_Set=Year_Set, Years2Include=Years2Include, Rotate=MapDetails_List[["Rotate"]], mfrow=Dim, mar=c(0,0,2,0), oma=c(3.5,3.5,0,0), Cex=MapDetails_List[["Cex"]], cex=1.8)
 
 # x2i here is the nn.idx index in Spatial_List$PolygonList$NN_Extrap, index of nearest neighbors
@@ -101,7 +101,7 @@ df = data.frame("lat" = rep(pred_lat, dim(Mat)[2]),
   "year" = 2002 + sort(rep(1:13,dim(Mat)[1])))
 
 library(ggplot2)
-pdf("crabs.pdf")
+png("crabs.png", width=700,height=700)
 ggplot(data=df, aes(x=lon, y=lat, colour = logdens)) +
   geom_point(size=0.2,alpha=0.2) + facet_wrap(~ year)
 dev.off()
@@ -115,7 +115,7 @@ df.diff = data.frame("lat" = rep(pred_lat, dim(Mat)[2]),
   "logdens" = c(Mat.diff),
   "year" = 2002 + sort(rep(1:13,dim(Mat)[1])))
 
-pdf("crabs_diff.pdf")
+png("crabs/crabs_diff.png", width=700,height=700)
 ggplot(data=df.diff[df.diff$year>2003,], aes(x=lon, y=lat, colour = logdens)) +
   geom_point(size=0.2,alpha=0.2) + facet_wrap(~ year)
 dev.off()
