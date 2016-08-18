@@ -18,8 +18,8 @@ library(knitr)
 We can simulate spatial data from knots with multivariate - t random effects with the function below. 
 
 ```{r}
-set.seed(3)
-nDataPoints = 1000
+set.seed(2)
+nDataPoints = 300
 grid = cbind("lon" = runif(nDataPoints, 5, 15), "lat" = runif(nDataPoints, 5, 15))
 nLocs = dim(grid)[1]
 
@@ -53,7 +53,7 @@ simulateData = function(nKnots = 50, gp_scale = 0.3, sigma_t = 0.15, nDraws = 10
 
 We can visually check to see that the simulation is working ok,  
 ```{r check-projection}
-dataSim = simulateData(nDraws = 1)
+dataSim = simulateData(nDraws = 500)
 
 if(dim(dataSim$reKnots)[1]==1) {
   dataSim$reKnots = t(dataSim$reKnots)
@@ -81,10 +81,30 @@ for(i in 1:length(n_knots)) {
   dataSim = simulateData(nKnots = n_knots[i])
   p.vals = unlist(lapply((apply(dataSim$proj, 2, shapiro.test)), getElement, "p.value"))
   normality[i] = length(which(p.vals < 0.05)) / length(p.vals)
+  print(i)
 }
 
 ```
 
 
+## Including observation error
+```{r}
+
+# The above example dataset has 1000 data points, so we can iterate 10:100 knots
+n_knots = seq(10, 100, by = 10)
+normality = 0
+ratio_obs2pro = 2 # multiplier, e.g. obs error = 2 x process error would be value = 2
+for(i in 1:length(n_knots)) {
+  # simulate 1000 draws of posteriors -- with observation error equal to process error
+  dataSim = simulateData(nKnots = n_knots[i])
+  N = dim(dataSim$proj)[1] * dim(dataSim$proj)[2]
+  SD = median(apply(dataSim$proj, 2, sd))*ratio_obs2pro
+  obsError = matrix(rnorm(N, 0, SD), dim(dataSim$proj)[1], dim(dataSim$proj)[2])
+  dataSim$proj = dataSim$proj + obsError
+  p.vals = unlist(lapply((apply(dataSim$proj, 2, shapiro.test)), getElement, "p.value"))
+  normality[i] = length(which(p.vals < 0.05)) / length(p.vals)
+}
+
+```
 
 
