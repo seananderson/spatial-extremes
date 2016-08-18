@@ -1,0 +1,90 @@
+---
+title: 'Simulation testing: what’s the ratio of knots:data we need to estimate the
+  t-distribution?'
+output: pdf_document
+---
+
+```{r chunkSet, cache=FALSE, echo=FALSE,warning=FALSE,message=FALSE}
+library(cluster)
+library(mvtnorm)
+library(R2jags)
+library(fields)
+library(ggplot2)
+library(knitr)
+```
+
+## Simulating spatial data from multivariate t
+
+We can simulate spatial data from knots with multivariate - t random effects with the function below. 
+
+```{r}
+set.seed(3)
+nDataPoints = 1000
+grid = cbind("lon" = runif(nDataPoints, 5, 15), "lat" = runif(nDataPoints, 5, 15))
+nLocs = dim(grid)[1]
+
+simulateData = function(nKnots = 50, gp_scale = 0.3, sigma_t = 0.15, nDraws = 1000) {
+
+  # cluster analysis to determine knot locations
+  knots = jitter(pam(grid,nKnots)$medoids)
+  distKnots = as.matrix(dist(knots))
+  distKnotsSq = distKnots^2 # squared distances
+
+  corKnots = exp(-gp_scale*distKnotsSq)
+  sigmaKnots = diag(nKnots) * sigma_t * sigma_t# * corKnots * 
+  invSigmaKnots = solve(sigmaKnots)
+  # Calculate distance from knots to grid
+  distAll = as.matrix(dist(rbind(grid, knots)))^2
+  distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
+  Sigma21 = exp(-gp_scale*distKnots21Sq) * sigma_t * sigma_t
+  
+  # Generate vector of random effects
+  # each 'draw' here is hypothetical draw from posterior
+  reKnots = rmvt(nDraws, sigma = sigmaKnots, df = 2)
+  #reKnots = sweep(reKnots, 2, apply(reKnots, 2, mean))
+
+  # Project random effects to locations of the data
+  proj = t((Sigma21 %*% invSigmaKnots) %*% t(reKnots))
+  return(list(knots = knots, reKnots = reKnots, proj = proj))
+}
+```
+
+## Checking projection
+
+We can visually check to see that the simulation is working ok,  
+```{r check-projection}
+dataSim = simulateData(nDraws = 1)
+
+if(dim(dataSim$reKnots)[1]==1) {
+  dataSim$reKnots = t(dataSim$reKnots)
+  dataSim$proj = t(dataSim$proj)
+}
+
+k <- data.frame(dataSim$knots, v = t(dataSim$reKnots)[,1], type = "knots")
+p <- data.frame(grid, v = t(dataSim$proj)[,1], type = "projection")
+d <- rbind(k, p)
+ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
+  geom_point(size=3) + scale_colour_gradient2()
+```
+
+## How many knots do we need? 
+
+Part of the ability to recover the t distribution is making sure the number of knots approaches the number of data points. What's an acceptable ratio of knots : data? This isn't something we've been concerned with for the other spatial models to data, where everything is normal. At small values of knots, there's likely more averaging (thus the resolution is lost and the projected random effects become normal). We can explore this by doing a series of tests for normality (shapiro.test) on the projected values. 
+
+```{r}
+
+# The above example dataset has 1000 data points, so we can iterate 10:100 knots
+n_knots = seq(10, 100, by = 10)
+normality = 0
+for(i in 1:length(n_knots)) {
+  # simulate 1000 draws of posteriors -- 
+  dataSim = simulateData(nKnots = n_knots[i])
+  p.vals = unlist(lapply((apply(dataSim$proj, 2, shapiro.test)), getElement, "p.value"))
+  normality[i] = length(which(p.vals < 0.05)) / length(p.vals)
+}
+
+```
+
+
+
+
