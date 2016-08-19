@@ -86,25 +86,31 @@ for(i in 1:length(n_knots)) {
 
 ```
 
-
 ## Including observation error
+
+What ratios of observation : process error are appropriate without destroying the multivariate-t distribution? 
+### It seems likke as long as observation error standard deviation is < 2x process standard deviation. Increasing the number of knots also helps a little bit (hence the increasing trend for most cases)
+
 ```{r}
 
 # The above example dataset has 1000 data points, so we can iterate 10:100 knots
-n_knots = seq(10, 100, by = 10)
-normality = 0
-ratio_obs2pro = 2 # multiplier, e.g. obs error = 2 x process error would be value = 2
-for(i in 1:length(n_knots)) {
+df = expand.grid("n_knots" = seq(10, 100, by = 10), 
+  "ratio_obs2pro" = c(1, 2, 3, 4, 5), "normality" = 0, "pro_sd" = 0)
+
+for(i in 1:nrow(df)) { 
+  print(i)
   # simulate 1000 draws of posteriors -- with observation error equal to process error
-  dataSim = simulateData(nKnots = n_knots[i])
-  N = dim(dataSim$proj)[1] * dim(dataSim$proj)[2]
-  SD = median(apply(dataSim$proj, 2, sd))*ratio_obs2pro
+  dataSim = simulateData(nKnots = df$n_knots[i])
+  N = dim(dataSim$proj)[1] * dim(dataSim$proj)[2] # total number of random numbers to gen.
+  df$pro_sd[i] = median(apply(dataSim$proj, 2, sd))
+  SD = df$pro_sd[i] * df$ratio_obs2pro[i]
   obsError = matrix(rnorm(N, 0, SD), dim(dataSim$proj)[1], dim(dataSim$proj)[2])
   dataSim$proj = dataSim$proj + obsError
   p.vals = unlist(lapply((apply(dataSim$proj, 2, shapiro.test)), getElement, "p.value"))
-  normality[i] = length(which(p.vals < 0.05)) / length(p.vals)
+  df$normality[i] = length(which(p.vals < 0.05)) / length(p.vals)
 }
 
+ggplot(df, aes(n_knots, normality, group = ratio_obs2pro, colour = pro_sd)) + geom_line() + facet_wrap(~ ratio_obs2pro) + ylab("Percent shapiro tests rejecting normality")
 ```
 
 
