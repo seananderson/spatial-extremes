@@ -23,9 +23,9 @@ transformed parameters {
 	#real sigma;
 	vector[(nKnots)] muZeros;
 	for(i in 1:nKnots) {
-		muZeros[i] <- 0;
+		muZeros[i] = 0;
 	}
-	#sigma <- sqrt(sigmaSq);
+	#sigma = sqrt(sigmaSq);
 }
 model {
   real DF;
@@ -35,24 +35,24 @@ model {
   vector[nLocs] spatialEffects[nT];
   matrix[nKnots, nKnots] invSigmaKnots;
 
-  SigmaKnots <- gp_sigmaSq * exp(-gp_scale * distKnotsSq);# cov matrix between knots
-  SigmaOffDiag <- gp_sigmaSq * exp(-gp_scale * distKnots21Sq);# cov matrix between knots and projected locs
+  SigmaKnots = gp_sigmaSq * exp(-gp_scale * distKnotsSq);# cov matrix between knots
+  SigmaOffDiag = gp_sigmaSq * exp(-gp_scale * distKnots21Sq);# cov matrix between knots and projected locs
   for (i in 1:nKnots) {
-	SigmaKnots[i,i] <- jitter_sq + gp_sigmaSq; # diagonal
-	SigmaOffDiag[i,i] <- jitter_sq + gp_sigmaSq; # diagonal
+	SigmaKnots[i,i] = jitter_sq + gp_sigmaSq; # diagonal
+	SigmaOffDiag[i,i] = jitter_sq + gp_sigmaSq; # diagonal
   }
-  invSigmaKnots <- inverse(SigmaKnots); # inverse needed for calculation below, this is different than inverse() in that Sigma = symm pos def
+  invSigmaKnots = inverse(SigmaKnots); # inverse needed for calculation below, this is different than inverse() in that Sigma = symm pos def
 
   # spatial random effects of knots are ~ mvn (0, sigma)
   #spatialEffectsKnots ~ multi_normal(muZeros, SigmaKnots);
-  SigmaKnots_chol <- cholesky_decompose(SigmaKnots);
+  SigmaKnots_chol = cholesky_decompose(SigmaKnots);
 
   # Calculate the random effect and projection for each time interval
   spatialEffectsKnots[1] ~ multi_normal_cholesky(muZeros,SigmaKnots_chol);
   # project onto new locations (n x knots) * (knots x knots) * (knots x 1)
-  DF <- 2;
+  DF = 2;
   scaledf ~ chi_square(DF);
-  spatialEffects[1] <- SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] * sqrt(DF/scaledf));
+  spatialEffects[1] = SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] * sqrt(DF/scaledf));
 
   # priors on parameters for covariances, etc
   gp_scale ~ cauchy(0,5);
