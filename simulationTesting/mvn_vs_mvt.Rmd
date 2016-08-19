@@ -23,49 +23,51 @@ options(mc.cores = parallel::detectCores())
 
 ## Spatial data simulation 
 
-We'll start and set the seed,
-```{r}
-set.seed(3)
-```
-
-
-```{r}
-# Simulate data on grid
-#grid = as.matrix(expand.grid("lon" = seq(5,15,1), "lat" = seq(5,15,1)))
-
-grid = cbind("lon" = runif(1000, 5, 15), "lat" = runif(1000, 5, 15))
+```{r function}
+nDataPoints = 300
+grid = cbind("lon" = runif(nDataPoints, 5, 15), 
+  "lat" = runif(nDataPoints, 5, 15))
 nLocs = dim(grid)[1]
 
-nKnots = 50 # Dimension of random effects
-knots = jitter(pam(grid,nKnots)$medoids)
-distKnots = as.matrix(dist(knots))
-distKnotsSq = distKnots^2 # squared distances
-# note: shape parameter scaled to distance matrix
-gp_scale = 0.3
-sigma.norm = 0.15
-corKnots = exp(-gp_scale*distKnotsSq)
-Sigma.normal = corKnots * sigma.norm * sigma.norm
-invSigmaKnots.norm = solve(Sigma.normal)
-# Calculate distance from knots to grid
-distAll = as.matrix(dist(rbind(grid, knots)))^2
-distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
-Sigma21.normal = exp(-gp_scale*distKnots21Sq) * sigma.norm * sigma.norm
-# Generate vector of random effects
-re.norm = rmvt(1, sigma = Sigma.normal, df = 2)
-re.norm = re.norm-mean(re.norm)# Scale
+simulateData = function(nKnots = 50, gp_scale = 0.3, sigma_t = 0.15, nDraws = 1000) {
 
-# Project random effects to locations of the data
-proj.norm = t((Sigma21.normal %*% invSigmaKnots.norm) %*% t(re.norm))
+  # cluster analysis to determine knot locations
+  knots = jitter(pam(grid,nKnots)$medoids)
+  distKnots = as.matrix(dist(knots))
+  distKnotsSq = distKnots^2 # squared distances
 
-diagKnots = diag(nKnots)
-nPoints = length(proj.norm)
-muZeros = rep(0, nKnots)
-indices = seq(1,nPoints)
+  corKnots = exp(-gp_scale*distKnotsSq)
+  sigmaKnots = diag(nKnots) * sigma_t * sigma_t# * corKnots * 
+  invSigmaKnots = solve(sigmaKnots)
+  # Calculate distance from knots to grid
+  distAll = as.matrix(dist(rbind(grid, knots)))^2
+  distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
+  Sigma21 = exp(-gp_scale*distKnots21Sq) * sigma_t * sigma_t
+  
+  # Generate vector of random effects
+  # each 'draw' here is hypothetical draw from posterior
+  reKnots = rmvt(nDraws, sigma = sigmaKnots, df = 2)
+  #reKnots = sweep(reKnots, 2, apply(reKnots, 2, mean))
+
+  # Project random effects to locations of the data
+  proj = t((Sigma21 %*% invSigmaKnots) %*% t(reKnots))
+  return(list(knots = knots, reKnots = reKnots, proj = proj, distKnotsSq = distKnotsSq, distKnots21Sq = distKnots21Sq))
+}
 ```
 
-```{r check-projection}
-k <- data.frame(knots, v = 1 * t(re.norm), type = "knots")
-p <- data.frame(grid, v = t(proj.norm), type = "projection")
+## Checking projection
+
+We can visually check to see that the simulation is working ok,  
+```{r check-projection, echo=FALSE}
+dataSim = simulateData(nKnots = 20, nDraws = 2)
+
+if(dim(dataSim$reKnots)[1]==1) {
+  dataSim$reKnots = t(dataSim$reKnots)
+  dataSim$proj = t(dataSim$proj)
+}
+
+k <- data.frame(dataSim$knots, v = t(dataSim$reKnots)[,1], type = "knots")
+p <- data.frame(grid, v = t(dataSim$proj)[,1], type = "projection")
 d <- rbind(k, p)
 ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
   geom_point(size=3) + scale_colour_gradient2()
@@ -77,10 +79,10 @@ ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
 # Include observation error
 # Use same gamma parameterization as JAGS
 gamma.a = 0.03
-gamma.b = gamma.a/exp(proj.norm)
+gamma.b = gamma.a/exp(t(dataSim$proj)[,1])
 # simulate observed data on grid
-y.gamma = rgamma(length(proj.norm), shape = gamma.a, rate = gamma.b)  
-y.norm = rnorm(length(proj.norm), 3, sd= 0.3)  
+y.gamma = rgamma(ncol(dataSim$proj), shape = gamma.a, rate = gamma.b)  
+y.norm = rnorm(ncol(dataSim$proj), 3, sd= 0.3)  
 hist(y.gamma, 40, col="grey", xlab="Simulated data", main="")
 ```
   
@@ -89,272 +91,57 @@ hist(y.gamma, 40, col="grey", xlab="Simulated data", main="")
 ```{r, fig.pos="placeHere",fig.cap="Simulated Poisson data, using MVT random effects."}
 # Include observation error
 # simulate observed data on grid
-y.poisson = rpois(length(proj.norm), exp(proj.norm))  
+y.poisson = rpois(ncol(dataSim$proj), exp(t(dataSim$proj)[,1]))  
 
 hist(y.poisson, 40, col="grey", xlab="Simulated data", main="")
 ```
-
-## Comparing MVN and MVT random effects with Gamma model 
-
-Write the code for the gaussian random effects model with Gamma observation model. 
-```{r jagsGaussianChunk}
-jagsscript = cat("
-model {	
-   # priors on parameters for gaussian process
-   gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
-   gp_scale <- 1/gp_scaleInv;
-   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # prior on normal var parameter
-   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm; 
-   gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
-   gp_jitterSq <- 1/gp_jitterSqInv;
-
-   # This builds the 2 cov matrices needed
-   # SigmaKnots is the COV matrix btween knots
-   # SigmaOffDiag is the COV matrix between new locations and knots, e.g. it's (100 x 10)   
-   for(i in 1:nKnots) {
-   	for(j in 1:nKnots) {
-     # this adds some jitter to the diagonal but not the off-diags
-  	 SigmaKnotsNorm[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_norm * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_norm);	
-  	}
-   }
-   for(i in 1:nLocs) {
-   	for(j in 1:nKnots) {
-  	 SigmaOffDiagNorm[i,j] <- gp_sigmaSq_norm * exp(-gp_scale * distKnots21Sq[i,j]);
-   	}
-   }	
-   invSigmaKnotsNorm <- inverse(SigmaKnotsNorm[,]); # inverse of matrix for projection and mvn distribution
-
-   # Spatial random effects
-   spatialEffectsKnotsNorm[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
-   spatialEffects[1:nLocs,1] <- (SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1];
-   
-   # evaluate the likelihood
-   gamma.a ~ dgamma(0.001,0.001); # basically CV
-   for(i in 1:nPoints) {
-       pred[i] <- exp(min(max(spatialEffects[indices[i], 1], -20), 20));
-       y.gamma[i] ~ dgamma(gamma.a, gamma.a/pred[i]);
-   }    
-   
-}  ",file="recover_rf_gaussianGamma.txt")
-
-```
-
-Run the model,
-
-```{r runJagsGaussianChunk, cache=TRUE}
-jags.data = list("nLocs", "nKnots", "y.gamma", "distKnotsSq",  "distKnots21Sq", "diagKnots", "muZeros", "indices", "nPoints")
-   jags.params=c("gp_sigmaSq_norm", "spatialEffectsKnotsNorm", "gamma.a")
-jagsmodel.gaussian = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_gaussianGamma.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
-```
-
-Write the same model for the multivariate t distribution. Note that we can't use dmt() in the current version of JAGS, but can convert a multivariate normal distribution to multivariate Student's - t by hand.  
-
-```{r jagsMVTChunk}
-jagsscript = cat("
-model {	
-   # priors on parameters for gaussian process
-   gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
-   gp_scale <- 1/gp_scaleInv;
-   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # prior on normal var parameter
-   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm; 
-   gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
-   gp_jitterSq <- 1/gp_jitterSqInv;
-
-   # This builds the 2 cov matrices needed
-   # SigmaKnots is the COV matrix btween knots
-   # SigmaOffDiag is the COV matrix between new locations and knots, e.g. it's (100 x 10)   
-   for(i in 1:nKnots) {
-   	for(j in 1:nKnots) {
-     # this adds some jitter to the diagonal but not the off-diags
-  	 SigmaKnotsNorm[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_norm * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_norm);	
-  	}
-   }
-   for(i in 1:nLocs) {
-   	for(j in 1:nKnots) {
-  	 SigmaOffDiagNorm[i,j] <- gp_sigmaSq_norm * exp(-gp_scale * distKnots21Sq[i,j]);
-   	}
-   }	
-   invSigmaKnotsNorm <- inverse(SigmaKnotsNorm[,]); # inverse of matrix for projection and mvn distribution
-
-   # Spatial random effects. MVT needs to be constructed manually, because of 
-   # well known problems with mvt() in JAGS. See discussions like this one:
-   # http://sourceforge.net/p/mcmc-jags/discussion/610037/thread/491d9ccc/?limit=25
-   spatialEffectsKnotsNorm.mvn[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
-   DF <- 2;
-   scale.df ~ dchisq(DF);
-   spatialEffectsKnotsNorm[1:nKnots,1] <- spatialEffectsKnotsNorm.mvn[1:nKnots,1] * sqrt(DF/scale.df);
-   spatialEffects[1:nLocs,1] <- (SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1];
-   
-   # evaluate the likelihood
-   gamma.a ~ dgamma(0.001,0.001); # basically CV
-   for(i in 1:nPoints) {
-       pred[i] <- exp(min(max(spatialEffects[indices[i], 1], -20), 20));
-       y.gamma[i] ~ dgamma(gamma.a, gamma.a/pred[i]);
-   }    
-   
-}  ",file="recover_rf_mvtGamma.txt")
-
-```
-
-```{r runJagsGaussianMVT, cache=TRUE}
-jags.data = list("nLocs", "nKnots", "y.gamma", "distKnotsSq",  "distKnots21Sq", "diagKnots", "muZeros", "indices", "nPoints")
-   jags.params=c("gp_sigmaSq_norm", "spatialEffectsKnotsNorm", "gamma.a")
-jagsmodel.mvt = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_mvtGamma.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
-```
-
-
-## Comparing MVN and MVT random effects with Poisson model
-
-Write the code for the gaussian random effects model with Poisson observation model. 
-```{r}
-jagsscript = cat("
-model {	
-   # priors on parameters for gaussian process
-   gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
-   gp_scale <- 1/gp_scaleInv;
-   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # prior on normal var parameter
-   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm; 
-   gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
-   gp_jitterSq <- 1/gp_jitterSqInv;
-
-   # This builds the 2 cov matrices needed
-   # SigmaKnots is the COV matrix btween knots
-   # SigmaOffDiag is the COV matrix between new locations and knots, e.g. it's (100 x 10)   
-   for(i in 1:nKnots) {
-   	for(j in 1:nKnots) {
-     # this adds some jitter to the diagonal but not the off-diags
-  	 SigmaKnotsNorm[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_norm * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_norm);	
-  	}
-   }
-   for(i in 1:nLocs) {
-   	for(j in 1:nKnots) {
-  	 SigmaOffDiagNorm[i,j] <- gp_sigmaSq_norm * exp(-gp_scale * distKnots21Sq[i,j]);
-   	}
-   }	
-   invSigmaKnotsNorm <- inverse(SigmaKnotsNorm[,]); # inverse of matrix for projection and mvn distribution
-
-   # Spatial random effects
-   spatialEffectsKnotsNorm[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
-   spatialEffects[1:nLocs,1] <- (SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1];
-   
-   # evaluate the likelihood
-   gamma.a ~ dgamma(0.001,0.001); # basically CV
-   for(i in 1:nPoints) {
-       y.poisson[i] ~ dpois(exp(min(max(spatialEffects[indices[i], 1], -20), 20)));
-   }    
-   
-}  ",file="recover_rf_gaussianPoisson.txt")
-
-```
-
-Run the model,
-
-```{r, cache=TRUE}
-jags.data = list("nLocs", "nKnots", "y.poisson", "distKnotsSq",  "distKnots21Sq", "diagKnots", "muZeros", "indices", "nPoints")
-   jags.params=c("gp_sigmaSq_norm", "spatialEffectsKnotsNorm")
-jagsmodel.gaussianPoisson = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_gaussianPoisson.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
-```
-
-Write the same model for the multivariate t distribution.
-```{r}
-jagsscript = cat("
-model {	
-   # priors on parameters for gaussian process
-   gp_scaleInv ~ dgamma(0.01,0.01); # shared btw normal/fat
-   gp_scale <- 1/gp_scaleInv;
-   gp_sigmaSqInv_norm ~ dgamma(0.01,0.01); # prior on normal var parameter
-   gp_sigmaSq_norm <- 1/gp_sigmaSqInv_norm; 
-   gp_jitterSqInv ~ dgamma(0.01,0.01); # shared btw normal/fat 	
-   gp_jitterSq <- 1/gp_jitterSqInv;
-
-   # This builds the 2 cov matrices needed
-   # SigmaKnots is the COV matrix btween knots
-   # SigmaOffDiag is the COV matrix between new locations and knots, e.g. it's (100 x 10)   
-   for(i in 1:nKnots) {
-   	for(j in 1:nKnots) {
-     # this adds some jitter to the diagonal but not the off-diags
-  	 SigmaKnotsNorm[i,j] <- (1-diagKnots[i,j]) * gp_sigmaSq_norm * exp(-gp_scale * distKnotsSq[i,j]) + diagKnots[i,j] * (gp_jitterSq + gp_sigmaSq_norm);	
-  	}
-   }
-   for(i in 1:nLocs) {
-   	for(j in 1:nKnots) {
-  	 SigmaOffDiagNorm[i,j] <- gp_sigmaSq_norm * exp(-gp_scale * distKnots21Sq[i,j]);
-   	}
-   }	
-   invSigmaKnotsNorm <- inverse(SigmaKnotsNorm[,]); # inverse of matrix for projection and mvn distribution
-
-   # Spatial random effects. MVT needs to be constructed manually, because of 
-   # well known problems with mvt() in JAGS. See discussions like this one:
-   # http://sourceforge.net/p/mcmc-jags/discussion/610037/thread/491d9ccc/?limit=25
-   spatialEffectsKnotsNorm.mvn[1:nKnots,1] ~ dmnorm(muZeros, invSigmaKnotsNorm);
-   DF <- 2;
-   scale.df ~ dchisq(DF);
-   spatialEffectsKnotsNorm[1:nKnots,1] <- spatialEffectsKnotsNorm.mvn[1:nKnots,1] * sqrt(DF/scale.df);
-   spatialEffects[1:nLocs,1] <- (SigmaOffDiagNorm %*% invSigmaKnotsNorm) %*% spatialEffectsKnotsNorm[1:nKnots,1];
-   
-   # evaluate the likelihood
-   for(i in 1:nPoints) {
-       pred[i] <- exp(min(max(spatialEffects[indices[i], 1], -20), 20));
-       y.poisson[i] ~ dpois(exp(min(max(spatialEffects[indices[i], 1], -20), 20)));
-   }    
-   
-}  ",file="recover_rf_mvtPoisson.txt")
-
-```
-
-```{r, cache=TRUE}
-jags.data = list("nLocs", "nKnots", "y.poisson", "distKnotsSq",  "distKnots21Sq", "diagKnots", "muZeros", "indices", "nPoints")
-   jags.params=c("gp_sigmaSq_norm", "spatialEffectsKnotsNorm")
-jagsmodel.mvtPoisson = jags.parallel(jags.data, inits=NULL, parameters.to.save=jags.params, model.file="recover_rf_mvtPoisson.txt", n.chains = 4, n.burnin=20000, n.thin=10, n.iter=30000, DIC=TRUE) 
-```
-
-## Comparing model results. 
-We can switch to a predictive comparison eventually, this table is just to coarsely compare models with DIC. For some reason, real values aren't being spit out to table.
   
-```{r}
-m = matrix(NA, 4, 3)
-colnames(m) = c("Model","DIC","pD")
-m[,1] = c("mvn - Gamma", "mvt - Gamma", "mvn - Poisson", "mvt - Poisson")
-m[,2] = c(jagsmodel.gaussian$BUGSoutput$DIC, 
-          jagsmodel.mvt$BUGSoutput$DIC, 
-          jagsmodel.gaussianPoisson$DIC, 
-          jagsmodel.mvtPoisson$DIC)
-m[,3] = c(jagsmodel.gaussian$BUGSoutput$pD, 
-          jagsmodel.mvt$BUGSoutput$pD, 
-          jagsmodel.gaussianPoisson$pD, 
-          jagsmodel.mvtPoisson$pD)
-#m[,2] = round(m[,2],2)
-kable(m)
+## Comparing MVN and MVT random effects with Gamma model (STAN)
+  
+```{r stan_mvtGamma, cache=TRUE}
+# Named list of data
+spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "scaledf")
+
+# fit the model
+stanMod_mvtGamma = stan(file = 'simulationTesting/mvtGamma.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 1, thin = 1, warmup = 500, iter = 1000, 
+  pars = spatglm_pars)
 ```
 
-Model summaries can be printed (not shown) but the other comparison we can make is to the estimated random effects.
-```{r, fig.pos="placeHere", fig.cap = "Estimates of random effects for simulated Gamma data"}
-#print(jagsmodel.gaussian)
-#print(jagsmodel.mvt)
 
-par(mfrow=c(2,2), mgp=c(2,1,0), mai=c(0.5,0.5,0.3,0.05))
-mvn.est = apply(jagsmodel.gaussian$BUGSoutput$sims.matrix[, -c(1:3)], 2, median)
-mvt.est = apply(jagsmodel.mvt$BUGSoutput$sims.matrix[, -c(1:3)], 2, median)
-plot(re.norm, mvn.est, xlab = "true REs @ knots", ylab = "estimates", main = "mvn - Gamma")
-plot(re.norm, mvt.est, xlab = "true REs @ knots", ylab = "estimates", main = "mvt - Gamma")
-plot(mvn.est, mvt.est, xlab = "MVN estimates @ knots", ylab = "MVT estimates @ knots")
-abline(0, 1, col="red")
+```{r stan_gaussGamma, cache=TRUE, eval=FALSE}
+# Named list of data
+spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq")
+
+# fit the model
+stanMod_gaussianGamma = stan(file = 'simulationTesting/gaussianGamma.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
+  pars = spatglm_pars)
 ```
+  
+```{r stan_mvtGamma, cache=TRUE}
+# Named list of data
+spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "scaledf")
 
-```{r, fig.pos="placeHere", fig.cap = "Estimates of random effects for simulated Poisson data"}
-#print(jagsmodel.gaussianPoisson)
-#print(jagsmodel.mvtPoisson)
-par(mfrow=c(2,2), mgp=c(2,1,0), mai=c(0.5,0.5,0.3,0.05))
-mvn.est = apply(jagsmodel.gaussianPoisson$BUGSoutput$sims.matrix[, -c(1,2)], 2, median)
-mvt.est = apply(jagsmodel.mvtPoisson$BUGSoutput$sims.matrix[, -c(1,2)], 2, median)
-plot(re.norm, mvn.est, xlab = "true REs @ knots", ylab = "estimates", main = "mvn - Poisson")
-plot(re.norm, mvt.est, xlab = "true REs @ knots", ylab = "estimates", main = "mvt - Poisson")
-plot(mvn.est, mvt.est, xlab = "MVN estimates @ knots", ylab = "MVT estimates @ knots")
-abline(0, 1, col="red")
+# fit the model
+stanMod_mvtGamma = stan(file = 'mvtGamma_0616.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
+  pars = spatglm_pars)
+
+#extract(stanMod_mvtGamma, permuted = FALSE)
+
+est.means = apply(extract(stanMod_mvtGamma, permuted = TRUE)[[2]][,1,], 2, mean)
+plot(re.norm, est.means - mean(est.means))
 ```
 
 ## Comparing MVN and MVT random effects with Poisson model (STAN)
-
+  
 ```{r stan_gaussPois, cache=TRUE}
 # Named list of data
 spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, 
@@ -382,48 +169,4 @@ spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq")
 stanMod_mvtPoisson = stan(file = 'mvtPoisson.stan',data = spatglm_data, 
   verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
   pars = spatglm_pars)
-```
-
-## Comparing MVN and MVT random effects with Gamma model (STAN)
-
-```{r stan_gaussGamma, cache=TRUE}
-# Named list of data
-spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
-# parameters to monitor
-spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq")
-
-# fit the model
-stanMod_gaussianGamma = stan(file = 'gaussianGamma.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
-  pars = spatglm_pars)
-```
-
-
-```{r stan_mvtGamma, cache=TRUE}
-# Named list of data
-spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
-# parameters to monitor
-spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "scaledf")
-
-# fit the model
-stanMod_mvtGamma = stan(file = 'mvtGamma.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
-  pars = spatglm_pars)
-```
-
-```{r stan_mvtGamma, cache=TRUE}
-# Named list of data
-spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
-# parameters to monitor
-spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "scaledf")
-
-# fit the model
-stanMod_mvtGamma = stan(file = 'mvtGamma_0616.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
-  pars = spatglm_pars)
-
-#extract(stanMod_mvtGamma, permuted = FALSE)
-
-est.means = apply(extract(stanMod_mvtGamma, permuted = TRUE)[[2]][,1,], 2, mean)
-plot(re.norm, est.means - mean(est.means))
 ```
