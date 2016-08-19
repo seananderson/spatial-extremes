@@ -60,7 +60,7 @@ model {
   jitter_sq ~ cauchy(0,5);
   gammaA ~ cauchy(0,5);
   for(n in 1:N) {
-	y[n] ~ gamma(gammaA, gammaA/exp(spatialEffects[1, location[n]]));
+	y[n] ~ gamma(gammaA, gammaA/exp(fmax(spatialEffects[1, location[n]], 200)));
     #y[n] ~ normal(spatialEffects[time[n], location[n]], sigma);
   }
 
