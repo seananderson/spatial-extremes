@@ -15,7 +15,7 @@ parameters {
   real<lower=0> jitter_sq;
   real<lower=0> scaledf;
   real<lower=0> gammaA;
-  real<lower=0> dft;
+  real<lower=0, upper=30> dft;
   vector[nKnots] spatialEffectsKnots[nT];
   #real<lower=0> sigmaSq;
 }
@@ -29,7 +29,6 @@ transformed parameters {
 	#sigma = sqrt(sigmaSq);
 }
 model {
-  real DF;
   matrix[nKnots, nKnots] SigmaKnots;
   matrix[nKnots, nKnots] SigmaKnots_chol;
   matrix[nLocs,nKnots] SigmaOffDiag;
@@ -50,10 +49,11 @@ model {
 
   # Calculate the random effect and projection for each time interval
   spatialEffectsKnots[1] ~ multi_normal_cholesky(muZeros,SigmaKnots_chol);
+  #spatialEffectsKnots[1] ~ multi_student_t(dft, muZeros, SigmaKnots);
   # project onto new locations (n x knots) * (knots x knots) * (knots x 1)
-  DF = dft;
-  scaledf ~ chi_square(DF);
-  spatialEffects[1] = SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] * sqrt(DF/scaledf));
+  scaledf ~ chi_square(dft);
+  spatialEffects[1] = SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] * sqrt(dft/scaledf));
+  #spatialEffects[1] = SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] );
 
   # priors on parameters for covariances, etc
   gp_scale ~ cauchy(0,5);
@@ -61,8 +61,8 @@ model {
   jitter_sq ~ cauchy(0,5);
   gammaA ~ cauchy(0,5);
   for(n in 1:N) {
-	y[n] ~ gamma(gammaA, gammaA/exp(fmax(spatialEffects[1, location[n]], 200)));
-    #y[n] ~ normal(spatialEffects[time[n], location[n]], sigma);
+	y[n] ~ gamma(gammaA, gammaA/exp(fmin(spatialEffects[1, location[n]], 200)));
+    #y[n] ~ normal(spatialEffects[1, location[n]], 0.0001);
   }
 
 }

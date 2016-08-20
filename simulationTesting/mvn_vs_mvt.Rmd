@@ -82,7 +82,7 @@ gamma.a = 0.03
 gamma.b = gamma.a/exp(t(dataSim$proj)[,1])
 # simulate observed data on grid
 y.gamma = rgamma(ncol(dataSim$proj), shape = gamma.a, rate = gamma.b)  
-y.norm = rnorm(ncol(dataSim$proj), 3, sd= 0.3)  
+y.norm = rnorm(ncol(dataSim$proj), 0, sd= 0.000001)  
 hist(y.gamma, 40, col="grey", xlab="Simulated data", main="")
 ```
   
@@ -102,12 +102,13 @@ hist(y.poisson, 40, col="grey", xlab="Simulated data", main="")
 # Named list of data
 spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
 # parameters to monitor
-spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "scaledf")
+spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "scaledf", "dft", "gammaA")
 
 # fit the model
-stanMod_mvtGamma = stan(file = 'simulationTesting/mvtGamma.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 1, thin = 1, warmup = 500, iter = 1000, 
+stanMod_mvtGamma = stan(file = 'simulationTesting/mvtGamma_v2.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
   pars = spatglm_pars)
+
 ```
 
 
