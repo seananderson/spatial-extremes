@@ -15,18 +15,13 @@ parameters {
   real<lower=0> jitter_sq;
   real<lower=0> scaledf;
   real<lower=0> gammaA;
-  real<lower=0, upper=30> dft;
   vector[nKnots] spatialEffectsKnots[nT];
-  #real<lower=0> sigmaSq;
 }
 transformed parameters {
-	# mean for MVN below
-	#real sigma;
 	vector[(nKnots)] muZeros;
 	for(i in 1:nKnots) {
 		muZeros[i] = 0;
 	}
-	#sigma = sqrt(sigmaSq);
 }
 model {
   matrix[nKnots, nKnots] SigmaKnots;
@@ -43,17 +38,16 @@ model {
   }
   invSigmaKnots = inverse(SigmaKnots); # inverse needed for calculation below, this is different than inverse() in that Sigma = symm pos def
 
-  # spatial random effects of knots are ~ mvn (0, sigma)
-  #spatialEffectsKnots ~ multi_normal(muZeros, SigmaKnots);
-  SigmaKnots_chol = cholesky_decompose(SigmaKnots);
-
   # Calculate the random effect and projection for each time interval
-  spatialEffectsKnots[1] ~ multi_normal_cholesky(muZeros,SigmaKnots_chol);
-  #spatialEffectsKnots[1] ~ multi_student_t(dft, muZeros, SigmaKnots);
   # project onto new locations (n x knots) * (knots x knots) * (knots x 1)
-  scaledf ~ chi_square(dft);
-  spatialEffects[1] = SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] * sqrt(dft/scaledf));
-  #spatialEffects[1] = SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] );
+  #SigmaKnots_chol = cholesky_decompose(SigmaKnots);
+  #spatialEffectsKnots[1] ~ multi_normal_cholesky(muZeros,SigmaKnots_chol);
+  #scaledf ~ chi_square(3);
+  #spatialEffects[1] = SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] * sqrt(3/scaledf));
+
+  # use multivariate t dist (Ben Goodrich et al frown on this approach)
+  spatialEffectsKnots[1] ~ multi_student_t(3, muZeros, SigmaKnots);
+  spatialEffects[1] = SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] );
 
   # priors on parameters for covariances, etc
   gp_scale ~ cauchy(0,5);
@@ -61,8 +55,7 @@ model {
   jitter_sq ~ cauchy(0,5);
   gammaA ~ cauchy(0,5);
   for(n in 1:N) {
-	y[n] ~ gamma(gammaA, gammaA/exp(fmin(spatialEffects[1, location[n]], 200)));
-    #y[n] ~ normal(spatialEffects[1, location[n]], 0.0001);
+	  y[n] ~ gamma(gammaA, gammaA/exp(fmin(spatialEffects[1, location[n]], 200)));
   }
 
 }
