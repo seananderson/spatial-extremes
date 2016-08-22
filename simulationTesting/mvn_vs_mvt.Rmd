@@ -76,37 +76,26 @@ ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
 
 We can also create several other permutations of the same dataset. We're interested first in exploring density of knots. Second, we're interested in exploring varying degrees of observation error.
 
-### Simulating data with Gamma observation model
-
-```{r, fig.pos="placeHere",fig.cap="Simulated gamma data, using MVT random effects."}
-# Include observation error
-# Use same gamma parameterization as JAGS
-gamma.a = 0.03
-gamma.b = gamma.a/exp(t(dataSim$proj)[,1])
-# simulate observed data 
-y.gamma = rgamma(ncol(dataSim$proj), shape = gamma.a, rate = gamma.b)  
-#hist(y.gamma, 40, col="grey", xlab="Simulated data", main="")
-```
-  
 ## Verify that the MVN - Normal model can recover parameters
 
 We'll look at the ability to recover random effects deviations at knot locations.  
 
 ```{r stan_mvtNormal, cache=TRUE, echo=FALSE}
-
 set.seed(1)
 dataSim = simulateData(nKnots = 30, nDraws = 2, gp_scale = 0.5, mvt=FALSE)
-y.norm = rnorm(ncol(dataSim$proj), dataSim$proj[1,], sd= 0.01)  
+# gamma assumes constant cv (below so we'll use similar procedure to generate normal devs)
+CV = 0.01
+y.norm = rnorm(ncol(dataSim$proj), dataSim$proj[1,], sd= CV * abs(dataSim$proj[1,]))  
 
 spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
 # parameters to monitor
 spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf", "sigma","spatialEffects")
 
 # fit the model
-stanMod_mvnNormal = stan(file = 'simulationTesting/mvnNormal.stan',data = spatglm_data, 
+stanMod_mvnNormal_1 = stan(file = 'simulationTesting/mvnNormal.stan',data = spatglm_data, 
   verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
-est <- extract(stanMod_mvnNormal, permuted = TRUE)
+est <- extract(stanMod_mvnNormal_1, permuted = TRUE)
 
 # we can recover the spatial random deviates really well,
 par(mfrow = c(2,1), mai=c(0.7,0.7,0.2,0.1), mgp=c(2,1,0))
@@ -120,23 +109,22 @@ abline(0,1, col="red")
 
 ## Verify that the MVT - Normal model can recover parameters 
 
-```{r stan_mvtGamma, cache=TRUE, echo=FALSE}
+```{r stan_mvtNormal, cache=TRUE, echo=FALSE}
 set.seed(1)
-dataSim = simulateData(nKnots = 50, nDraws = 2, gp_scale = 0.5, mvt=TRUE)
-#gamma.a = 0.03
-#gamma.b = gamma.a/exp(t(dataSim$proj)[,1])
-#y.gamma = rgamma(ncol(dataSim$proj), shape = gamma.a, rate = gamma.b)
-y.norm = rnorm(ncol(dataSim$proj), dataSim$proj[1,], sd= 0.01) 
+dataSim = simulateData(nKnots = 30, nDraws = 2, gp_scale = 0.5, mvt=TRUE)
+# gamma assumes constant cv (below so we'll use similar procedure to generate normal devs)
+CV = 0.01
+y.norm = rnorm(ncol(dataSim$proj), dataSim$proj[1,], sd= CV * abs(dataSim$proj[1,]))  
 
 spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
 # parameters to monitor
 spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf", "gammaA","spatialEffects")
 
 # fit the model
-stanMod_mvtNormal = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
+stanMod_mvtNormal_1 = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
   verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
-est <- extract(stanMod_mvtNormal, permuted = TRUE)
+est <- extract(stanMod_mvtNormal_1, permuted = TRUE)
 
 par(mfrow = c(2,1), mai=c(0.7,0.7,0.2,0.1), mgp=c(2,1,0))
 plot(dataSim$reKnots[1,], apply(est$spatialEffectsKnots[,1,],2,mean), xlab="True values", ylab="Estimated", main="RE @ knots, MVT-normal model")
@@ -147,6 +135,87 @@ plot(apply(est$spatialEffects[,1,], 2, mean), y.norm, xlab="Predicted", ylab="Ob
 abline(0,1, col="red")
 ```
 
+## Verify that the MVT - Gamma model can recover parameters 
+
+```{r stan_mvtGamma, cache=TRUE, echo=FALSE}
+set.seed(1)
+dataSim = simulateData(nKnots = 30, nDraws = 2, gp_scale = 0.5, mvt=TRUE)
+# gamma parameterized in terms of shape and rate. E[y] = a/b, Var = a/b2
+# CV = 1/sqrt(gamma.a). So gamma.a = (1/CV2)
+CV = 0.01
+gamma.a = 1/(CV^2)
+gamma.b = gamma.a/exp(t(dataSim$proj)[,1])
+y.gamma = rgamma(ncol(dataSim$proj), shape = gamma.a, rate = gamma.b)
+
+spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf", "gammaA","spatialEffects")
+
+# fit the model
+stanMod_mvtGamma_1 = stan(file = 'simulationTesting/mvtGamma.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+est <- extract(stanMod_mvtGamma_1, permuted = TRUE)
+
+par(mfrow = c(2,1), mai=c(0.7,0.7,0.2,0.1), mgp=c(2,1,0))
+plot(dataSim$reKnots[1,], apply(est$spatialEffectsKnots[,1,],2,mean), xlab="True values", ylab="Estimated", main="RE @ knots, MVT-gamma model")
+abline(0,1, col="red")
+
+# We can also plot the predicted vs true values, 
+plot(apply(est$spatialEffects[,1,], 2, mean), y.norm, xlab="Predicted", ylab="Observed", main = "MVT-gamma model")
+abline(0,1, col="red")
+```
+  
+## Examine whether MVT-gamma model is more easily corrupted by observation error compared to MVT-normal model
+
+Apply both models to the same simulated data set with the same random seed (30 knots, 100 data points, CV = 0.15).  
+
+```{r stan_mvtGamma, cache=TRUE, echo=FALSE}
+set.seed(1)
+dataSim = simulateData(nKnots = 30, nDraws = 2, gp_scale = 0.5, mvt=TRUE)
+# gamma parameterized in terms of shape and rate. E[y] = a/b, Var = a/b2
+# CV = 1/sqrt(gamma.a). So gamma.a = (1/CV2)
+CV = 0.15
+gamma.a = 1/(CV^2)
+gamma.b = gamma.a/exp(t(dataSim$proj)[,1])
+y.gamma = rgamma(ncol(dataSim$proj), shape = gamma.a, rate = gamma.b)
+
+spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots")
+
+# fit the model
+stanMod_mvtGamma_2 = stan(file = 'simulationTesting/mvtGamma.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+
+set.seed(1)
+dataSim = simulateData(nKnots = 30, nDraws = 2, gp_scale = 0.5, mvt=TRUE)
+# gamma parameterized in terms of shape and rate. E[y] = a/b, Var = a/b2
+# CV = 1/sqrt(gamma.a). So gamma.a = (1/CV2)
+CV = 0.15
+y.norm = rnorm(ncol(dataSim$proj), dataSim$proj[1,], sd= CV * abs(dataSim$proj[1,]))  
+
+spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots")
+
+# fit the model
+stanMod_mvtNorm_2 = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+
+par(mfrow = c(2,1), mai=c(0.7,0.7,0.2,0.1), mgp=c(2,1,0))
+est <- extract(stanMod_mvtGamma_2, permuted = TRUE)
+plot(dataSim$reKnots[1,], apply(est$spatialEffectsKnots[,1,],2,mean), xlab="True values", ylab="Estimated", main="RE @ knots, MVT-gamma model")
+abline(0,1, col="red")
+
+est <- extract(stanMod_mvtNorm_2, permuted = TRUE)
+plot(dataSim$reKnots[1,], apply(est$spatialEffectsKnots[,1,],2,mean), xlab="True values", ylab="Estimated", main="RE @ knots, MVT-normal model")
+abline(0,1, col="red")
+
+```
+  
   
 ```{r stan_gaussGamma, cache=TRUE, eval=FALSE}
 # Named list of data
@@ -160,7 +229,7 @@ stanMod_gaussianGamma = stan(file = 'simulationTesting/gaussianGamma.stan',data 
   pars = spatglm_pars)
 ```
   
-```{r stan_mvtGamma, cache=TRUE}
+```{r stan_mvtGamma, cache=TRUE, eval=FALSE}
 # Named list of data
 spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
 # parameters to monitor
@@ -179,7 +248,7 @@ plot(re.norm, est.means - mean(est.means))
 
 ## Comparing MVN and MVT random effects with Poisson model (STAN)
   
-```{r stan_gaussPois, cache=TRUE}
+```{r stan_gaussPois, cache=TRUE, eval=FALSE}
 # Named list of data
 spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, 
   "y" = y.poisson, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq,
@@ -194,7 +263,7 @@ stanMod_gaussianPoisson = stan(file = 'gaussianPoisson.stan',
 ```
 
 
-```{r stan_mvtPois, cache=TRUE}
+```{r stan_mvtPois, cache=TRUE, eval=FALSE}
 # Named list of data
 spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, 
   "y" = y.poisson, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq,
