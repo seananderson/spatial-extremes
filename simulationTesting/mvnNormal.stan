@@ -14,7 +14,7 @@ parameters {
   real<lower=0> gp_sigmaSq;
   #real<lower=0,upper=0.000001> jitter_sq;
   real<lower=0> scaledf;
-  real<lower=0> gammaA;
+  real<lower=0> sigma;
   vector[nKnots] spatialEffectsKnots[nT];
 }
 transformed parameters {
@@ -33,32 +33,14 @@ transformed parameters {
 }
 model {
 
-  #matrix[nKnots, nKnots] invSigmaKnots;
-
-  #for (i in 1:nKnots) {
-	#SigmaKnots[i,i] = jitter_sq + gp_sigmaSq; # diagonal
-	#SigmaOffDiag[i,i] = jitter_sq + gp_sigmaSq; # diagonal
-  #}
-  #invSigmaKnots = inverse(SigmaKnots); # inverse needed for calculation below, this is different than inverse() in that Sigma = symm pos def
-
-  # Calculate the random effect and projection for each time interval
-  # project onto new locations (n x knots) * (knots x knots) * (knots x 1)
-
-  #SigmaKnots_chol = cholesky_decompose(SigmaKnots);
-  #spatialEffectsKnots[1] ~ multi_normal_cholesky(muZeros,SigmaKnots_chol);
-  spatialEffectsKnots[1] ~ multi_student_t(3, muZeros, SigmaKnots);
-
-  # use multivariate t dist (Ben Goodrich et al frown on this approach)
-  #spatialEffectsKnots[1] ~ multi_student_t(3, muZeros, SigmaKnots);
-  #spatialEffects[1] = SigmaOffDiag * invSigmaKnots * (spatialEffectsKnots[1] );
+  spatialEffectsKnots[1] ~ multi_normal(muZeros,SigmaKnots);
 
   # priors on parameters for covariances, etc
   gp_scale ~ cauchy(0,5);
   gp_sigmaSq ~ cauchy(0,5);
-  #jitter_sq ~ cauchy(0,5);
-  gammaA ~ cauchy(0,5);
+  sigma ~ cauchy(0,5);
   for(n in 1:N) {
-	  y[n] ~ gamma(gammaA, gammaA/exp(fmin(spatialEffects[1, location[n]], 200)));
+	  y[n] ~ normal(spatialEffects[1, location[n]], sigma);
   }
 }
 

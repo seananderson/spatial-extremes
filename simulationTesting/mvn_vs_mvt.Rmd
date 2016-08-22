@@ -24,12 +24,12 @@ options(mc.cores = parallel::detectCores())
 ## Spatial data simulation 
 
 ```{r function}
-nDataPoints = 300
+nDataPoints = 100
 grid = cbind("lon" = runif(nDataPoints, 5, 15), 
   "lat" = runif(nDataPoints, 5, 15))
 nLocs = dim(grid)[1]
 
-simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15, nDraws = 1000) {
+simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15, nDraws = 1000, mvt = TRUE) {
 
   # cluster analysis to determine knot locations
   knots = jitter(pam(grid,nKnots)$medoids)
@@ -37,7 +37,7 @@ simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15, nDraws = 10
   distKnotsSq = distKnots^2 # squared distances
 
   corKnots = exp(-gp_scale*distKnotsSq)
-  sigmaKnots = diag(nKnots) * sigma_t * sigma_t# * corKnots * 
+  sigmaKnots = sigma_t * sigma_t * corKnots
   invSigmaKnots = solve(sigmaKnots)
   # Calculate distance from knots to grid
   distAll = as.matrix(dist(rbind(grid, knots)))^2
@@ -46,11 +46,12 @@ simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15, nDraws = 10
   
   # Generate vector of random effects
   # each 'draw' here is hypothetical draw from posterior
-  reKnots = rmvt(nDraws, sigma = sigmaKnots, df = 3)
+  if(mvt==TRUE) reKnots = mvtnorm::rmvt(nDraws, sigma = sigmaKnots, df = 3)
+  if(mvt==FALSE) reKnots = mvtnorm::rmvnorm(nDraws, sigma = sigmaKnots)
   
   # Project random effects to locations of the data
   proj = t((Sigma21 %*% invSigmaKnots) %*% t(reKnots))
-  return(list(knots = knots, reKnots = reKnots, proj = proj, distKnotsSq = distKnotsSq, distKnots21Sq = distKnots21Sq))
+  return(list(knots = knots, reKnots = reKnots, proj = proj, distKnotsSq = distKnotsSq, distKnots21Sq = distKnots21Sq, sigmaKnots = sigmaKnots))
 }
 ```
 
@@ -58,7 +59,8 @@ simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15, nDraws = 10
 
 We can visually check to see that the simulation is working ok,  
 ```{r check-projection, echo=FALSE}
-dataSim = simulateData(nKnots = 10, nDraws = 2)
+set.seed(1)
+dataSim = simulateData(nKnots = 30, nDraws = 2, gp_scale = 0.5, mvt=TRUE)
 
 if(dim(dataSim$reKnots)[1]==1) {
   dataSim$reKnots = t(dataSim$reKnots)
@@ -83,24 +85,69 @@ gamma.a = 0.03
 gamma.b = gamma.a/exp(t(dataSim$proj)[,1])
 # simulate observed data 
 y.gamma = rgamma(ncol(dataSim$proj), shape = gamma.a, rate = gamma.b)  
-#y.norm = rnorm(ncol(dataSim$proj), 0, sd= 0.000001)  
 #hist(y.gamma, 40, col="grey", xlab="Simulated data", main="")
 ```
   
-## Comparing MVN and MVT random effects with Gamma model (STAN)
-  
-```{r stan_mvtGamma, cache=TRUE}
-spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+## Verify that the MVN - Normal model can recover parameters
+
+We'll look at the ability to recover random effects deviations at knot locations.  
+
+```{r stan_mvtNormal, cache=TRUE, echo=FALSE}
+
+set.seed(1)
+dataSim = simulateData(nKnots = 30, nDraws = 2, gp_scale = 0.5, mvt=FALSE)
+y.norm = rnorm(ncol(dataSim$proj), dataSim$proj[1,], sd= 0.01)  
+
+spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
 # parameters to monitor
-spatglm_pars = c("gp_scale", "spatialEffectsKnots", "gp_sigmaSq", "jitter_sq", "scaledf", "dft", "gammaA")
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf", "sigma","spatialEffects")
 
 # fit the model
-stanMod_mvtGamma = stan(file = 'simulationTesting/mvtGamma_v2.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 1, thin = 1, warmup = 500, iter = 1000, 
+stanMod_mvnNormal = stan(file = 'simulationTesting/mvnNormal.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
+est <- extract(stanMod_mvnNormal, permuted = TRUE)
+
+# we can recover the spatial random deviates really well,
+par(mfrow = c(2,1), mai=c(0.7,0.7,0.2,0.1), mgp=c(2,1,0))
+plot(dataSim$reKnots[1,], apply(est$spatialEffectsKnots[,1,],2,mean), xlab="True values", ylab="Estimated", main="RE @ knots, MVN-normal model")
+abline(0,1, col="red")
+
+# We can also plot the predicted vs true values, 
+plot(apply(est$spatialEffects[,1,], 2, mean), y.norm, xlab="Predicted", ylab="Observed", main = "MVN-normal model")
+abline(0,1, col="red")
 ```
 
+## Verify that the MVT - Normal model can recover parameters 
 
+```{r stan_mvtGamma, cache=TRUE, echo=FALSE}
+set.seed(1)
+dataSim = simulateData(nKnots = 50, nDraws = 2, gp_scale = 0.5, mvt=TRUE)
+#gamma.a = 0.03
+#gamma.b = gamma.a/exp(t(dataSim$proj)[,1])
+#y.gamma = rgamma(ncol(dataSim$proj), shape = gamma.a, rate = gamma.b)
+y.norm = rnorm(ncol(dataSim$proj), dataSim$proj[1,], sd= 0.01) 
+
+spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf", "gammaA","spatialEffects")
+
+# fit the model
+stanMod_mvtNormal = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+est <- extract(stanMod_mvtNormal, permuted = TRUE)
+
+par(mfrow = c(2,1), mai=c(0.7,0.7,0.2,0.1), mgp=c(2,1,0))
+plot(dataSim$reKnots[1,], apply(est$spatialEffectsKnots[,1,],2,mean), xlab="True values", ylab="Estimated", main="RE @ knots, MVT-normal model")
+abline(0,1, col="red")
+
+# We can also plot the predicted vs true values, 
+plot(apply(est$spatialEffects[,1,], 2, mean), y.norm, xlab="Predicted", ylab="Observed", main = "MVT-normal model")
+abline(0,1, col="red")
+```
+
+  
 ```{r stan_gaussGamma, cache=TRUE, eval=FALSE}
 # Named list of data
 spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
