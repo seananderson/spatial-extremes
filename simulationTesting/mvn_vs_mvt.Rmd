@@ -51,10 +51,36 @@ simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15,
   if(mvt==TRUE) reKnots = mvtnorm::rmvt(nDraws, sigma = sigmaKnots, df = df)
   if(mvt==FALSE) reKnots = mvtnorm::rmvnorm(nDraws, sigma = sigmaKnots)
   
+  # if(mvt==TRUE) {
+  #   MVN <- MASS::mvrnorm(nDraws, rep(0, ncol(sigmaKnots)), sigmaKnots)
+  #   reKnots <- t(t(MVN / sqrt(df / stats::rchisq(n, df))))
+  # } else {
+  #   reKnots = MASS::rmvnorm(nDraws, rep(0, ncol(sigmaKnots)), sigmaKnots)
+  # }
+  
   # Project random effects to locations of the data
   proj = t((Sigma21 %*% invSigmaKnots) %*% t(reKnots))
   return(list(knots = knots, reKnots = reKnots, proj = proj, distKnotsSq = distKnotsSq, distKnots21Sq = distKnots21Sq, sigmaKnots = sigmaKnots))
 }
+```
+
+```{r mvt-alternative-check, eval=FALSE, echo=FALSE}
+## http://stats.stackexchange.com/questions/68476/drawing-from-the-multivariate-students-t-distribution
+## mu <- c(7, 5)
+## sigma <- matrix(c(1, 1/2, 1/2, 1), 2)
+## nu <- 1
+## n <- 1e3 # Number of draws
+## set.seed(1)
+## MVN <- MASS::mvrnorm(n, rep(0, length(mu)), sigma)
+## set.seed(123)
+## y1 <- t(t(MVN / sqrt(nu / stats::rchisq(n, nu))) + mu)
+## set.seed(123)
+## nu <- 1.05
+## y2 <- t(t(MVN / sqrt(nu / stats::rchisq(n, nu))) + mu)
+## # par(mfrow = c(1, 2))
+## # plot(y1)
+## # plot(y2)
+## plot(y1[,1], y1[,1] - y2[,1]);abline(a = 0, b = 0)
 ```
 
 ## Checking projection for MVT spatial model
