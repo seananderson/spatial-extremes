@@ -427,7 +427,16 @@ plot(apply(est_tt$spatialEffectsKnots[,1,],2,mean),
 abline(0,1, col="red")
 ```
 
-How exactly does the MVT compare to MVN with single draw?
+## How exactly does the MVT compare to MVN with a single draw?
+
+For a single draw from the multivariate distributions, 
+the MVN and MVT scale linearly with each other.
+The MVN usually has more variability but occasionally the
+MVT will have much more variability.
+The pattern will be exactly the same across the two with
+each draw, just scaled one way or the other.
+I.e., heavy tails are created across multiple draws not
+from a single draw.
 
 ```{r}
 set.seed(1)
