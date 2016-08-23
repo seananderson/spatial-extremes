@@ -30,7 +30,8 @@ grid = cbind("lon" = runif(nDataPoints, 5, 15),
   "lat" = runif(nDataPoints, 5, 15))
 nLocs = dim(grid)[1]
 
-simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15, nDraws = 1000, mvt = TRUE) {
+simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15, 
+  nDraws = 1000, mvt = TRUE, df = 3) {
 
   # cluster analysis to determine knot locations
   knots = jitter(pam(grid,nKnots)$medoids)
@@ -47,7 +48,7 @@ simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15, nDraws = 10
   
   # Generate vector of random effects
   # each 'draw' here is hypothetical draw from posterior
-  if(mvt==TRUE) reKnots = mvtnorm::rmvt(nDraws, sigma = sigmaKnots, df = 3)
+  if(mvt==TRUE) reKnots = mvtnorm::rmvt(nDraws, sigma = sigmaKnots, df = df)
   if(mvt==FALSE) reKnots = mvtnorm::rmvnorm(nDraws, sigma = sigmaKnots)
   
   # Project random effects to locations of the data
