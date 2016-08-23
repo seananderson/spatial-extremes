@@ -374,3 +374,94 @@ y.poisson = rpois(ncol(dataSim$proj), exp(t(dataSim$proj)[,1]))
 
 hist(y.poisson, 40, col="grey", xlab="Simulated data", main="")
 ```
+
+\break
+
+## Try model mismatch: fit MVT to MVT vs MVN to MVT, is MVT better?
+
+```{r stan_mvtmvn_mismatch, cache=TRUE, echo=FALSE, warning=FALSE, message=FALSE, results="hide"}
+# Make sure 'effective' nu is low:
+s <- 0
+nu_big <- TRUE
+while (nu_big) {
+  s <- s + 1
+  message(paste("seed =", s))
+  set.seed(s)
+  dataSim <-simulateData(nKnots = 30, nDraws = 1, gp_scale = 0.5, mvt = TRUE, df = 1)
+  # alpha = 0 means forced to be symmetrical student-t
+  m <- sn::selm(dataSim$reKnots[1,] ~ 1, family = "ST", fixed.param = list(alpha = 0)) 
+  # summary(m)
+  nu <- sn::coef(m, "dp")[["nu"]]
+  message(paste("nu =", round(nu, 1)))
+  nu_big <- ifelse(nu > 3, TRUE, FALSE)
+}
+plot(dataSim$reKnots[1,])
+
+# gamma assumes constant cv (below so we'll use similar procedure to generate normal devs)
+CV = 0.01
+y.norm = rnorm(ncol(dataSim$proj), dataSim$proj[1,], sd= CV * abs(dataSim$proj[1,]))  
+
+spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf", "gammaA","spatialEffects")
+
+# fit the model mvt-mvt
+stanMod_mvtmvt_1 = stan(file = 'mvtNormal.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+est_tt <- extract(stanMod_mvtmvt_1)
+
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf", "sigma","spatialEffects")
+
+# fit the model mvn-mvt
+stanMod_mvnmvt_1 = stan(file = 'mvnNormal.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+est_nt <- extract(stanMod_mvnmvt_1)
+
+par(mfrow = c(1,1))
+plot(apply(est_tt$spatialEffectsKnots[,1,],2,mean), 
+  apply(est_nt$spatialEffectsKnots[,1,],2,mean), 
+  xlab="MVT model, MVT data", ylab="MVN model, MVT data")
+abline(0,1, col="red")
+```
+
+How exactly does the MVT compare to MVN with single draw?
+
+```{r}
+set.seed(1)
+d1 <-simulateData(nKnots = 99, nDraws = 1e3, gp_scale = 0.5, mvt = TRUE, df = 2)
+set.seed(1)
+d2 <-simulateData(nKnots = 99, nDraws = 1e3, gp_scale = 0.5, mvt = TRUE, df = 1e9)
+
+par(mfrow = c(1, 2))
+plot(d1$reKnots, xlim = range(c(d1$reKnots[,1], d2$reKnots[,1])), 
+  ylim = range(c(d1$reKnots[,2], d2$reKnots[,2])), 
+  col = "#00000010", pch = 19)
+plot(d2$reKnots, xlim = range(c(d1$reKnots[,1], d2$reKnots[,1])), 
+  ylim = range(c(d1$reKnots[,2], d2$reKnots[,2])), 
+  col = "#00000010", pch = 19)
+
+# compare biggest outlier
+i <- which(d1$reKnots[,1] == max(d1$reKnots[,1]))
+plot(d1$reKnots[i,], d2$reKnots[i,]);abline(a = 0, b = 1)
+plot(d1$reKnots[i,], d1$reKnots[i,] - d2$reKnots[i,]);abline(a = 0, b = 0)
+
+k1 <- data.frame(d1$knots, v = as.numeric(d1$reKnots[i,]), type = "MVT")
+k2 <- data.frame(d2$knots, v = as.numeric(d2$reKnots[i,]), type = "MVN")
+d <- rbind(k1, k2)
+ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
+  geom_point(size=3) + scale_colour_gradient2()
+
+# probably not a huge outlier:
+i <- 1
+plot(d1$reKnots[i,], d2$reKnots[i,]);abline(a = 0, b = 1)
+plot(d1$reKnots[i,], d1$reKnots[i,] - d2$reKnots[i,]);abline(a = 0, b = 0)
+
+k1 <- data.frame(d1$knots, v = as.numeric(d1$reKnots[1,]), type = "MVT")
+k2 <- data.frame(d2$knots, v = as.numeric(d2$reKnots[1,]), type = "MVN")
+d <- rbind(k1, k2)
+ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
+  geom_point(size=3) + scale_colour_gradient2()
+```
