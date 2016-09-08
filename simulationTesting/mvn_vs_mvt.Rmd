@@ -433,7 +433,7 @@ while (nu_big) {
   # because we're not fitting to the data, leave the knots out for now and 
   
   spatglm_data = list("nKnots"= nrow(dataSim$knots), "distKnotsSq" = dataSim$distKnotsSq, 
-    "y" = dataSim$reKnots, "nT"=20)
+    "y" = dataSim$reKnots, "nT"=nrow(dataSim$proj))
   # parameters to monitor
   spatglm_pars = c("gp_scale", "gp_sigmaSq", "scaledf")
 
@@ -449,21 +449,22 @@ while (nu_big) {
 
 # Note: We're not including an observation error model here. 
 
-spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = dataSim$proj, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+
 # parameters to monitor
-spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf", "gammaA","spatialEffects")
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
 
 # fit the model mvt-mvt
-stanMod_mvtmvt_1 = stan(file = 'mvtNormal.stan',data = spatglm_data, 
+stanMod_mvtmvt_1 = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
   verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
 est_tt <- extract(stanMod_mvtmvt_1)
 
 # parameters to monitor
-spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf", "sigma","spatialEffects")
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
 
 # fit the model mvn-mvt
-stanMod_mvnmvt_1 = stan(file = 'mvnNormal.stan',data = spatglm_data, 
+stanMod_mvnmvt_1 = stan(file = 'simulationTesting/mvnNormal.stan',data = spatglm_data, 
   verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
 est_nt <- extract(stanMod_mvnmvt_1)

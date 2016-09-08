@@ -2,18 +2,14 @@
 data {
   int<lower=1> nKnots;
   int<lower=1> nLocs;
-  int<lower=1> N;
   int<lower=1> nT;
-  real y[N];
-  int location[N];
+  matrix[nT,nLocs] y;
   matrix[nKnots,nKnots] distKnotsSq;
   matrix[nLocs,nKnots] distKnots21Sq;
 }
 parameters {
   real<lower=0> gp_scale;
   real<lower=0> gp_sigmaSq;
-  #real<lower=0,upper=0.000001> jitter_sq;
-  real<lower=0> scaledf;
   real<lower=0> sigma;
   vector[nKnots] spatialEffectsKnots[nT];
 }
@@ -29,18 +25,25 @@ transformed parameters {
 	for(i in 1:nKnots) {
 		muZeros[i] = 0;
 	}
-  spatialEffects[1] = SigmaOffDiag * inverse(SigmaKnots) * (spatialEffectsKnots[1]);
+	for(i in 1:nT) {
+  spatialEffects[i] = SigmaOffDiag * inverse(SigmaKnots) * (spatialEffectsKnots[i]);
+	}
 }
 model {
-
-  spatialEffectsKnots[1] ~ multi_normal(muZeros,SigmaKnots);
-
   # priors on parameters for covariances, etc
   gp_scale ~ cauchy(0,5);
   gp_sigmaSq ~ cauchy(0,5);
   sigma ~ cauchy(0,5);
-  for(n in 1:N) {
-	  y[n] ~ normal(spatialEffects[1, location[n]], sigma);
+  #scaledf ~ exponential(0.1);
+  for(t in 1:nT) {
+  #spatialEffectsKnots[t] ~ multi_student_t(scaledf, muZeros, SigmaKnots);
+  spatialEffectsKnots[t] ~ multi_normal(muZeros, SigmaKnots);
   }
+
+  for(t in 1:nT) {
+    y[t] ~ normal(spatialEffects[t], 0.00001);
+    #y[t] ~ normal(spatialEffects[t], sigma);
+  }
+
 }
 
