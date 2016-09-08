@@ -14,6 +14,7 @@ parameters {
   real<lower=0> gp_sigmaSq;
   real<lower=0> scaledf;
   real<lower=0> gammaA;
+  real<lower=0,upper=40> dft;
   vector[nKnots] spatialEffectsKnots[nT];
 }
 transformed parameters {
@@ -31,9 +32,10 @@ transformed parameters {
   spatialEffects[1] = SigmaOffDiag * inverse(SigmaKnots) * (spatialEffectsKnots[1]);
 }
 model {
-  spatialEffectsKnots[1] ~ multi_student_t(3, muZeros, SigmaKnots);
+  spatialEffectsKnots[1] ~ multi_student_t(dft, muZeros, SigmaKnots);
 
   # priors on parameters for covariances, etc
+  dft ~ cauchy(0,5);
   gp_scale ~ cauchy(0,5);
   gp_sigmaSq ~ cauchy(0,5);
   gammaA ~ cauchy(0,5);

@@ -244,7 +244,6 @@ spatglm_pars = c("spatialEffectsKnots","spatialEffects")
 stanMod_mvtNorm_2 = stan(file = 'mvtNormal.stan',data = spatglm_data, 
   verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
-
 #par(mfrow = c(2,1), mai=c(0.7,0.7,0.2,0.1), mgp=c(2,1,0))
 #est <- extract(stanMod_mvtGamma_2, permuted = TRUE)
 #plot(dataSim$reKnots[1,], apply(est$spatialEffectsKnots[,1,],2,mean), xlab="True values", ylab="Estimated", main="RE @ #knots, MVT-gamma model")
@@ -264,11 +263,14 @@ plot(exp(apply(est$spatialEffects[,1,], 2, mean)), y.gamma, xlab="Predicted", yl
 abline(0,1, col="red")
 ```
 
-### Does increasing the density of knots improve estimates for the gamma model? 
+\break  
+  
+## Does increasing the density of knots improve estimates for the gamma model? 
 
 One option for generating better estimates for the MVT-gamma model may be to increase the density of the knots. Taking the same dataset as above, we can compare the base case model (30 knots) to one that has twice as many (60 knots). This plot shows little difference between the two -- increasing the knot density doesn't solve the problems with predictions.  
 
 ```{r stan_mvtGamma50, cache=TRUE, echo=FALSE, warning=FALSE,message=FALSE,results="hide"}
+
 set.seed(1)
 dataSim = simulateData(nKnots = 30, nDraws = 2, gp_scale = 0.5, mvt=TRUE)
 # gamma parameterized in terms of shape and rate. E[y] = a/b, Var = a/b2
@@ -304,6 +306,36 @@ plot(exp(apply(est$spatialEffects[,1,], 2, mean)), y.gamma, xlab="Predicted", yl
 abline(0,1, col="red")
 ```
 
+\break 
+
+## Does freeing up the MVT degrees of freedom parameter improve estimation? 
+
+```{r stan_mvtGamma50, cache=TRUE, echo=FALSE, warning=FALSE,message=FALSE,results="hide"}
+set.seed(1)
+dataSim = simulateData(nKnots = 30, nDraws = 2, gp_scale = 0.5, mvt=TRUE)
+# gamma parameterized in terms of shape and rate. E[y] = a/b, Var = a/b2
+# CV = 1/sqrt(gamma.a). So gamma.a = (1/CV2)
+CV = 0.15
+gamma.a = 1/(CV^2)
+gamma.b = gamma.a/exp(t(dataSim$proj)[,1])
+y.gamma = rgamma(ncol(dataSim$proj), shape = gamma.a, rate = gamma.b)
+
+spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.gamma, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "spatialEffects","dft")
+
+# fit the model
+stanMod_mvtGamma_4 = stan(file = 'mvtGamma_df.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+
+# We can also plot the predicted vs true values, 
+par(mfrow = c(2,1), mai=c(0.7,0.7,0.2,0.1), mgp=c(2,1,0))
+est <- extract(stanMod_mvtGamma_4, permuted = TRUE)
+plot(exp(apply(est$spatialEffects[,1,], 2, mean)), y.gamma, xlab="Predicted", ylab="Observed", main = "MVT-gamma model (30 knots)")
+abline(0,1, col="red")
+```
+  
   
 ```{r stan_gaussGamma, cache=TRUE, eval=FALSE}
 # Named list of data
@@ -379,6 +411,8 @@ hist(y.poisson, 40, col="grey", xlab="Simulated data", main="")
 
 ## Try model mismatch: fit MVT to MVT vs MVN to MVT, is MVT better?
 
+We'll start the simulation with 20 replicate draws of the MVT distribution (20 coming from the black swan paper). For each simulated data set, we'll fit the MVT distribution in STAN (estimating the df parameter with the exponential(0.1) prior) and find datasets that contain extreme outliers (df < 3).
+
 ```{r stan_mvtmvn_mismatch, cache=TRUE, echo=FALSE, warning=FALSE, message=FALSE, results="hide"}
 # Make sure 'effective' nu is low:
 s <- 0
@@ -387,19 +421,33 @@ while (nu_big) {
   s <- s + 1
   message(paste("seed =", s))
   set.seed(s)
-  dataSim <-simulateData(nKnots = 30, nDraws = 1, gp_scale = 0.5, mvt = TRUE, df = 1)
+  dataSim <-simulateData(nKnots = 30, nDraws = 20, gp_scale = 0.5, mvt = TRUE, df = 1)
   # alpha = 0 means forced to be symmetrical student-t
-  m <- sn::selm(dataSim$reKnots[1,] ~ 1, family = "ST", fixed.param = list(alpha = 0)) 
+  #m <- sn::selm(dataSim$reKnots[1,] ~ 1, family = "ST", fixed.param = list(alpha = 0)) 
   # summary(m)
-  nu <- sn::coef(m, "dp")[["nu"]]
-  message(paste("nu =", round(nu, 1)))
+  #nu <- sn::coef(m, "dp")[["nu"]]
+  #message(paste("nu =", round(nu, 1)))
+  
+  # fit to multivariate t distribution -- what is effective df?
+  # note: we're fitting the distribution of the random effects, not projected data
+  # because we're not fitting to the data, leave the knots out for now and 
+  
+  spatglm_data = list("nKnots"= nrow(dataSim$knots), "distKnotsSq" = dataSim$distKnotsSq, 
+    "y" = dataSim$reKnots, "nT"=20)
+  # parameters to monitor
+  spatglm_pars = c("gp_scale", "gp_sigmaSq", "scaledf")
+
+  # fit the model
+  stanMod = stan(file = 'simulationTesting/mvtSimulate.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
+  pars = spatglm_pars)  
+  
+  nu <- median(extract(stanMod, permuted = TRUE)[["scaledf"]])
+  
   nu_big <- ifelse(nu > 3, TRUE, FALSE)
 }
-plot(dataSim$reKnots[1,])
 
-# gamma assumes constant cv (below so we'll use similar procedure to generate normal devs)
-CV = 0.01
-y.norm = rnorm(ncol(dataSim$proj), dataSim$proj[1,], sd= CV * abs(dataSim$proj[1,]))  
+# Note: We're not including an observation error model here. 
 
 spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "N"=nLocs, "nT" = 1, "y" = y.norm, "location" = seq(1, nLocs), "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
 # parameters to monitor
@@ -474,3 +522,4 @@ d <- rbind(k1, k2)
 ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
   geom_point(size=3) + scale_colour_gradient2()
 ```
+
