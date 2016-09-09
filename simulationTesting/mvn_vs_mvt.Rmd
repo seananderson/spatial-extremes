@@ -25,7 +25,7 @@ options(mc.cores = parallel::detectCores())
 
 ```{r function}
 
-nDataPoints = 100
+nDataPoints = 33
 grid = cbind("lon" = runif(nDataPoints, 5, 15), 
   "lat" = runif(nDataPoints, 5, 15))
 nLocs = dim(grid)[1]
@@ -461,7 +461,7 @@ stanMod_mvtmvt_1 = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm
 est_tt <- extract(stanMod_mvtmvt_1)
 
 # parameters to monitor
-spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq")
 
 # fit the model mvn-mvt
 stanMod_mvnmvt_1 = stan(file = 'simulationTesting/mvnNormal.stan',data = spatglm_data, 

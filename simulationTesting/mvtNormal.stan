@@ -35,7 +35,7 @@ model {
   gp_scale ~ cauchy(0,5);
   gp_sigmaSq ~ cauchy(0,5);
   sigma ~ cauchy(0,5);
-  scaledf ~ exponential(0.1);
+  scaledf ~ exponential(0.01);
   for(t in 1:nT) {
   spatialEffectsKnots[t] ~ multi_student_t(scaledf, muZeros, SigmaKnots);
   }
