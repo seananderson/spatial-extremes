@@ -25,7 +25,7 @@ options(mc.cores = parallel::detectCores())
 
 ```{r function}
 
-nDataPoints = 33
+nDataPoints = 31
 grid = cbind("lon" = runif(nDataPoints, 5, 15), 
   "lat" = runif(nDataPoints, 5, 15))
 nLocs = dim(grid)[1]
