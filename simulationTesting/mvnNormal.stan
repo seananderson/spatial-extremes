@@ -25,8 +25,9 @@ transformed parameters {
 	for(i in 1:nKnots) {
 		muZeros[i] = 0;
 	}
+	SigmaOffDiag = SigmaOffDiag * inverse(SigmaKnots); # multiply and invert once, used below
 	for(i in 1:nT) {
-  spatialEffects[i] = SigmaOffDiag * inverse(SigmaKnots) * (spatialEffectsKnots[i]);
+  spatialEffects[i] = SigmaOffDiag * spatialEffectsKnots[i];
 	}
 }
 model {
