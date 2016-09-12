@@ -12,7 +12,7 @@ parameters {
   real<lower=0> gp_sigmaSq;
   real<lower=0> sigma;
   real<lower=0> scaledf;
-  real<lower=0> W;
+  real<lower=0> W[nT];
   vector[nKnots] spatialEffectsKnots[nT];
 }
 transformed parameters {
@@ -29,7 +29,7 @@ transformed parameters {
 	}
 	SigmaOffDiag = SigmaOffDiag * inverse(SigmaKnots); # multiply and invert once, used below
 	for(i in 1:nT) {
-  spatialEffects[i] = sqrt(W) * SigmaOffDiag * spatialEffectsKnots[i];
+  spatialEffects[i] = SigmaOffDiag * spatialEffectsKnots[i];
 	}
 }
 model {
@@ -38,9 +38,10 @@ model {
   gp_sigmaSq ~ cauchy(0,5);
   sigma ~ cauchy(0,5);
   scaledf ~ exponential(0.01);
-  W ~ scaled_inv_chi_square(scaledf,1); # see discussion https://groups.google.com/forum/#!topic/stan-users/0F0O4hfHA8g
+  W ~ inv_gamma(scaledf/2, gp_sigmaSq*scaledf/2);
+
   for(t in 1:nT) {
-  spatialEffectsKnots[t] ~ multi_normal(muZeros, SigmaKnots);
+  spatialEffectsKnots[t] ~ multi_normal(muZeros, W[t]*SigmaKnots);
   }
 
   for(t in 1:nT) {

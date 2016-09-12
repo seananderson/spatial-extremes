@@ -410,7 +410,7 @@ hist(y.poisson, 40, col="grey", xlab="Simulated data", main="")
 
 \break
 
-## Try model mismatch: fit MVT to MVT vs MVN to MVT, is MVT better?
+## Validating fits of MVT and MVN spatial models
 
 Step 1: Simulating data with extreme events  
 We'll start the simulation with 20 replicate draws of the MVT distribution (20 coming from the black swan paper). For each simulated data set, we'll fit the MVT distribution in STAN (estimating the df parameter with the exponential(0.1) prior) and find datasets that contain extreme outliers (df < 3). For nearly all cases of the seed, multiple realizations of the MVT distribution produce extreme events. 
@@ -462,6 +462,8 @@ while (nu_big) {
 
 }
 ```
+
+### Including prediction in these validation models
 
 ```{r}
 
