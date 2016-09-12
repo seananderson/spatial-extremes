@@ -412,9 +412,13 @@ hist(y.poisson, 40, col="grey", xlab="Simulated data", main="")
 
 ## Try model mismatch: fit MVT to MVT vs MVN to MVT, is MVT better?
 
-We'll start the simulation with 20 replicate draws of the MVT distribution (20 coming from the black swan paper). For each simulated data set, we'll fit the MVT distribution in STAN (estimating the df parameter with the exponential(0.1) prior) and find datasets that contain extreme outliers (df < 3).
+Step 1: Simulating data with extreme events  
+We'll start the simulation with 20 replicate draws of the MVT distribution (20 coming from the black swan paper). For each simulated data set, we'll fit the MVT distribution in STAN (estimating the df parameter with the exponential(0.1) prior) and find datasets that contain extreme outliers (df < 3). For nearly all cases of the seed, multiple realizations of the MVT distribution produce extreme events. 
 
-```{r stan_mvtmvn_mismatch, cache=TRUE, echo=FALSE, warning=FALSE, message=FALSE, results="hide"}
+Step 2: Validating the model fits (with no projections yet)
+We can fit a spatial model with MVT knots, and a model with MVN knots that is adjusted to behave as a Student-t distribution. The posteriors for the df parameter are much tighter for the model with MVT random effects - why? 
+
+```{r stan_validting_mvt, cache=TRUE, echo=FALSE, warning=FALSE, message=FALSE, results="hide"}
 # Make sure 'effective' nu is low:
 s <- 0
 nu_big <- TRUE
@@ -442,33 +446,54 @@ while (nu_big) {
   stanMod = stan(file = 'simulationTesting/mvtSimulate.stan',data = spatglm_data, 
   verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
   pars = spatglm_pars)  
+ 
+  spatglm_pars = c("gp_scale", "gp_sigmaSq", "scaledf")
+  stanMod_trans = stan(file = 'simulationTesting/mvnSimulate_trans.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
+  pars = spatglm_pars)
   
+  par(mfrow = c(2,1), mai=c(0.5,0.5,0.1,0.1))
+  hist(extract(stanMod, permuted = TRUE)[["scaledf"]], main="MVT")
+  hist(extract(stanMod_trans, permuted = TRUE)[["scaledf"]], main="MVN.transformed")  
+  
+  # check effective df from normal model
   nu <- median(extract(stanMod, permuted = TRUE)[["scaledf"]])
-  
   nu_big <- ifelse(nu > 3, TRUE, FALSE)
+
 }
+```
+
+```{r}
 
 # Note: We're not including an observation error model here. 
 
 spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = dataSim$proj, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
 
 # parameters to monitor
-spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf", "spatialEffects")
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
 
-# fit the model mvt-mvt
+# Model 1: Fit the model with MVT random effects and normal obs error
 stanMod_mvtmvt_1 = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 1000, iter = 2000, 
   pars = spatglm_pars)
 est_tt <- extract(stanMod_mvtmvt_1)
 
+# Model 2: Fit the model with MVN random effects and normal obs error
 # parameters to monitor
 spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq")
-
-# fit the model mvn-mvt
 stanMod_mvnmvt_1 = stan(file = 'simulationTesting/mvnNormal.stan',data = spatglm_data, 
   verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
 est_nt <- extract(stanMod_mvnmvt_1)
+
+# Model 3: Fit the model with MVN random effects transformed to MVT and normal obs error
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
+
+stanMod_mvtmvt_3 = stan(file = 'simulationTesting/mvnNormal_trans.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+est_t2 <- extract(stanMod_mvtmvt_3)
 
 par(mfrow = c(1,1))
 plot(apply(est_tt$spatialEffectsKnots[,1,],2,mean), 
@@ -476,6 +501,20 @@ plot(apply(est_tt$spatialEffectsKnots[,1,],2,mean),
   xlab="MVT model, MVT data", ylab="MVN model, MVT data")
 abline(0,1, col="red")
 ```
+
+
+
+```{r}
+# Try JAGS model to see if it's a STAN thing or the projection
+# 
+#spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = dataSim$proj, "distKnotsSq" = #dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq, "muZeros" = rep(0, nrow(dataSim$knots)), "diagKnots" = #diag(nrow(dataSim$knots)))
+#
+#estModel = jags(data = spatglm_data, inits=NULL, parameters.to.save=c("df"), #model.file="simulationTesting/archive_jags/recover_rf_mvtGaussian.txt",
+#  n.chains=3, n.iter=7000, n.burnin=5000,
+#  n.thin=1)
+```
+
+
 
 ## How exactly does the MVT compare to MVN with a single draw?
 
