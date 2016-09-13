@@ -41,7 +41,7 @@ model {
   }
 
   for(t in 1:nT) {
-    y[t] ~ normal(spatialEffects[t], 0.00001);
+    y[t] ~ normal(spatialEffects[t], 0.1);
     #y[t] ~ normal(spatialEffects[t], sigma);
   }
 
