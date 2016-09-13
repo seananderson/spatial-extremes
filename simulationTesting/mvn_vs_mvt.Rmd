@@ -1,0 +1,302 @@
+---
+title: "Comparing MVN and MVT spatial random effects"
+output:
+  pdf_document:
+    fig_caption: yes
+---
+
+The objective of this is to simulate a model with multivariate-T spatial random effects, and evaluate whether that model does a better job than the conventional random effects model (Multivariate normal).
+
+```{r chunkSet, cache=FALSE, echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
+library(cluster)
+library(mvtnorm)
+library(R2jags)
+library(fields)
+library(ggplot2)
+library(knitr)
+library(MASS)
+library(rstan)
+opts_chunk$set(tidy=TRUE, message=FALSE,warning=FALSE)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+# Spatial data simulation 
+
+```{r function}
+
+nDataPoints = 31
+grid = cbind("lon" = runif(nDataPoints, 5, 15), 
+  "lat" = runif(nDataPoints, 5, 15))
+nLocs = dim(grid)[1]
+
+simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15, 
+  nDraws = 1000, mvt = TRUE, df = 3) {
+
+  # cluster analysis to determine knot locations
+  knots = jitter(pam(grid,nKnots)$medoids)
+  distKnots = as.matrix(dist(knots))
+  distKnotsSq = distKnots^2 # squared distances
+
+  corKnots = exp(-gp_scale*distKnotsSq)
+  sigmaKnots = sigma_t * sigma_t * corKnots
+  invSigmaKnots = solve(sigmaKnots)
+  # Calculate distance from knots to grid
+  distAll = as.matrix(dist(rbind(grid, knots)))^2
+  # this is the transpose of the lower left corner
+  distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
+  Sigma21 = exp(-gp_scale*distKnots21Sq) * sigma_t * sigma_t
+  
+  # Generate vector of random effects
+  # each 'draw' here is hypothetical draw from posterior
+  if(mvt==TRUE) reKnots = mvtnorm::rmvt(nDraws, sigma = sigmaKnots, df = df)
+  if(mvt==FALSE) reKnots = mvtnorm::rmvnorm(nDraws, sigma = sigmaKnots)
+  
+  # if(mvt==TRUE) {
+  #   MVN <- MASS::mvrnorm(nDraws, rep(0, ncol(sigmaKnots)), sigmaKnots)
+  #   reKnots <- t(t(MVN / sqrt(df / stats::rchisq(n, df))))
+  # } else {
+  #   reKnots = MASS::rmvnorm(nDraws, rep(0, ncol(sigmaKnots)), sigmaKnots)
+  # }
+  
+  # Project random effects to locations of the data
+  proj = t((Sigma21 %*% invSigmaKnots) %*% t(reKnots))
+  return(list(knots = knots, reKnots = reKnots, proj = proj, distKnotsSq = distKnotsSq, distKnots21Sq = distKnots21Sq, sigmaKnots = sigmaKnots))
+}
+```
+
+\break 
+
+## Checking projection for MVT spatial model
+
+We can visually check to see that the simulation is working ok,  
+```{r check-projection, echo=FALSE}
+set.seed(1)
+dataSim = simulateData(nKnots = 30, nDraws = 2, gp_scale = 0.5, mvt=TRUE)
+
+if(dim(dataSim$reKnots)[1]==1) {
+  dataSim$reKnots = t(dataSim$reKnots)
+  dataSim$proj = t(dataSim$proj)
+}
+
+k <- data.frame(dataSim$knots, v = t(dataSim$reKnots)[,1], type = "knots")
+p <- data.frame(grid, v = t(dataSim$proj)[,1], type = "projection")
+d <- rbind(k, p)
+ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
+  geom_point(size=3) + scale_colour_gradient2()
+```
+
+\break  
+
+## How exactly does the MVT compare to MVN with a single draw?
+
+For a single draw from the multivariate distributions, 
+the MVN and MVT scale linearly with each other.
+The MVN usually has more variability but occasionally the
+MVT will have much more variability.
+The pattern will be exactly the same across the two with
+each draw, just scaled one way or the other.
+I.e., heavy tails are created across multiple draws not
+from a single draw.
+
+```{r}
+set.seed(1)
+d1 <-simulateData(nKnots = 99, nDraws = 1e3, gp_scale = 0.5, mvt = TRUE, df = 2)
+set.seed(1)
+d2 <-simulateData(nKnots = 99, nDraws = 1e3, gp_scale = 0.5, mvt = TRUE, df = 1e9)
+
+par(mfrow = c(1, 2))
+plot(d1$reKnots, xlim = range(c(d1$reKnots[,1], d2$reKnots[,1])), 
+  ylim = range(c(d1$reKnots[,2], d2$reKnots[,2])), 
+  col = "#00000010", pch = 19)
+plot(d2$reKnots, xlim = range(c(d1$reKnots[,1], d2$reKnots[,1])), 
+  ylim = range(c(d1$reKnots[,2], d2$reKnots[,2])), 
+  col = "#00000010", pch = 19)
+
+# compare biggest outlier
+i <- which(d1$reKnots[,1] == max(d1$reKnots[,1]))
+plot(d1$reKnots[i,], d2$reKnots[i,]);abline(a = 0, b = 1)
+plot(d1$reKnots[i,], d1$reKnots[i,] - d2$reKnots[i,]);abline(a = 0, b = 0)
+
+k1 <- data.frame(d1$knots, v = as.numeric(d1$reKnots[i,]), type = "MVT")
+k2 <- data.frame(d2$knots, v = as.numeric(d2$reKnots[i,]), type = "MVN")
+d <- rbind(k1, k2)
+ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
+  geom_point(size=3) + scale_colour_gradient2()
+
+# probably not a huge outlier:
+i <- 1
+plot(d1$reKnots[i,], d2$reKnots[i,]);abline(a = 0, b = 1)
+plot(d1$reKnots[i,], d1$reKnots[i,] - d2$reKnots[i,]);abline(a = 0, b = 0)
+
+k1 <- data.frame(d1$knots, v = as.numeric(d1$reKnots[1,]), type = "MVT")
+k2 <- data.frame(d2$knots, v = as.numeric(d2$reKnots[1,]), type = "MVN")
+d <- rbind(k1, k2)
+ggplot(d, aes(lon, lat, colour = v)) + facet_wrap(~type) +
+  geom_point(size=3) + scale_colour_gradient2()
+```
+
+\break 
+  
+# Validating fits of MVT and MVN spatial models
+
+Step 1: Simulating data with extreme events  
+We'll start the simulation with 20 replicate draws of the MVT distribution (20 coming from the black swan paper). For each simulated data set, we'll fit the MVT distribution in STAN (estimating the df parameter with the exponential(0.1) prior) and find datasets that contain extreme outliers (df < 3). For nearly all cases of the seed, multiple realizations of the MVT distribution produce extreme events. 
+
+Step 2: Validating the model fits (with no projections yet)
+We can fit a spatial model with MVT knots, and a model with MVN knots that is adjusted to behave as a Student-t distribution. The posteriors for the df parameter are much tighter for the model with MVT random effects - why? Answer: the MVT scale parameter needs to be drawn in all realizations / years so that the df can be estimated (otherwise there's just a single draw).
+
+```{r stan_validting_mvt, cache=TRUE, echo=FALSE, warning=FALSE, message=FALSE, results="hide"}
+# Make sure 'effective' nu is low:
+s <- 0
+nu_big <- TRUE
+while (nu_big) {
+  s <- s + 1
+  message(paste("seed =", s))
+  set.seed(s)
+  dataSim <-simulateData(nKnots = 30, nDraws = 20, gp_scale = 0.5, mvt = TRUE, df = 1)
+  # alpha = 0 means forced to be symmetrical student-t
+  #m <- sn::selm(dataSim$reKnots[1,] ~ 1, family = "ST", fixed.param = list(alpha = 0)) 
+  # summary(m)
+  #nu <- sn::coef(m, "dp")[["nu"]]
+  #message(paste("nu =", round(nu, 1)))
+  
+  # fit to multivariate t distribution -- what is effective df?
+  # note: we're fitting the distribution of the random effects, not projected data
+  # because we're not fitting to the data, leave the knots out for now and 
+  
+  spatglm_data = list("nKnots"= nrow(dataSim$knots), "distKnotsSq" = dataSim$distKnotsSq, 
+    "y" = dataSim$reKnots, "nT"=nrow(dataSim$proj))
+  # parameters to monitor
+  spatglm_pars = c("gp_scale", "gp_sigmaSq", "scaledf")
+
+  # fit the model
+  stanMod = stan(file = 'simulationTesting/mvtSimulate.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
+  pars = spatglm_pars)  
+ 
+  spatglm_pars = c("gp_scale", "gp_sigmaSq", "scaledf")
+  stanMod_trans = stan(file = 'simulationTesting/mvnSimulate_trans.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
+  pars = spatglm_pars)
+  
+  par(mfrow = c(2,1), mai=c(0.5,0.5,0.1,0.1))
+  hist(extract(stanMod, permuted = TRUE)[["scaledf"]], main="MVT")
+  hist(extract(stanMod_trans, permuted = TRUE)[["scaledf"]], main="MVN.transformed")  
+  
+  # check effective df from normal model
+  nu <- median(extract(stanMod, permuted = TRUE)[["scaledf"]])
+  nu_big <- ifelse(nu > 3, TRUE, FALSE)
+}
+```
+
+\break  
+
+## Extension 1: Including prediction in these validation models
+
+```{r}
+
+# Note: We're not including an observation error model here. 
+spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = dataSim$proj, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
+
+# Model 1: Fit the model with MVT random effects and normal obs error
+stanMod_mvtmvt_1 = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+est_tt <- extract(stanMod_mvtmvt_1)
+
+# Model 2: Fit the model with MVN random effects and normal obs error
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq")
+stanMod_mvnmvt_1 = stan(file = 'simulationTesting/mvnNormal.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+est_nt <- extract(stanMod_mvnmvt_1)
+
+# Model 3: Fit the model with MVT random effects and normal obs error
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
+stanMod_mvtmvt = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+est_tt <- extract(stanMod_mvtmvt)
+
+# Model 4: Fit the model with MVN random effects transformed to MVT and normal obs error
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
+
+stanMod_mvtmvt_trans = stan(file = 'simulationTesting/mvnNormal_trans.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+est_t2 <- extract(stanMod_mvtmvt_trans)
+
+```
+
+## Extension 2: Including observation error: how much does this corrupt ability to estimate df?
+
+For this set of simulations, we'll simulate datasets with an increasing amount of observation error (from the same base dataset) and evaluate our ability to recover the df parameter. 
+
+This simulation is only being done with the model that has MVT random effects for now, but could be easily modified to include any of the others. 
+
+```{r stan_obsError_sim}
+
+nDataPoints = 100
+grid = cbind("lon" = runif(nDataPoints, 5, 15), 
+  "lat" = runif(nDataPoints, 5, 15))
+nLocs = dim(grid)[1]
+set.seed(1)
+dataSim <-simulateData(nKnots = 30, nDraws = 20, gp_scale = 0.5, mvt = TRUE, df = 1)
+
+df = data.frame("sd"=seq(0.05, 1, 0.05), "est_df"=NA, "low"=NA,"hi"=NA)
+for(i in 1:nrow(df)) {
+  # generate data with observation error
+  Y = dataSim$proj + matrix(rnorm(ncol(dataSim$proj) * nrow(dataSim$proj), sd = df$sd[i]), nrow(dataSim$proj), ncol(dataSim$proj))
+  # create list for STAN
+  spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = dataSim$proj, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+  spatglm_pars = c("scaledf")
+  # estimate model
+  stanMod = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+  df$est_df[i] <- median(extract(stanMod)[["scaledf"]])
+  df$low[i] <- quantile(extract(stanMod)[["scaledf"]], 0.025)
+  df$hi[i] <- quantile(extract(stanMod)[["scaledf"]], 0.975)
+}
+
+```
+
+
+
+```{r}
+# Try JAGS model to see if it's a STAN thing or the projection
+# 
+#spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = dataSim$proj, "distKnotsSq" = #dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq, "muZeros" = rep(0, nrow(dataSim$knots)), "diagKnots" = #diag(nrow(dataSim$knots)))
+#
+#estModel = jags(data = spatglm_data, inits=NULL, parameters.to.save=c("df"), #model.file="simulationTesting/archive_jags/recover_rf_mvtGaussian.txt",
+#  n.chains=3, n.iter=7000, n.burnin=5000,
+#  n.thin=1)
+```
+
+
+```{r mvt-alternative-check, eval=FALSE, echo=FALSE}
+## http://stats.stackexchange.com/questions/68476/drawing-from-the-multivariate-students-t-distribution
+## mu <- c(7, 5)
+## sigma <- matrix(c(1, 1/2, 1/2, 1), 2)
+## nu <- 1
+## n <- 1e3 # Number of draws
+## set.seed(1)
+## MVN <- MASS::mvrnorm(n, rep(0, length(mu)), sigma)
+## set.seed(123)
+## y1 <- t(t(MVN / sqrt(nu / stats::rchisq(n, nu))) + mu)
+## set.seed(123)
+## nu <- 1.05
+## y2 <- t(t(MVN / sqrt(nu / stats::rchisq(n, nu))) + mu)
+## # par(mfrow = c(1, 2))
+## # plot(y1)
+## # plot(y2)
+## plot(y1[,1], y1[,1] - y2[,1]);abline(a = 0, b = 0)
+```
+
