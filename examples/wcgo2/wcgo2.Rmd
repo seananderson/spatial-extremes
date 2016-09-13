@@ -48,6 +48,9 @@ locs = cbind(d$haul_longitude_dim.longitude_in_degrees, d$haul_latitude_dim.lati
 knots = jitter(pam(locs,nKnots)$medoids)
 distKnots = as.matrix(dist(knots))
 distKnotsSq = distKnots^2 # squared distances
+
+plot(locs)
+points(knots, col='red')
   
 # Calculate distance from knots to grid
 distAll = as.matrix(dist(rbind(locs, knots)))^2
