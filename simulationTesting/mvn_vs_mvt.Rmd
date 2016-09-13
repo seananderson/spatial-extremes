@@ -468,7 +468,6 @@ while (nu_big) {
 ```{r}
 
 # Note: We're not including an observation error model here. 
-
 spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = dataSim$proj, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
 
 # parameters to monitor
@@ -476,7 +475,7 @@ spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
 
 # Model 1: Fit the model with MVT random effects and normal obs error
 stanMod_mvtmvt_1 = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 3, thin = 1, warmup = 1000, iter = 2000, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
 est_tt <- extract(stanMod_mvtmvt_1)
 
@@ -488,14 +487,22 @@ stanMod_mvnmvt_1 = stan(file = 'simulationTesting/mvnNormal.stan',data = spatglm
   pars = spatglm_pars)
 est_nt <- extract(stanMod_mvnmvt_1)
 
-# Model 3: Fit the model with MVN random effects transformed to MVT and normal obs error
+# Model 3: Fit the model with MVT random effects and normal obs error
+# parameters to monitor
+spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
+stanMod_mvtmvt = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+est_tt <- extract(stanMod_mvtmvt)
+
+# Model 4: Fit the model with MVN random effects transformed to MVT and normal obs error
 # parameters to monitor
 spatglm_pars = c("spatialEffectsKnots", "gp_scale", "gp_sigmaSq", "scaledf")
 
-stanMod_mvtmvt_3 = stan(file = 'simulationTesting/mvnNormal_trans.stan',data = spatglm_data, 
+stanMod_mvtmvt_trans = stan(file = 'simulationTesting/mvnNormal_trans.stan',data = spatglm_data, 
   verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
-est_t2 <- extract(stanMod_mvtmvt_3)
+est_t2 <- extract(stanMod_mvtmvt_trans)
 
 par(mfrow = c(1,1))
 plot(apply(est_tt$spatialEffectsKnots[,1,],2,mean), 
