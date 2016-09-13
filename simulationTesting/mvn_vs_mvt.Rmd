@@ -255,16 +255,46 @@ for(i in 1:nrow(df)) {
   # generate data with observation error
   Y = dataSim$proj + matrix(rnorm(ncol(dataSim$proj) * nrow(dataSim$proj), sd = df$sd[i]), nrow(dataSim$proj), ncol(dataSim$proj))
   # create list for STAN
-  spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = dataSim$proj, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+  spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = Y, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
   spatglm_pars = c("scaledf")
   # estimate model
-  stanMod = stan(file = 'simulationTesting/mvtNormal.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, 
+  stanMod = stan(file = 'simulationTesting/mvtNormal_estSigma.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
   df$est_df[i] <- median(extract(stanMod)[["scaledf"]])
   df$low[i] <- quantile(extract(stanMod)[["scaledf"]], 0.025)
   df$hi[i] <- quantile(extract(stanMod)[["scaledf"]], 0.975)
 }
+g1 = ggplot(df, (aes(sd, est_df))) + geom_ribbon(aes(ymin=low, ymax=hi), fill="grey") + geom_hline((aes(yintercept=1))) + ggtitle("Normal") + xlab("SD")
+  
+pdf("simulationTesting/plots/normalSimulations.pdf")
+g1
+dev.off()
+
+df_gamma = data.frame("sd"=seq(0.05, 1, 0.05), "est_df"=NA, "low"=NA,"hi"=NA)
+for(i in 1:nrow(df_gamma)) {
+  # generate data with observation error
+  CV = df_gamma$sd[i]
+  gamma.a = 1/(CV^2)
+  gamma.b = gamma.a/exp(dataSim$proj)
+  y.gamma = rgamma(nrow(gamma.b)*ncol(gamma.b), shape = gamma.a, rate = c(gamma.b))
+  Y = matrix(y.gamma, ncol = ncol(gamma.b))
+
+  # create list for STAN
+  spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = Y, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+  spatglm_pars = c("scaledf")
+  # estimate model
+  stanMod = stan(file = 'simulationTesting/mvtGamma_estSigma.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+  df_gamma$est_df[i] <- median(extract(stanMod)[["scaledf"]])
+  df_gamma$low[i] <- quantile(extract(stanMod)[["scaledf"]], 0.025)
+  df_gamma$hi[i] <- quantile(extract(stanMod)[["scaledf"]], 0.975)
+}
+pdf("simulationTesting/plots/gammaSimulations.pdf")
+g2 = ggplot(df_gamma, (aes(sd, est_df))) + geom_ribbon(aes(ymin=low, ymax=hi), fill="grey") + geom_hline((aes(yintercept=1))) + ggtitle("Gamma") + xlab("CV")
+g2
+dev.off()
 
 ```
 
