@@ -41,8 +41,8 @@ model {
   # priors on parameters for covariances, etc
   gp_scale ~ cauchy(0,5);
   gp_sigmaSq ~ cauchy(0,5);
-  CV ~ lognormal(-0.2,0.2);
-  #scaledf ~ exponential(0.01);
+  CV ~ lognormal(-2,0.2);
+  scaledf ~ exponential(0.01);
   for(t in 1:nT) {
   spatialEffectsKnots[t] ~ multi_normal(muZeros, SigmaKnots);
   }

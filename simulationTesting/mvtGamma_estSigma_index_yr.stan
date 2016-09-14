@@ -17,6 +17,7 @@ parameters {
   real<lower=0> scaledf;
   real<lower=0> CV;
   real yearEffects[nT];
+  real<lower=0> year_sigma;
   vector[nKnots] spatialEffectsKnots[nT];
 }
 transformed parameters {
@@ -39,10 +40,17 @@ transformed parameters {
 }
 model {
   # priors on parameters for covariances, etc
-  gp_scale ~ cauchy(0,5);
-  gp_sigmaSq ~ cauchy(0,5);
-  CV ~ lognormal(-2,0.2);
-  scaledf ~ exponential(0.01);
+  gp_scale ~ normal(0,1);
+  gp_sigmaSq ~ normal(0,1);
+  CV ~ normal(0,1);
+  scaledf ~ gamma(2,0.1); # prior from https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
+  year_sigma ~ normal(0,1);
+
+  # random walk / random effects in year terms
+  yearEffects[1] ~ normal(0,1);
+  for(t in 2:nT) {
+    yearEffects[t] ~ normal(yearEffects[t-1],year_sigma);
+  }
   for(t in 1:nT) {
   spatialEffectsKnots[t] ~ multi_student_t(scaledf, muZeros, SigmaKnots);
   }
@@ -50,6 +58,5 @@ model {
   for(i in 1:N) {
     y[i] ~ gamma(gammaA, gammaA/exp(yearEffects[yearID[i]] + spatialEffects[yearID[i],stationID[i]]));
   }
-
 }
 

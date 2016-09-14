@@ -18,7 +18,6 @@ parameters {
   real<lower=0> scaledf;
   real<lower=0> CV;
   real B;
-  real B2;
   real yearEffects[nT];
   vector[nKnots] spatialEffectsKnots[nT];
 }
@@ -46,14 +45,14 @@ model {
   gp_sigmaSq ~ cauchy(0,5);
   #gamma.a = 1/(CV^2), CV = sqrt(1/gammaA)
   #gammaA ~ cauchy(0,5);
-  CV ~ lognormal(-0.2,0.2);
+  CV ~ lognormal(-2,0.2);
   scaledf ~ exponential(0.01);
   for(t in 1:nT) {
   spatialEffectsKnots[t] ~ multi_student_t(scaledf, muZeros, SigmaKnots);
   }
 
   for(i in 1:N) {
-    y[i] ~ gamma(gammaA, gammaA/exp(B*cov[i] + B2*cov[i]*cov[i] + yearEffects[1] + spatialEffects[yearID[i],stationID[i]]));
+    y[i] ~ gamma(gammaA, gammaA/exp(B*cov[i] + yearEffects[yearID[i]] + spatialEffects[yearID[i],stationID[i]]));
   }
 
 }

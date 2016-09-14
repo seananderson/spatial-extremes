@@ -5,7 +5,7 @@ output:
     fig_caption: yes
 ---
 
-# This isn't working yet -- in hindsight this dataset may not be large enough. MVT-gamma model seems to converge, MVN-gamma does not? 
+# This is an example using oxygen data from the coast of Washington in the trawl survey -- index of hypoxia, etc. 
 
 ```{r chunkSet, cache=FALSE, echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
 library(cluster)
@@ -23,35 +23,32 @@ options(mc.cores = parallel::detectCores())
 ```
 
 ```{r}
-d = read.csv("examples/sewardline/LTOP_Seward_merged_stages.csv")
+d = read.csv("crabs/data/TrawlHaulChars_since2002.csv")
+d = d[which(is.na(d$o2_at_gear_ml_per_l_der)==FALSE & d$date_dim.year > 2008),]
+d = d[,c("haul_latitude_dim.latitude_in_degrees","haul_longitude_dim.longitude_in_degrees","date_dim.year","o2_at_gear_ml_per_l_der","seafloor_depth_m_der")]
 
-# start with most common spp, Oithona.spinirostris
-# background on biology: http://plankt.oxfordjournals.org/content/38/3/703.short?rss=1
-#d = d[,c("cruiseID","dateTime","stationID","consecStationNum","lat","lon","sonicDepth","towDepth","gear","ringDiam","meshSize","towType","AF.Animalia.Arthropoda.Crustacea.Maxillopoda.Copepoda.Neocopepoda.Cyclopoida.N.A.N.A.Oithonidae.Oithona.similis")]
-#names(d)[which(names(d)%in%c("AF.Animalia.Arthropoda.Crustacea.Maxillopoda.Copepoda.Neocopepoda.Cyclopoida.N.A.N.A.Oithonidae.Oithona.similis"))] = "density"
+d$year = as.numeric(d$date_dim.year)
 
-d = d[,c("cruiseID","dateTime","stationID","consecStationNum","lat","lon","sonicDepth","towDepth","gear","ringDiam","meshSize","towType","chloropyllA")]
-names(d)[which(names(d)%in%c("chloropyllA"))] = "density"
-d = d[which(d$density > 0),]
+d = d[which(d$haul_latitude_dim.latitude_in_degrees > 46.260987),]
+#which(locs[,2] < 46.260987 & locs[,2] > 41.99)
+# only use data from WA coast
 
-d$year = as.numeric(substr(d$dateTime,1,4))
-d$month = as.numeric(substr(d$dateTime,6,7))
-
-# restrict data to may samples only -- continuous in most years
-d = d[which(d$month%in%c(3,4,5) & d$year < 2007),]
 ```
 
 # Prep data for input to STAN
 
 ```{r prep_data}
-nKnots = 15
+nKnots = 40
 nLocs = nrow(d)
-locs = cbind(d$lon, d$lat)
+locs = cbind(d$haul_longitude_dim.longitude_in_degrees, d$haul_latitude_dim.latitude_in_degrees)
 
 # cluster analysis to determine knot locations
 knots = jitter(pam(locs,nKnots)$medoids)
 distKnots = as.matrix(dist(knots))
 distKnotsSq = distKnots^2 # squared distances
+
+plot(locs)
+points(knots, col='red')
   
 # Calculate distance from knots to grid
 distAll = as.matrix(dist(rbind(locs, knots)))^2
@@ -64,16 +61,17 @@ distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
 #  id.vars = c("year", "density","stationID"))
 #Y <- dcast(dmelt, year ~ stationID, value.var = "density")
 
-Y = d$density
+Y = d$o2_at_gear_ml_per_l_der
 yearID = as.numeric(as.factor(d$year))
 stationID = seq(1,nrow(d))
-
+cov = log(d$seafloor_depth_m_der)
+  
 # create list for STAN
-spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)), "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y, "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq)
-spatglm_pars = c("scaledf","yearEffects", "CV")
+spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)), "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y, "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq, "cov"=cov)
+spatglm_pars = c("scaledf","yearEffects", "CV", "gp_sigmaSq", "gp_scale")
 
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
-stanMod_gamma = stan(file = 'simulationTesting/mvtGamma_estSigma_index.stan',data = spatglm_data, 
+stanMod_gamma = stan(file = 'simulationTesting/mvtGamma_estSigma_index_cov.stan',data = spatglm_data, 
 verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, pars = spatglm_pars)
 
 yearEff_gamma = extract(stanMod_gamma)[["yearEffects"]]

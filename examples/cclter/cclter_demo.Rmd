@@ -23,30 +23,31 @@ options(mc.cores = parallel::detectCores())
 ```
 
 ```{r}
-d = read.csv("examples/sewardline/LTOP_Seward_merged_stages.csv")
+chl = read.csv("examples/cclter/Chlorophyll (Process Cruise).csv")
+event = read.csv("examples/cclter/CTD Cast Log (Process Cruise).csv")
 
+chl = dplyr::left_join(chl, event)
 # start with most common spp, Oithona.spinirostris
 # background on biology: http://plankt.oxfordjournals.org/content/38/3/703.short?rss=1
 #d = d[,c("cruiseID","dateTime","stationID","consecStationNum","lat","lon","sonicDepth","towDepth","gear","ringDiam","meshSize","towType","AF.Animalia.Arthropoda.Crustacea.Maxillopoda.Copepoda.Neocopepoda.Cyclopoida.N.A.N.A.Oithonidae.Oithona.similis")]
 #names(d)[which(names(d)%in%c("AF.Animalia.Arthropoda.Crustacea.Maxillopoda.Copepoda.Neocopepoda.Cyclopoida.N.A.N.A.Oithonidae.Oithona.similis"))] = "density"
 
-d = d[,c("cruiseID","dateTime","stationID","consecStationNum","lat","lon","sonicDepth","towDepth","gear","ringDiam","meshSize","towType","chloropyllA")]
-names(d)[which(names(d)%in%c("chloropyllA"))] = "density"
+chl$month = substr(chl$Datetime.GMT, 6,7)
+chl$year = substr(chl$Datetime.GMT, 1,4)
+
+d = chl[,c("month","year","Latitude..º.","Longitude..º.","Chlorophyll.a..µg.l.")]
+names(d)[which(names(d)%in%c("Chlorophyll.a..µg.l."))] = "density"
 d = d[which(d$density > 0),]
 
-d$year = as.numeric(substr(d$dateTime,1,4))
-d$month = as.numeric(substr(d$dateTime,6,7))
-
-# restrict data to may samples only -- continuous in most years
-d = d[which(d$month%in%c(3,4,5) & d$year < 2007),]
+d = d[-which(is.na(d$Longitude..º. + d$Latitude..º.)),]
 ```
 
 # Prep data for input to STAN
 
 ```{r prep_data}
-nKnots = 15
+nKnots = 30
 nLocs = nrow(d)
-locs = cbind(d$lon, d$lat)
+locs = cbind(d[,4], d[,3])
 
 # cluster analysis to determine knot locations
 knots = jitter(pam(locs,nKnots)$medoids)
