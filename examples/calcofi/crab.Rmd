@@ -21,45 +21,15 @@ options(mc.cores = parallel::detectCores())
 ```
 
 ```{r}
-devtools::install_github("ropensci/rerddap")
-library('rerddap')
-out = info('erdCalCOFIlrvcntpos')
-td = tabledap(out, fields = c('time','longitude', 'latitude', 'larvae_10m2', 'common_name'))
 
-#btl = info('siocalcofiHydroBottle')
-#chl = tabledap(info('siocalcofiHydroCasts'), fields = c('month','longitude', 'latitude', 'sta_id', 'sta_code', 'st_station','st_line','year'))
+crabs = readRDS("crabs/data/joined_crab.rds")
+crabs = crabs[crabs$lat > 46.25 & crabs$year >= 2005,]
+ggplot(crabs, aes(lon, lat, color = as.factor(ceiling(cpue_kgperha)))) + geom_point(alpha=1) + facet_wrap(~ year)
 
-td$month = as.numeric(substr(td$time,6,7))
-td$year = as.numeric(substr(td$time,1,4))
+ggplot(crabs[crabs$cpue_kgperha>0,], aes(lon, lat, color = log(cpue_kgperha))) + geom_point(alpha=1) + facet_wrap(~ year)
 
-# start with lanternfishes
-#td = td[td$common_name==sort(unique(td$common_name))[234],]
-#td = td[td$year%in%c(1957:1966) & td$month%in%c(4,5),]
+d = crabs[crabs$cpue_kgperha>0,]
 
-# bocaccio -- better than lanternfish
-#td = td[td$common_name==sort(unique(td$common_name))[68],]
-#td = td[td$year%in%c(1951:1966) & td$month%in%c(1,2,3),]
-
-# pacific sardine -- this is probably the best example so far
-#td = td[td$common_name==sort(unique(td$common_name))[330],]
-#td = td[td$year%in%c(1951:1960) & td$month%in%c(5),]
-
-# pacific mackerel also does ok (like sardine). CV a little lower. For mackerel, all 
-# year effects are essentially the same. But constant model doesn't improve things or change
-# CV or estimated df. 
-#td = td[td$common_name==sort(unique(td$common_name))[324],]
-#td = td[td$year%in%c(1951:1960) & td$month%in%c(5),]
-
-# northern anchovy - later years
-#td = td[td$common_name==sort(unique(td$common_name))[288],]
-#td = td[td$year%in%c(1978:1985) & td$month%in%c(3),]
-
-td = td[td$common_name==sort(unique(td$common_name))[288],]
-td = td[td$year%in%c(1951:1960) & td$month%in%c(3),]
-
-names(td)[names(td)=="larvae_10m2"]="density"
-td$density=as.numeric(td$density)
-d = td
 ```
 
 # Prep data for input to STAN
@@ -67,7 +37,7 @@ d = td
 ```{r prep_data}
 nKnots = 30
 nLocs = nrow(d)
-locs = cbind(as.numeric(d$longitude),as.numeric(d$latitude))
+locs = cbind(as.numeric(d$lon),as.numeric(d$lat))
 
 # cluster analysis to determine knot locations
 knots = jitter(pam(locs,nKnots)$medoids)
@@ -79,7 +49,7 @@ distAll = as.matrix(dist(rbind(locs, knots)))^2
 # this is the transpose of the lower left corner
 distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
 
-Y = as.numeric(d$density)
+Y = as.numeric(d$cpue_kgperha)
 yearID = as.numeric(as.factor(d$year))
 stationID = seq(1,nrow(d))
 
