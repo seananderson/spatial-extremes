@@ -32,16 +32,15 @@ transformed parameters {
 }
 model {
   # priors on parameters for covariances, etc
-  gp_scale ~ cauchy(0,5);
-  gp_sigmaSq ~ cauchy(0,5);
-  sigma ~ cauchy(0,5);
-  scaledf ~ exponential(0.01);
+  gp_scale ~ normal(0,1);
+  gp_sigmaSq ~ normal(0,1);
+  sigma ~ normal(0,1);
+  scaledf ~ gamma(2,0.1); # prior from https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
   for(t in 1:nT) {
   spatialEffectsKnots[t] ~ multi_student_t(scaledf, muZeros, SigmaKnots);
   }
 
   for(t in 1:nT) {
-    #y[t] ~ normal(spatialEffects[t], 0.1);
     y[t] ~ normal(spatialEffects[t], sigma);
   }
 

@@ -1,0 +1,219 @@
+---
+title: "Simulations for the MVT spatial fields paper"
+output:
+  pdf_document:
+    fig_caption: yes
+---
+
+```{r chunkSet, cache=FALSE, echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
+library(cluster)
+library(mvtnorm)
+library(R2jags)
+library(fields)
+library(ggplot2)
+library(knitr)
+library(MASS)
+library(rstan)
+opts_chunk$set(tidy=TRUE, message=FALSE,warning=FALSE)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+# Spatial data simulation 
+
+```{r function}
+
+nDataPoints = 100
+grid = cbind("lon" = runif(nDataPoints, 5, 15), 
+  "lat" = runif(nDataPoints, 5, 15))
+nLocs = dim(grid)[1]
+
+simulateData = function(nKnots = 10, gp_scale = 0.3, sigma_t = 0.15, 
+  nDraws = 1000, mvt = TRUE, df = 3) {
+
+  # cluster analysis to determine knot locations
+  knots = jitter(pam(grid,nKnots)$medoids)
+  distKnots = as.matrix(dist(knots))
+  distKnotsSq = distKnots^2 # squared distances
+
+  corKnots = exp(-gp_scale*distKnotsSq)
+  sigmaKnots = sigma_t * sigma_t * corKnots
+  invSigmaKnots = solve(sigmaKnots)
+  # Calculate distance from knots to grid
+  distAll = as.matrix(dist(rbind(grid, knots)))^2
+  # this is the transpose of the lower left corner
+  distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
+  Sigma21 = exp(-gp_scale*distKnots21Sq) * sigma_t * sigma_t
+  
+  # Generate vector of random effects
+  # each 'draw' here is hypothetical draw from posterior
+  if(mvt==TRUE) reKnots = mvtnorm::rmvt(nDraws, sigma = sigmaKnots, df = df)
+  if(mvt==FALSE) reKnots = mvtnorm::rmvnorm(nDraws, sigma = sigmaKnots)
+  
+  # if(mvt==TRUE) {
+  #   MVN <- MASS::mvrnorm(nDraws, rep(0, ncol(sigmaKnots)), sigmaKnots)
+  #   reKnots <- t(t(MVN / sqrt(df / stats::rchisq(n, df))))
+  # } else {
+  #   reKnots = MASS::rmvnorm(nDraws, rep(0, ncol(sigmaKnots)), sigmaKnots)
+  # }
+  
+  # Project random effects to locations of the data
+  proj = t((Sigma21 %*% invSigmaKnots) %*% t(reKnots))
+  return(list(knots = knots, reKnots = reKnots, proj = proj, distKnotsSq = distKnotsSq, distKnots21Sq = distKnots21Sq, sigmaKnots = sigmaKnots))
+}
+```
+
+\break 
+  
+## Validating fits of MVT and MVN spatial models
+
+Step 1: Simulating data with extreme events  
+We'll start the simulation with 20 replicate draws (=years) of the MVT distribution (20 coming from the black swan paper). For each simulated data set (100 observations / year for 20 years, 30 knots), we'll fit the MVT distribution in STAN (estimating the df parameter with the exponential(0.1) prior) and find datasets that contain extreme outliers (df < 3). For *all* cases of the seed, multiple realizations of the MVT distribution produce extreme events. 
+
+### This is a validation that the estimation model can recover the simulation parameters quite well -- note: no projection is involved, and observation error is low.
+
+```{r stan_validting_mvt, cache=TRUE, echo=FALSE, warning=FALSE, message=FALSE, results="hide"}
+# Make sure 'effective' nu is low:
+s <- 0
+nu_big <- TRUE
+while (nu_big) {
+  s <- s + 1
+  message(paste("seed =", s))
+  set.seed(s)
+  dataSim <-simulateData(nKnots = 30, nDraws = 20, gp_scale = 0.5, mvt = TRUE, df = 1)
+  # alpha = 0 means forced to be symmetrical student-t
+  #m <- sn::selm(dataSim$reKnots[1,] ~ 1, family = "ST", fixed.param = list(alpha = 0)) 
+  # summary(m)
+  #nu <- sn::coef(m, "dp")[["nu"]]
+  #message(paste("nu =", round(nu, 1)))
+  
+  # fit to multivariate t distribution -- what is effective df?
+  # note: we're fitting the distribution of the random effects, not projected data
+  # because we're not fitting to the data, leave the knots out for now and 
+  
+  spatglm_data = list("nKnots"= nrow(dataSim$knots), "distKnotsSq" = dataSim$distKnotsSq, 
+    "y" = dataSim$reKnots, "nT"=nrow(dataSim$proj))
+  # parameters to monitor
+  spatglm_pars = c("gp_scale", "gp_sigmaSq", "scaledf")
+
+  # fit the model
+  stanMod = stan(file = 'stan_models/mvtSimulate.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
+  pars = spatglm_pars)  
+  
+  #par(mfrow = c(2,1), mai=c(0.5,0.5,0.1,0.1))
+  #hist(extract(stanMod, permuted = TRUE)[["scaledf"]], main="MVT")
+  #hist(extract(stanMod_trans, permuted = TRUE)[["scaledf"]], main="MVN.transformed")  
+  
+  # check effective df from normal model
+  nu <- median(extract(stanMod, permuted = TRUE)[["scaledf"]])
+  nu_big <- ifelse(nu > 3, TRUE, FALSE)
+}
+```
+
+\break  
+
+## How much does observation error corrupt ability to estimate df?
+
+For this set of simulations, we'll simulate datasets with an increasing amount of observation error (from the same base dataset) and evaluate our ability to recover the df parameter. 
+
+We'll start with the model that has MVT random effects.
+
+*each run takes 35-40 sec to fit*  
+
+```{r stan_obsError_sim}
+
+nDataPoints = 100
+grid = cbind("lon" = runif(nDataPoints, 5, 15), 
+  "lat" = runif(nDataPoints, 5, 15))
+nLocs = dim(grid)[1]
+set.seed(1)
+dataSim <-simulateData(nKnots = 30, nDraws = 20, gp_scale = 0.5, mvt = TRUE, df = 1)
+
+df = data.frame("sd"=seq(0.05, 1, 0.05), "est_df"=NA, "low"=NA,"hi"=NA)
+for(i in 1:nrow(df)) {
+  # generate data with observation error
+  Y = dataSim$proj + matrix(rnorm(ncol(dataSim$proj) * nrow(dataSim$proj), sd = df$sd[i]), nrow(dataSim$proj), ncol(dataSim$proj))
+  # create list for STAN
+  spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = Y, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+  spatglm_pars = c("scaledf")
+  # estimate model
+  stanMod = stan(file = 'stan_models/mvtNormal_estSigma.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+  df$est_df[i] <- median(extract(stanMod)[["scaledf"]])
+  df$low[i] <- quantile(extract(stanMod)[["scaledf"]], 0.025)
+  df$hi[i] <- quantile(extract(stanMod)[["scaledf"]], 0.975)
+}
+g1 = ggplot(df, (aes(sd, est_df))) + geom_ribbon(aes(ymin=low, ymax=hi), fill="grey") + geom_hline((aes(yintercept=1))) + ggtitle("Normal") + xlab("SD")
+  
+pdf("simulationTesting/plots/normalSimulations.pdf")
+g1
+dev.off()
+
+df_gamma = data.frame("sd"=seq(0.05, 1, 0.05), "est_df"=NA, "low"=NA,"hi"=NA)
+for(i in 1:nrow(df_gamma)) {
+  # generate data with observation error
+  CV = df_gamma$sd[i]
+  gamma.a = 1/(CV^2)
+  gamma.b = gamma.a/exp(dataSim$proj)
+  y.gamma = rgamma(nrow(gamma.b)*ncol(gamma.b), shape = gamma.a, rate = c(gamma.b))
+  Y = matrix(y.gamma, ncol = ncol(gamma.b))
+
+  # create list for STAN
+  spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = Y, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+  spatglm_pars = c("scaledf")
+  # estimate model
+  stanMod = stan(file = 'stan_models/mvtGamma_estSigma.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+  df_gamma$est_df[i] <- median(extract(stanMod)[["scaledf"]])
+  df_gamma$low[i] <- quantile(extract(stanMod)[["scaledf"]], 0.025)
+  df_gamma$hi[i] <- quantile(extract(stanMod)[["scaledf"]], 0.975)
+}
+pdf("simulationTesting/plots/gammaSimulations.pdf")
+g2 = ggplot(df_gamma, (aes(sd, est_df))) + geom_ribbon(aes(ymin=low, ymax=hi), fill="grey") + geom_hline((aes(yintercept=1))) + ggtitle("Gamma") + xlab("CV")
+g2
+dev.off()
+
+```
+
+## When underlying model has MVN spatial field, can we detect it?
+
+For this simulation, we'll generate model from the MVN spatial fields, but apply the MVT model. How well can we estimate the 'df' parameteter in the presence of observation error? 
+
+```{r}
+
+nDataPoints = 100
+grid = cbind("lon" = runif(nDataPoints, 5, 15), 
+  "lat" = runif(nDataPoints, 5, 15))
+nLocs = dim(grid)[1]
+set.seed(1)
+dataSim <-simulateData(nKnots = 30, nDraws = 20, gp_scale = 0.5, mvt = FALSE, df = 1)
+
+df = data.frame("sd"=seq(0.05, 1, 0.05), "est_df"=NA, "low"=NA,"hi"=NA)
+for(i in 1:nrow(df)) {
+  # generate data with observation error
+  Y = dataSim$proj + matrix(rnorm(ncol(dataSim$proj) * nrow(dataSim$proj), sd = df$sd[i]), nrow(dataSim$proj), ncol(dataSim$proj))
+  # create list for STAN
+  spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = Y, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+  spatglm_pars = c("scaledf")
+  # estimate model
+  stanMod = stan(file = 'stan_models/mvtNormal_estSigma.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+  df$est_df[i] <- median(extract(stanMod)[["scaledf"]])
+  df$low[i] <- quantile(extract(stanMod)[["scaledf"]], 0.025)
+  df$hi[i] <- quantile(extract(stanMod)[["scaledf"]], 0.975)
+}
+
+g3 = ggplot(df, (aes(sd, est_df))) + geom_ribbon(aes(ymin=low, ymax=hi), fill="grey") + geom_line() + geom_hline((aes(yintercept=1))) + ggtitle("Normal") + xlab("SD") + ylab("Estimated DF")
+  
+pdf("simulationTesting/plots/mvtEstimation_mvnSimulations.pdf")
+g3
+dev.off()
+
+```
+
+
+

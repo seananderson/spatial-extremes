@@ -31,7 +31,7 @@ td = tabledap(out, fields = c('time','longitude', 'latitude', 'larvae_10m2', 'co
 
 td$month = as.numeric(substr(td$time,6,7))
 td$year = as.numeric(substr(td$time,1,4))
-
+td$station = paste(td$longitude, td$latitude)
 # start with lanternfishes
 #td = td[td$common_name==sort(unique(td$common_name))[234],]
 #td = td[td$year%in%c(1957:1966) & td$month%in%c(4,5),]
@@ -54,12 +54,28 @@ td$year = as.numeric(substr(td$time,1,4))
 #td = td[td$common_name==sort(unique(td$common_name))[288],]
 #td = td[td$year%in%c(1978:1985) & td$month%in%c(3),]
 
-td = td[td$common_name==sort(unique(td$common_name))[288],]
-td = td[td$year%in%c(1951:1960) & td$month%in%c(3),]
+#td = td[td$common_name==sort(unique(td$common_name))[288],]
+#td = td[td$year%in%c(1951:1960) & td$month%in%c(3),]
 
-names(td)[names(td)=="larvae_10m2"]="density"
-td$density=as.numeric(td$density)
-d = td
+
+td = td[td$month==4 & td$year%in%c(1990:2002), ]
+
+# try to calculate species diversity
+simp.div = function(x) {
+  1/sum((x/sum(x))^2)
+}
+g = group_by(td, station, common_name) %>% 
+  summarize(x = sum(as.numeric(larvae_10m2))) %>% 
+  group_by(time, station) %>% 
+  summarize(div = simp.div(x))
+  
+td = left_join(td, g)
+
+
+ggplot(td, aes(longitude, latitude, color = div)) + geom_point() + facet_wrap(~year)
+
+
+
 ```
 
 # Prep data for input to STAN
