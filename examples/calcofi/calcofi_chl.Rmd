@@ -65,7 +65,7 @@ verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, pars = spatglm_p
 yearEff_gamma = extract(stanMod_gamma)[["yearEffects"]]
 
 spatglm_pars = c("yearEffects", "gammaA")
-stanMod_normal = stan(file = 'simulationTesting/mvnGamma_estSigma_index.stan',data = spatglm_data, 
+stanMod_normal = stan(file = 'stan_models/mvnGamma_estSigma_index.stan',data = spatglm_data, 
 verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, pars = spatglm_pars)
 yearEff_normal = extract(stanMod_normal)[["yearEffects"]]
 ```
