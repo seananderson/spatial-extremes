@@ -57,8 +57,7 @@ td$station = paste(td$longitude, td$latitude)
 #td = td[td$common_name==sort(unique(td$common_name))[288],]
 #td = td[td$year%in%c(1951:1960) & td$month%in%c(3),]
 
-
-td = td[td$month==4 & td$year%in%c(1990:2002), ]
+td = td[td$month==4 & td$year%in%c(1989:2007), ]
 
 # try to calculate species diversity
 simp.div = function(x) {
@@ -68,11 +67,12 @@ g = group_by(td, station, year, common_name) %>%
   summarize(x = sum(as.numeric(larvae_10m2))) %>% 
   group_by(year, station) %>% 
   summarize(div = simp.div(x))
-  
-td = left_join(td, g)
 
-ggplot(td, aes(longitude, latitude, color = div)) + geom_point() + facet_wrap(~year)
+g$lon = as.numeric(unlist(lapply(strsplit(g$station," "), getElement,1)))
+g$lat = as.numeric(unlist(lapply(strsplit(g$station," "), getElement,2)))
 
+ggplot(g, aes(lon, lat, color=log(div))) + geom_point() + facet_wrap(~year)
+d = g
 ```
 
 # Prep data for input to STAN
@@ -80,7 +80,7 @@ ggplot(td, aes(longitude, latitude, color = div)) + geom_point() + facet_wrap(~y
 ```{r prep_data}
 nKnots = 30
 nLocs = nrow(d)
-locs = cbind(as.numeric(d$longitude),as.numeric(d$latitude))
+locs = cbind(as.numeric(d$lon),as.numeric(d$lat))
 
 # cluster analysis to determine knot locations
 knots = jitter(pam(locs,nKnots)$medoids)
@@ -92,7 +92,7 @@ distAll = as.matrix(dist(rbind(locs, knots)))^2
 # this is the transpose of the lower left corner
 distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
 
-Y = as.numeric(d$density)
+Y = as.numeric(d$div)
 yearID = as.numeric(as.factor(d$year))
 stationID = seq(1,nrow(d))
 
@@ -101,7 +101,7 @@ spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)
 spatglm_pars = c("scaledf","yearEffects", "CV")
 
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
-stanMod_gamma = stan(file = 'simulationTesting/mvtGamma_estSigma_index_yr.stan',data = spatglm_data, 
+stanMod_gamma = stan(file = 'stan_models/mvtGamma_estSigma_index_yr.stan',data = spatglm_data, 
 verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, pars = spatglm_pars)
 
 yearEff_gamma = extract(stanMod_gamma)[["yearEffects"]]
