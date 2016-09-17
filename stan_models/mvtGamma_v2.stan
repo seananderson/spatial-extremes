@@ -13,7 +13,7 @@ parameters {
   real<lower=0> gp_scale;
   real<lower=0> gp_sigmaSq;
   #real<lower=0> jitter_sq;
-  real<lower=0> scaledf;
+  real<lower=1> scaledf;
   real<lower=0> gammaA;
   vector[nKnots] spatialEffectsKnots[nT];
 }
