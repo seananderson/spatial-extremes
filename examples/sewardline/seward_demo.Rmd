@@ -5,8 +5,6 @@ output:
     fig_caption: yes
 ---
 
-# This isn't working yet -- in hindsight this dataset may not be large enough. MVT-gamma model seems to converge, MVN-gamma does not? 
-
 ```{r chunkSet, cache=FALSE, echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
 library(cluster)
 library(mvtnorm)
@@ -27,18 +25,21 @@ d = read.csv("examples/sewardline/LTOP_Seward_merged_stages.csv")
 
 # start with most common spp, Oithona.spinirostris
 # background on biology: http://plankt.oxfordjournals.org/content/38/3/703.short?rss=1
-#d = d[,c("cruiseID","dateTime","stationID","consecStationNum","lat","lon","sonicDepth","towDepth","gear","ringDiam","meshSize","towType","AF.Animalia.Arthropoda.Crustacea.Maxillopoda.Copepoda.Neocopepoda.Cyclopoida.N.A.N.A.Oithonidae.Oithona.similis")]
-#names(d)[which(names(d)%in%c("AF.Animalia.Arthropoda.Crustacea.Maxillopoda.Copepoda.Neocopepoda.Cyclopoida.N.A.N.A.Oithonidae.Oithona.similis"))] = "density"
 
-d = d[,c("cruiseID","dateTime","stationID","consecStationNum","lat","lon","sonicDepth","towDepth","gear","ringDiam","meshSize","towType","chloropyllA")]
-names(d)[which(names(d)%in%c("chloropyllA"))] = "density"
+#targetspp = "nauplii.Animalia.Arthropoda.Crustacea.Maxillopoda.Copepoda.Neocopepoda.Calanoida.N.A.N.A.Calanidae.Calanus.marshallae"
+#d = d[,c("cruiseID","dateTime","stationID","consecStationNum","lat","lon","sonicDepth","towDepth","gear","ringDiam","meshSize","towType",targetspp)]
+#names(d)[which(names(d)%in%c(targetspp))] = "density"
+
+targetspp = "chloropyllA"
+d = d[,c("cruiseID","dateTime","stationID","consecStationNum","lat","lon","sonicDepth","towDepth","gear","ringDiam","meshSize","towType",targetspp)]
+names(d)[which(names(d)%in%c(targetspp))] = "density"
 d = d[which(d$density > 0),]
 
 d$year = as.numeric(substr(d$dateTime,1,4))
 d$month = as.numeric(substr(d$dateTime,6,7))
 
 # restrict data to may samples only -- continuous in most years
-d = d[which(d$month%in%c(3,4,5) & d$year < 2007),]
+d = d[which(d$month%in%c(5) & d$year < 2007),]
 ```
 
 # Prep data for input to STAN
