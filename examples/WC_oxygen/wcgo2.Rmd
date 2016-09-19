@@ -33,6 +33,7 @@ d = d[which(d$haul_latitude_dim.latitude_in_degrees > 46.260987),]
 #which(locs[,2] < 46.260987 & locs[,2] > 41.99)
 # only use data from WA coast
 
+ggplot(d, aes(haul_longitude_dim.longitude_in_degrees, haul_latitude_dim.latitude_in_degrees, color=o2_at_gear_ml_per_l_der)) + geom_point() + facet_wrap(~year)
 ```
 
 # Prep data for input to STAN
@@ -67,11 +68,11 @@ stationID = seq(1,nrow(d))
 cov = log(d$seafloor_depth_m_der)
   
 # create list for STAN
-spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)), "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y, "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq, "cov"=cov)
+spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)), "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y, "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq, "x"=cov)
 spatglm_pars = c("scaledf","yearEffects", "CV", "gp_sigmaSq", "gp_scale")
 
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
-stanMod_gamma = stan(file = 'stan_models/mvtGamma_estSigma_index_cov.stan',data = spatglm_data, 
+stanMod_gamma = stan(file = 'stan_models/mvtGamma_estSigma_index_cov_yr_ar1.stan',data = spatglm_data, 
 verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, pars = spatglm_pars)
 
 yearEff_gamma = extract(stanMod_gamma)[["yearEffects"]]

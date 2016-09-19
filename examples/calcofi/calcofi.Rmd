@@ -31,19 +31,21 @@ td = tabledap(out, fields = c('time','longitude', 'latitude', 'larvae_10m2', 'co
 
 td$month = as.numeric(substr(td$time,6,7))
 td$year = as.numeric(substr(td$time,1,4))
+td$day = as.numeric(substr(td$time,9,10))
+td$jday = date::mdy.date(td$month,td$day,td$year) - date::mdy.date(1,1,td$year)
 td$station = paste(td$longitude, td$latitude)
 
 # start with lanternfishes
 #td = td[td$common_name==sort(unique(td$common_name))[234],]
-#td = td[td$year%in%c(1957:1966) & td$month%in%c(4,5),]
+#td = td[td$year%in%c(1957:1966) & td$month%in%c(4),]
 
 # bocaccio -- better than lanternfish
-#td = td[td$common_name==sort(unique(td$common_name))[68],]
-#td = td[td$year%in%c(1951:1966) & td$month%in%c(1,2,3),]
+td = td[td$common_name==sort(unique(td$common_name))[68],]
+td = td[td$year%in%c(1951:1966) & td$month%in%c(1,2,3),]
 
 # pacific sardine -- this is probably the best example so far
-td = td[td$common_name==sort(unique(td$common_name))[330],]
-td = td[td$year%in%c(1994:2007) & td$month%in%c(4),]
+#td = td[td$common_name==sort(unique(td$common_name))[330],]
+#td = td[td$year%in%c(1951:1966) & td$month%in%c(4),]
 
 # pacific mackerel also does ok (like sardine). CV a little lower. For mackerel, all 
 # year effects are essentially the same. But constant model doesn't improve things or change
@@ -58,14 +60,14 @@ td = td[td$year%in%c(1994:2007) & td$month%in%c(4),]
 #td = td[td$common_name==sort(unique(td$common_name))[288],]
 #td = td[td$year%in%c(1951:1960) & td$month%in%c(3),]
 
-g = group_by(td, station, year, common_name) %>% 
-  summarize(x = mean(as.numeric(larvae_10m2)))
+#g = group_by(td, station, year, common_name) %>% 
+#  summarize(x = mean(as.numeric(larvae_10m2)))
 
-g$lon = as.numeric(unlist(lapply(strsplit(g$station," "), getElement,1)))
-g$lat = as.numeric(unlist(lapply(strsplit(g$station," "), getElement,2)))
-names(g)[which(names(g)=="x")]="density"
-d = g
-ggplot(g, aes(lon, lat, color = log(x))) + geom_point() + facet_wrap(~year)
+#g$lon = as.numeric(unlist(lapply(strsplit(g$station," "), getElement,1)))
+#g$lat = as.numeric(unlist(lapply(strsplit(g$station," "), getElement,2)))
+#names(g)[which(names(g)=="x")]="density"
+#d = g
+#ggplot(g, aes(lon, lat, color = log(density))) + geom_point() + facet_wrap(~year)
 
 ```
 
@@ -96,7 +98,7 @@ spatglm_pars = c("scaledf","yearEffects", "CV")
 
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
 stanMod_gamma = stan(file = 'stan_models/mvtGamma_estSigma_index_yr.stan',data = spatglm_data, 
-verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, pars = spatglm_pars)
+verbose = TRUE, chains = 3, thin = 1, warmup = 100, iter = 200, pars = spatglm_pars)
 
 yearEff_gamma = extract(stanMod_gamma)[["yearEffects"]]
 
