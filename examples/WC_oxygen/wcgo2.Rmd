@@ -7,6 +7,9 @@ output:
 
 # This is an example using oxygen data from the coast of Washington in the trawl survey -- index of hypoxia, etc. 
 
+Recent paper by keller et al. here:
+http://onlinelibrary.wiley.com/doi/10.1111/fog.12100/abstract
+
 ```{r chunkSet, cache=FALSE, echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
 library(cluster)
 library(mvtnorm)
@@ -69,20 +72,20 @@ cov = log(d$seafloor_depth_m_der)
   
 # create list for STAN
 spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)), "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y, "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq, "x"=cov)
-spatglm_pars = c("scaledf","yearEffects", "CV", "gp_sigmaSq", "gp_scale")
+spatglm_pars = c("scaledf","yearEffects", "CV", "gp_sigmaSq", "gp_scale", "year_sigma","ar","B","spatialEffectsKnots")
 
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
 stanMod_gamma = stan(file = 'stan_models/mvtGamma_estSigma_index_cov_yr_ar1.stan',data = spatglm_data, 
-verbose = TRUE, chains = 5, thin = 1, warmup = 1000, iter = 2000, pars = spatglm_pars)
+verbose = TRUE, chains = 3, thin = 1, warmup = 1000, iter = 2000, pars = spatglm_pars)
 
 save.image("examples/WC_oxygen/stanMod_gamma.Rdata")
 
-yearEff_gamma = extract(stanMod_gamma)[["yearEffects"]]
+spatglm_pars = c("yearEffects", "CV", "gp_sigmaSq", "gp_scale", "year_sigma","ar","B","spatialEffectsKnots")
 
-spatglm_pars = c("yearEffects", "gammaA")
-stanMod_normal = stan(file = 'stan_models/mvnGamma_estSigma_index.stan',data = spatglm_data, 
-verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, pars = spatglm_pars)
-yearEff_normal = extract(stanMod_normal)[["yearEffects"]]
+stanMod_normal = stan(file = 'stan_models/mvnGamma_estSigma_index_cov_yr_ar1.stan',data = spatglm_data, 
+verbose = TRUE, chains = 3, thin = 1, warmup = 1000, iter = 2000, pars = spatglm_pars)
+
+save.image("examples/WC_oxygen/stanMod_gamma.Rdata")
 ```
 
 ```{r}
