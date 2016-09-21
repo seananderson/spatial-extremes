@@ -37,6 +37,9 @@ d = d[which(d$haul_latitude_dim.latitude_in_degrees > 46.260987),]
 # only use data from WA coast
 
 ggplot(d, aes(haul_longitude_dim.longitude_in_degrees, haul_latitude_dim.latitude_in_degrees, color=o2_at_gear_ml_per_l_der)) + geom_point() + facet_wrap(~year)
+
+#library(mgcv)
+#g = gam(log(o2_at_gear_ml_per_l_der) ~ #te(haul_longitude_dim.longitude_in_degrees, #haul_latitude_dim.latitude_in_degrees), data=d)
 ```
 
 # Prep data for input to STAN
