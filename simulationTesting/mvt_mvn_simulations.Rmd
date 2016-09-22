@@ -96,7 +96,6 @@ while (nu_big) {
   # parameters to monitor
   spatglm_pars = c("gp_scale", "gp_sigmaSq", "scaledf")
 
-  # fit the model
   stanMod = stan(file = 'stan_models/mvtSimulate.stan',data = spatglm_data, 
   verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
   pars = spatglm_pars)  
@@ -215,5 +214,34 @@ dev.off()
 
 ```
 
+```{r}
+nDataPoints = 100
+grid = cbind("lon" = runif(nDataPoints, 5, 15), 
+  "lat" = runif(nDataPoints, 5, 15))
+nLocs = dim(grid)[1]
+set.seed(1)
+dataSim <-simulateData(nKnots = 30, nDraws = 20, gp_scale = 0.5, mvt = TRUE, df = 1)
+# generate data with observation error
+df = data.frame("sd"=seq(0.15), "est_df"=NA, "low"=NA,"hi"=NA)
+i=1
+  Y = dataSim$proj + matrix(rnorm(ncol(dataSim$proj) * nrow(dataSim$proj), sd = df$sd[i]), nrow(dataSim$proj), ncol(dataSim$proj))
+  
+  # create list for STAN
+  spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = Y, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
+  spatglm_pars = c("scaledf")
+  # estimate model # 155 sec
+  stanMod = stan(file = 'stan_models/mvtNormal_estSigma.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+
+  # mvn - chi square trick without cholesky is 182 sec
+  stanMod = stan(file = 'stan_models/mvnNormal_trans.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars)
+  
+  stanMod = stan(file = 'stan_models/mvnNormal_trans.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
+  pars = spatglm_pars) 
+```
 
 
