@@ -27,7 +27,7 @@ transformed parameters {
 	for(i in 1:nKnots) {
 		muZeros[i] = 0;
 	}
-	SigmaOffDiag = SigmaOffDiag * inverse(SigmaKnots); # multiply and invert once, used below
+	SigmaOffDiag = SigmaOffDiag * inverse_spd(SigmaKnots); # multiply and invert once, used below
 	for(i in 1:nT) {
   spatialEffects[i] = SigmaOffDiag * spatialEffectsKnots[i];
 	}
@@ -38,7 +38,7 @@ model {
   gp_sigmaSq ~ cauchy(0,5);
   sigma ~ cauchy(0,5);
   scaledf ~ exponential(0.01);
-  W ~ inv_gamma(scaledf/2, gp_sigmaSq*scaledf/2);
+  W ~ inv_gamma(scaledf/2, scaledf/2);
 
   for(t in 1:nT) {
   spatialEffectsKnots[t] ~ multi_normal(muZeros, W[t]*SigmaKnots);

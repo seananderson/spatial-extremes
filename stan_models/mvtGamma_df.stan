@@ -29,7 +29,7 @@ transformed parameters {
 	for(i in 1:nKnots) {
 		muZeros[i] = 0;
 	}
-  spatialEffects[1] = SigmaOffDiag * inverse(SigmaKnots) * (spatialEffectsKnots[1]);
+  spatialEffects[1] = SigmaOffDiag * inverse_spd(SigmaKnots) * (spatialEffectsKnots[1]);
 }
 model {
   spatialEffectsKnots[1] ~ multi_student_t(dft, muZeros, SigmaKnots);

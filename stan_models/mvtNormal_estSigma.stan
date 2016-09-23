@@ -17,7 +17,8 @@ parameters {
 transformed parameters {
 	vector[nKnots] muZeros;
 	vector[nLocs] spatialEffects[nT];
-  matrix[nKnots, nKnots] SigmaKnots;
+  #matrix[nKnots, nKnots] SigmaKnots;
+  cov_matrix[nKnots] SigmaKnots;
   matrix[nLocs,nKnots] SigmaOffDiag;
   matrix[nLocs,nKnots] invSigmaKnots;
   SigmaKnots = gp_sigmaSq * exp(-gp_scale * distKnotsSq);# cov matrix between knots
@@ -25,7 +26,7 @@ transformed parameters {
 	for(i in 1:nKnots) {
 		muZeros[i] = 0;
 	}
-	SigmaOffDiag = SigmaOffDiag * inverse(SigmaKnots); # multiply and invert once, used below
+	SigmaOffDiag = SigmaOffDiag * inverse_spd(SigmaKnots); # multiply and invert once, used below
 	for(i in 1:nT) {
   spatialEffects[i] = SigmaOffDiag * spatialEffectsKnots[i];
 	}

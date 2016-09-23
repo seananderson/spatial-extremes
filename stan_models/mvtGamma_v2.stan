@@ -47,7 +47,7 @@ model {
 
   # use multivariate t dist (Ben Goodrich et al frown on this approach)
   spatialEffectsKnots[1] ~ multi_student_t(3, muZeros, SigmaKnots);
-  spatialEffects[1] = SigmaOffDiag * inverse(SigmaKnots) * (spatialEffectsKnots[1] );
+  spatialEffects[1] = SigmaOffDiag * inverse_spd(SigmaKnots) * (spatialEffectsKnots[1] );
 
   # priors on parameters for covariances, etc
   gp_scale ~ cauchy(0,5);

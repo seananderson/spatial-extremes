@@ -23,7 +23,7 @@ transformed parameters {
 
   SigmaKnots = gp_sigmaSq * exp(-gp_scale * distKnotsSq);# cov matrix between knots
   SigmaOffDiag = gp_sigmaSq * exp(-gp_scale * distKnots21Sq);# cov matrix between knots and projected
-	SigmaOffDiag = SigmaOffDiag * inverse(SigmaKnots); # multiply and invert once, used below
+	SigmaOffDiag = SigmaOffDiag * inverse_spd(SigmaKnots); # multiply and invert once, used below
 
 	for(t in 1:nT) {
   spatialEffects[t] = SigmaOffDiag * spatialEffectsKnots[t];
