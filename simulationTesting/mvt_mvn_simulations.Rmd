@@ -229,7 +229,7 @@ i=1
   # create list for STAN
   spatglm_data = list("nKnots"=nrow(dataSim$knots), "nLocs"=nLocs, "nT" = nrow(dataSim$reKnots), "y" = Y, "distKnotsSq" = dataSim$distKnotsSq, "distKnots21Sq" = dataSim$distKnots21Sq)
   spatglm_pars = c("scaledf")
-  # estimate model # 155 sec
+  # estimate model # 155 sec -- but using inverse_spd speeds this up!
   stanMod = stan(file = 'stan_models/mvtNormal_estSigma.stan',data = spatglm_data, 
   verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
@@ -239,9 +239,6 @@ i=1
   verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
   pars = spatglm_pars)
   
-  stanMod = stan(file = 'stan_models/mvnNormal_trans.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 1, thin = 1, warmup = 300, iter = 600, 
-  pars = spatglm_pars) 
 ```
 
 
