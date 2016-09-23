@@ -9,9 +9,9 @@ nLocs = dim(grid)[1]
 set.seed(1)
 dataSim <-simulateData(nKnots = 30, nDraws = 20, gp_scale = 0.5, mvt = TRUE, df = 1)
 
-allknots = seq(5, 35, 5)
+allknots = seq(5, 50, 5)
 secs = 0
-for(i in 1:length(allknots)) {
+for(i in 8:length(allknots)) {
 
   ptm = proc.time()
   # generate data with observation error
@@ -28,3 +28,8 @@ for(i in 1:length(allknots)) {
   secs[i] = (proc.time() - ptm)[3]
 }
 
+pdf("simulationTesting/cost_of_spatial_dimension.pdf")
+par(mfrow=c(2,1),mai=c(0.8,0.8,0.1,0.1), mgp=c(2,1,0))
+plot(allknots, secs, xlab="Spatial dimension (# knots)", ylab = "Seconds", type="b",lwd=3)
+plot(allknots, log(secs), xlab="Spatial dimension (# knots)", ylab = "Log(seconds)", type="b",lwd=3)
+dev.off()

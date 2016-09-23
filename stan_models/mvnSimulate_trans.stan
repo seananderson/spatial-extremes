@@ -26,8 +26,8 @@ model {
   scaledf ~ exponential(0.01);
 
   # commented out line gives same result
-  #W ~ scaled_inv_chi_square(scaledf,1); # see discussion https://groups.google.com/forum/#!topic/stan-users/0F0O4hfHA8g
-  W ~ inv_gamma(scaledf/2, gp_sigmaSq*scaledf/2);
+  W ~ scaled_inv_chi_square(scaledf,1); # see discussion https://groups.google.com/forum/#!topic/stan-users/0F0O4hfHA8g
+  #W ~ inv_gamma(scaledf/2, gp_sigmaSq*scaledf/2);
   for(t in 1:nT) {
   y[t] ~ multi_normal(muZeros, W[t]*SigmaKnots);
   }

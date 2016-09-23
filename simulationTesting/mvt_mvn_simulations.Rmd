@@ -100,6 +100,10 @@ while (nu_big) {
   verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
   pars = spatglm_pars)  
   
+  stanMod_trans = stan(file = 'stan_models/mvnSimulate_trans.stan',data = spatglm_data, 
+  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
+  pars = spatglm_pars) 
+  
   #par(mfrow = c(2,1), mai=c(0.5,0.5,0.1,0.1))
   #hist(extract(stanMod, permuted = TRUE)[["scaledf"]], main="MVT")
   #hist(extract(stanMod_trans, permuted = TRUE)[["scaledf"]], main="MVN.transformed")  
