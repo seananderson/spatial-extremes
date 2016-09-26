@@ -10,8 +10,10 @@ I found a direct link to the snow crab survey data from this site: <https://ecol
 Let's try downloading it from within R:
 
 ```{r}
-url <- "http://www.iobis.org/geoserver/OBIS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=OBIS:points_ex&outputFormat=csv&VIEWPARAMS=where:resource_id=2348"
-download.file(url = url, destfile = "examples/snow-crab/crab.csv")
+if (!file.exists("examples/snow-crab/crab.csv")) {
+  url <- "http://www.iobis.org/geoserver/OBIS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=OBIS:points_ex&outputFormat=csv&VIEWPARAMS=where:resource_id=2348"
+  download.file(url = url, destfile = "examples/snow-crab/crab.csv")
+}
 ```
 
 Note: "Abundance can only be used as a relative indicator of absolute abundance because the trawl vessel and gear varies througout the dataset."
