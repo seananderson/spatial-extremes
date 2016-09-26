@@ -1,0 +1,85 @@
+---
+title: "Gulf of St. Lawrence Snow Crab"
+author: "Sean Anderson"
+date: "September 26, 2016"
+output: html_document
+---
+
+I found a direct link to the snow crab survey data from this site: <https://ecologicaldata.org/wiki/canadian-snow-crab-trawl>
+
+Let's try downloading it from within R:
+
+```{r}
+url <- "http://www.iobis.org/geoserver/OBIS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=OBIS:points_ex&outputFormat=csv&VIEWPARAMS=where:resource_id=2348"
+download.file(url = url, destfile = "examples/snow-crab/crab.csv")
+```
+
+Note: "Abundance can only be used as a relative indicator of absolute abundance because the trawl vessel and gear varies througout the dataset."
+
+"No survey was conducted in 1996. 
+
+From OBIS metadata- "Throughout the years, the snow crab survey has covered an ever widening range of the Southern Gulf of St. Lawrence area. In 1989 for instance, there were 155 stations mostly within Area 12. Since then the survey has grown to cover all fishing grounds in the Southern Gulf of St. Lawrence (Area 12, E, F, and 19) with over 300 stations.
+
+Three successive boats have been used since the first survey. , The side trawler 'Emy Serge' from 1988 to 1998, followed by two stern trawlers, the 'Den C Martin' from1999 to 2002, and the 'Marco Michel' from 2003 to present. No boat comparisons were completed during the transitions. Because the fishing efficiency of the gear used is not yet known for snow crab, abundance is considered as relative compared to the absolute abundance."
+
+"Wade, Elmer J. Snow crab research trawl survey database (Southern Gulf of St. Lawrence, Gulf region, Canada) from 1988 to 2010. OBIS Canada, Bedford Institute of Oceanography, Dartmouth, Nova Scotia, Canada, 2011, Version 1, Digital. Retrieved from http://www.iobis.org"
+
+```{r}
+d <- readr::read_csv("examples/snow-crab/crab.csv")
+```
+
+Look at the data:
+
+```{r}
+library(tidyverse)
+names(d)
+nrow(d)
+unique(d$resource_citation)
+range(d$latitude)
+range(d$longitude)
+select(d, contains("day")) %>% as.data.frame() %>% head()
+select(d, contains("date"))
+select(d, contains("depth"))
+select(d, contains("temperature"))
+select(d, contains("year"))
+select(d, contains("collected")) %>% as.data.frame() %>% head()
+select(d, contains("observed"), contains("size"))
+select(d, contains("lifestage"))
+```
+
+Maybe the column `cs6m` contains something useful?
+
+```{r}
+head(d$cs6m)
+```
+
+Let's simplify the data frame by keeping only the columns we need and creating some derived columns.
+
+```{r}
+dat <- select(d, observedindividualcount, longitude, latitude, depth, 
+  temperature, oxygen, salinity, 
+  yearcollected, monthcollected, daycollected)
+glimpse(dat)
+
+dat <- dat %>%
+  mutate(date = lubridate::ymd(paste(yearcollected, monthcollected, daycollected))) %>%
+  rename(year = yearcollected, month = monthcollected, day = daycollected)
+glimpse(dat)
+```
+
+TODO: Probably should convert to UTMs. Not sure what a good projection to use here would be.
+
+Here's my quick attempts to plot number of individuals per trap with hexagon binning.
+
+I'm assuming that each row of data represents a single trap, but I'm not entirely sure. Otherwise, I'm not sure how we figure out effort. But the following plot doesn't really resemble Fig. 5 in Swain and Wade (2002).
+
+For one thing, I'm not sure what these data represent in terms of carapace width. Swain and Wade (2002) used >= 95 mm as a measure of adult abundance. 
+
+```{r}
+ggplot(dat, aes(longitude, latitude, z = observedindividualcount)) + 
+  stat_summary_hex(fun = function(x) log(sum(x) / length(x)), bins = 10) +
+  facet_wrap(~year) +
+   viridis::scale_fill_viridis(limits = c(0, 6))
+```
+
+

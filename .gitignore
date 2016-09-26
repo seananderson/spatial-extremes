@@ -24,3 +24,5 @@ visualize-t-rf.html
 *.so
 
 *.o
+
+examples/snow-crab/crab.csv
