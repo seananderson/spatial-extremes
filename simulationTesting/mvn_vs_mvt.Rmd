@@ -171,14 +171,28 @@ while (nu_big) {
   spatglm_pars = c("gp_scale", "gp_sigmaSq", "scaledf")
 
   # fit the model
-  stanMod = stan(file = 'simulationTesting/mvtSimulate.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
-  pars = spatglm_pars)  
+  time_dt <- system.time({stanMod = stan(file = 'stan_models/mvtSimulate.stan',data = spatglm_data,
+  verbose = TRUE, chains = 1, thin = 1, warmup = 1000, iter = 2000) })
+  #pars = spatglm_pars)
  
-  spatglm_pars = c("gp_scale", "gp_sigmaSq", "scaledf")
-  stanMod_trans = stan(file = 'simulationTesting/mvnSimulate_trans.stan',data = spatglm_data, 
-  verbose = TRUE, chains = 4, thin = 1, warmup = 500, iter = 1000, 
-  pars = spatglm_pars)
+  time_mix <- system.time({spatglm_pars = c("gp_scale", "gp_sigmaSq", "scaledf")
+  stanMod_trans = stan(file = 'stan_models/mvnSimulate_trans.stan',data = spatglm_data,
+  verbose = TRUE, chains = 1, thin = 1, warmup = 1000, iter = 2000) })
+  #pars = spatglm_pars)
+
+  b_dt <- broom::tidy(stanMod, ess = T, estimate.method = "median", conf.int = T)
+  dplyr::filter(b_dt, term == "scaledf")$ess / time_dt[[1]]
+  min(b_dt$ess) / time_dt[[1]]
+
+  b_mix <- broom::tidy(stanMod_trans, ess = T, estimate.method = "median", conf.int = T)
+  dplyr::filter(b_mix, term == "scaledf")$ess / time_mix[[1]]
+  min(b_mix$ess) / time_mix[[1]]
+
+  dplyr::filter(b_dt, term == "scaledf")
+  dplyr::filter(b_mix, term == "scaledf")
+
+  time_dt
+  time_mix
   
   par(mfrow = c(2,1), mai=c(0.5,0.5,0.1,0.1))
   hist(extract(stanMod, permuted = TRUE)[["scaledf"]], main="MVT")
