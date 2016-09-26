@@ -20,3 +20,7 @@ mvtGamma.rda
 visualize-t-rf.html
 
 *.rda
+
+*.so
+
+*.o
