@@ -71,9 +71,9 @@ glimpse(dat)
 
 TODO: Probably should convert to UTMs. Not sure what a good projection to use here would be.
 
-Here's my quick attempts to plot number of individuals per trap with hexagon binning.
+Here's my quick attempts to plot log(number of individuals per trawl) with hexagon binning.
 
-I'm assuming that each row of data represents a single trap, but I'm not entirely sure. Otherwise, I'm not sure how we figure out effort. But the following plot doesn't really resemble Fig. 5 in Swain and Wade (2002).
+I'm assuming that each row of data represents a single trawl. But the following plot doesn't really resemble Fig. 5 in Swain and Wade (2002).
 
 For one thing, I'm not sure what these data represent in terms of carapace width. Swain and Wade (2002) used >= 95 mm as a measure of adult abundance. 
 
