@@ -37,7 +37,7 @@ transformed parameters {
 	for(i in 1:nT) {
   spatialEffects[i] = SigmaOffDiag * spatialEffectsKnots[i];
 	}
-	gammaA <- 1/(CV*CV);
+	gammaA = 1/(CV*CV);
 }
 model {
   # priors on parameters for covariances, etc
@@ -46,7 +46,7 @@ model {
   #gamma.a = 1/(CV^2), CV = sqrt(1/gammaA)
   #gammaA ~ cauchy(0,5);
   CV ~ lognormal(-2,0.2);
-  scaledf ~ exponential(0.01);
+  scaledf ~ gamma(2,0.1);
   for(t in 1:nT) {
   spatialEffectsKnots[t] ~ multi_student_t(scaledf, muZeros, SigmaKnots);
   }

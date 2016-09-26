@@ -23,7 +23,7 @@ model {
   # priors on parameters for covariances, etc
   gp_scale ~ cauchy(0,5);
   gp_sigmaSq ~ cauchy(0,5);
-  scaledf ~ exponential(0.01);
+  scaledf ~ gamma(2,0.1);
 
   # commented out line gives same result
   W ~ scaled_inv_chi_square(scaledf,1); # see discussion https://groups.google.com/forum/#!topic/stan-users/0F0O4hfHA8g
