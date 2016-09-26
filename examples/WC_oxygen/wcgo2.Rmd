@@ -32,7 +32,8 @@ d = d[,c("haul_latitude_dim.latitude_in_degrees","haul_longitude_dim.longitude_i
 
 d$year = as.numeric(d$date_dim.year)
 
-d = d[which(d$haul_latitude_dim.latitude_in_degrees > 46.260987),]
+#d = d[which(d$haul_latitude_dim.latitude_in_degrees > 46.260987),]
+d = d[which(d$haul_latitude_dim.latitude_in_degrees > 42),]
 #which(locs[,2] < 46.260987 & locs[,2] > 41.99)
 # only use data from WA coast
 
@@ -45,7 +46,7 @@ ggplot(d, aes(haul_longitude_dim.longitude_in_degrees, haul_latitude_dim.latitud
 # Prep data for input to STAN
 
 ```{r prep_data}
-nKnots = 30
+nKnots = 75
 nLocs = nrow(d)
 locs = cbind(d$haul_longitude_dim.longitude_in_degrees, d$haul_latitude_dim.latitude_in_degrees)
 
