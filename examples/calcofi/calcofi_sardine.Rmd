@@ -34,8 +34,8 @@ td$year = as.numeric(substr(td$time,1,4))
 td$station = paste(td$longitude, td$latitude)
 
 # pacific sardine -- this is probably the best example so far
-#td = td[td$common_name==sort(unique(td$common_name))[330],]
-#td = td[td$year%in%c(1951:1960) & td$month%in%c(5),]
+td = td[td$common_name==sort(unique(td$common_name))[330],]
+td = td[td$year%in%c(1951:1965),]
 
 # pacific mackerel also does ok (like sardine). CV a little lower. For mackerel, all 
 # year effects are essentially the same. But constant model doesn't improve things or change
@@ -50,26 +50,15 @@ td$station = paste(td$longitude, td$latitude)
 #td = td[td$common_name==sort(unique(td$common_name))[288],]
 #td = td[td$year%in%c(1951:1960) & td$month%in%c(3),]
 
-td = td[td$month==4 & td$year%in%c(1989:2007), ]
-
-# try to calculate species diversity
-simp.div = function(x) {
-  1/sum((x/sum(x))^2)
-}
 library(dplyr)
-g = group_by(td, station, year, common_name) %>% 
-  summarize(x = sum(as.numeric(larvae_10m2))) %>% 
-  group_by(year, station) %>% 
-  summarize(div = simp.div(x))
+g = group_by(td, station, year, month) %>% 
+  summarize(x = sum(as.numeric(larvae_10m2)))
 
 g$lon = as.numeric(unlist(lapply(strsplit(g$station," "), getElement,1)))
 g$lat = as.numeric(unlist(lapply(strsplit(g$station," "), getElement,2)))
 
-g = g[which(g$lon < -117.3 & g$lon > -125.6933 & g$lat > 29.83 & g$lat < 38.18),]
-
-g = g[g$year %in% 1986:2002,]
-ggplot(g, aes(lon, lat, color=log(div))) + geom_point(alpha=0.3) + facet_wrap(~year)
-d = g
+ggplot(g[g$month%in%c(3,4,5),], aes(lon, lat)) + geom_point(alpha=0.3) + facet_wrap(~year)
+d = g[g$month%in%c(3,4,5),]
 ```
 
 # Prep data for input to STAN
@@ -89,7 +78,7 @@ distAll = as.matrix(dist(rbind(locs, knots)))^2
 # this is the transpose of the lower left corner
 distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
 
-Y = as.numeric(d$div)
+Y = as.numeric(d$x)
 yearID = as.numeric(as.factor(d$year))
 stationID = seq(1,nrow(d))
 
@@ -100,6 +89,7 @@ spatglm_pars = c("scaledf","yearEffects", "CV", "gp_sigmaSq", "gp_scale", "year_
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
 stanMod_gamma = stan(file = 'stan_models/mvtGamma_estSigma_index_cov_yr_ar1.stan',data = spatglm_data, 
 verbose = TRUE, chains = 3, thin = 1, warmup = 300, iter = 600, pars = spatglm_pars)
+
 
 yearEff_gamma = extract(stanMod_gamma)[["yearEffects"]]
 
