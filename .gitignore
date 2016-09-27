@@ -21,8 +21,34 @@ visualize-t-rf.html
 
 *.rda
 
+<<<<<<< Updated upstream
 *.so
 
 *.o
 
 examples/snow-crab/crab.csv
+=======
+simulationTesting/mvn_vs_mvt_files/figure-latex/unnamed-chunk-1-1.pdf
+
+simulationTesting/mvn_vs_mvt_cache/latex/__packages
+
+*.RData
+
+*.rdb
+
+*.rdx
+
+simulationTesting/mvn_vs_mvt_files/figure-latex/check-projection-1.pdf
+
+simulationTesting/mvn_vs_mvt_files/figure-latex/stan_mvtGamma-1.pdf
+
+simulationTesting/mvn_vs_mvt_files/figure-latex/stan_mvtGamma1-1.pdf
+
+simulationTesting/mvn_vs_mvt_files/figure-latex/stan_mvtGamma50-1.pdf
+
+simulationTesting/mvn_vs_mvt_files/figure-latex/stan_mvtNormal-1.pdf
+
+simulationTesting/mvn_vs_mvt_files/figure-latex/stan_mvtNormal2-1.pdf
+
+simulationTesting/mvn_vs_mvt.pdf
+>>>>>>> Stashed changes
