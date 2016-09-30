@@ -85,3 +85,29 @@ stanMod_norm = stan(file = 'stan_models/mvtNorm_estSigma_index_yr_ar1.stan',data
   verbose = TRUE, chains = 1, thin = 1, warmup = 500, iter = 1000, pars = spatglm_pars)
 
 saveRDS(stanMod_norm,"stanMod_norm.rds")
+
+# check posterior / priors
+stanMod_norm <- readRDS("examples/OR_blooms/stanMod_norm.rds")
+
+e <- extract(stanMod_norm)
+names(e)
+
+plot_prior <- function(par_name, dens_fun = dnorm, xlim = c(0, 5), ...) {
+  hist(e[[par_name]], xlim = xlim, main = par_name, xlab = "")
+  xx <- seq(xlim[1], xlim[2], length.out = 200)
+  par(new = TRUE)
+  yy <- dens_fun(xx, ...)
+  plot(xx, yy, type = "l", ylim = c(0, max(yy)), axes = FALSE,
+    ylab = "", xlab = "", xlim = xlim)
+}
+
+pdf("examples/OR_blooms/or-blooms-priors.pdf", width = 8, height = 4)
+par(mfrow = c(2, 3))
+par(cex = 0.8, mar = c(3, 3, 1, 1))
+plot_prior("scaledf", dgamma, shape = 2, scale = 1/0.1, xlim = c(1, 40))
+plot_prior("gp_sigmaSq", dnorm, xlim = c(0, 5))
+plot_prior("sigma", dnorm, xlim = c(0, 5))
+plot_prior("ar", dnorm, xlim = c(-2, 2))
+plot_prior("gp_scale", dnorm, xlim = c(0, 5))
+plot_prior("year_sigma", dnorm, xlim = c(0, 5))
+dev.off()
