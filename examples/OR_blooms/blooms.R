@@ -91,13 +91,15 @@ stanMod_norm <- readRDS("examples/OR_blooms/stanMod_norm.rds")
 
 e <- extract(stanMod_norm)
 names(e)
+dt2 <- function(x, df, mu, a) 1/a * dt((x - mu)/a, df)
 
-plot_prior <- function(par_name, dens_fun = dnorm, xlim = c(0, 5), ...) {
+plot_prior <- function(par_name, dens_fun = dnorm, xlim = c(0, 5),
+  xtrans = I, ...) {
   hist(e[[par_name]], xlim = xlim, main = par_name, xlab = "")
   xx <- seq(xlim[1], xlim[2], length.out = 200)
   par(new = TRUE)
   yy <- dens_fun(xx, ...)
-  plot(xx, yy, type = "l", ylim = c(0, max(yy)), axes = FALSE,
+  plot(xtrans(xx), yy, type = "l", ylim = c(0, max(yy)), axes = FALSE,
     ylab = "", xlab = "", xlim = xlim)
 }
 
@@ -110,4 +112,19 @@ plot_prior("sigma", dnorm, xlim = c(0, 5))
 plot_prior("ar", dnorm, xlim = c(-2, 2))
 plot_prior("gp_scale", dnorm, xlim = c(0, 5))
 plot_prior("year_sigma", dnorm, xlim = c(0, 5))
+dev.off()
+
+# alternatives:
+pdf("examples/OR_blooms/or-blooms-priors-proposed.pdf", width = 8, height = 4)
+par(mfrow = c(2, 3))
+par(cex = 0.8, mar = c(3, 3, 1, 1))
+a <- 2
+df <- 3
+plot_prior("scaledf", dgamma, shape = 2, scale = 1/0.1, xlim = c(1, 40))
+plot_prior("gp_sigmaSq", dt2, df = df, mu = 0, a = a, xlim = c(0, 4))
+plot_prior("sigma", dt2, df = df, mu = 0, a = a, xlim = c(0, 4))
+plot_prior("ar", dbeta, shape1 = 2, shape2 = 2, xlim = c(-1.5, 1.5),
+  xtrans = function(x) 2 * (x - 1/2))
+plot_prior("gp_scale", dt2, df = df, mu = 0, a = 20, xlim = c(0, 40))
+plot_prior("year_sigma", dt2, df = df, mu = 0, a = a, xlim = c(0, 4))
 dev.off()
