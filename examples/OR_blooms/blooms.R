@@ -82,4 +82,6 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
 stanMod_norm = stan(file = 'stan_models/mvtNorm_estSigma_index_yr_ar1.stan',data = spatglm_data,
-  verbose = TRUE, chains = 1, thin = 1, warmup = 1000, iter = 2000, pars = spatglm_pars)
+  verbose = TRUE, chains = 1, thin = 1, warmup = 500, iter = 1000, pars = spatglm_pars)
+
+saveRDS(stanMod_norm,"stanMod_norm.rds")
