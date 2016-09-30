@@ -28,6 +28,8 @@ transformed parameters {
   matrix[nKnots, nKnots] SigmaKnots;
   matrix[nLocs,nKnots] SigmaOffDiag;
   matrix[nLocs,nKnots] invSigmaKnots;
+  vector[N] y_hat;
+
   real gammaA;
   SigmaKnots = gp_sigmaSq * exp(-gp_scale * distKnotsSq);# cov matrix between knots
   SigmaOffDiag = gp_sigmaSq * exp(-gp_scale * distKnots21Sq);# cov matrix between knots and projected locs
@@ -36,31 +38,32 @@ transformed parameters {
 	}
 	SigmaOffDiag = SigmaOffDiag * inverse_spd(SigmaKnots); # multiply and invert once, used below
 	for(i in 1:nT) {
-  spatialEffects[i] = SigmaOffDiag * spatialEffectsKnots[i];
+    spatialEffects[i] = SigmaOffDiag * spatialEffectsKnots[i];
+	}
+	for(i in 1:N) {
+	  y_hat[i] = yearEffects[yearID[i]] + spatialEffects[yearID[i],stationID[i]]
 	}
 }
 model {
   # priors on parameters for covariances, etc
-  gp_scale ~ normal(0,1);
-  gp_sigmaSq ~ normal(0,1);
-  sigma ~ normal(0,1);
-  ar ~ normal(0,1);
-  scaledf ~ gamma(2,0.1); # prior from https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
-  year_sigma ~ normal(0,1);
+  gp_scale ~ student_t(3, 0, 20);
+  gp_sigmaSq ~ student_t(3, 0, 2);
+  sigma ~ student_t(3, 0, 2);
+  2 * (ar - 0.5) ~ beta(2, 2);
+  scaledf ~ gamma(2, 0.1); # https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
+  year_sigma ~ student_t(3, 0, 2);
 
   # random walk / random effects in year terms
   yearEffects[1] ~ normal(0,1);
   for(t in 2:nT) {
-    yearEffects[t] ~ normal(yearEffects[t-1],year_sigma);
+    yearEffects[t] ~ normal(yearEffects[t-1], year_sigma);
   }
-
   spatialEffectsKnots[1] ~ multi_student_t(scaledf, muZeros, SigmaKnots);
   for(t in 2:nT) {
-  spatialEffectsKnots[t] ~ multi_student_t(scaledf, ar*spatialEffectsKnots[t-1], SigmaKnots);
+    spatialEffectsKnots[t] ~ multi_student_t(scaledf,
+      ar*spatialEffectsKnots[t-1], SigmaKnots);
   }
 
-  for(i in 1:N) {
-    y[i] ~ normal(yearEffects[yearID[i]] + spatialEffects[yearID[i],stationID[i]], sigma);
-  }
+  y ~ normal(y_hat, sigma);
 }
 
