@@ -75,11 +75,11 @@ stationID = seq(1,nrow(dsub))
 
 # create list for STAN
 spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)), "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y, "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq, "x" = rep(0, length(Y)))
-spatglm_pars = c("scaledf","yearEffects", "CV", "gp_sigmaSq", "gp_scale", "year_sigma","ar","B","spatialEffectsKnots")
+spatglm_pars = c("scaledf","yearEffects", "sigma", "gp_sigmaSq", "gp_scale", "year_sigma","ar","spatialEffectsKnots")
 
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
-stanMod_gamma = stan(file = 'stan_models/mvtNorm_estSigma_index_yr_ar1.stan',data = spatglm_data,
-  verbose = TRUE, chains = 3, thin = 1, warmup = 10, iter = 20, pars = spatglm_pars)
+stanMod_norm = stan(file = 'stan_models/mvtNorm_estSigma_index_yr_ar1.stan',data = spatglm_data,
+  verbose = TRUE, chains = 1, thin = 1, warmup = 1000, iter = 2000, pars = spatglm_pars)
