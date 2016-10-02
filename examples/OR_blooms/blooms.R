@@ -53,6 +53,12 @@ lons = unique(d$lon)[seq(1, length(unique(d$lon)), dowsample)]
 lats = unique(d$lat)[seq(1, length(unique(d$lat)), dowsample)]
 dsub = d[which(d$lat%in% lats & d$lon %in% lons),]
 
+# convert to UTM
+dsub$ID = seq(1,nrow(dsub))
+coordinates(dsub) = c("lon","lat")
+proj4string(dsub) <- CRS("+proj=longlat +datum=WGS84")  ## for example
+dsub = as.data.frame(spTransform(dsub, CRS(paste("+proj=utm +zone=10"," ellps=WGS84",sep=''))))
+
 dsub = dsub[which(is.na(dsub$prc_chla_trans)==FALSE),]
 
 nKnots = 75
@@ -60,11 +66,11 @@ knots = cluster::pam(dsub[,c("lon","lat")],nKnots)$medoids
 filter(dsub, prc_chla_trans < 3, prc_chla_trans > -3) %>%
   ggplot() + geom_point(data=dsub, aes(lon, lat, color = prc_chla_trans)) +
   facet_wrap(~month)
-distKnots = as.matrix(dist(knots))
+distKnots = as.matrix(dist(knots)/100000)
 distKnotsSq = distKnots^2 # squared distances
 
 # Calculate distance from knots to grid
-distAll = as.matrix(dist(rbind(dsub[,c("lon","lat")], knots)))^2
+distAll = as.matrix(dist(rbind(dsub[,c("lon","lat")], knots))/100000)^2
 # this is the transpose of the lower left corner
 nLocs = nrow(dsub)
 distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
@@ -82,7 +88,7 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
 stanMod_norm = stan(file = 'stan_models/mvtNorm_estSigma_index_yr_ar1.stan',data = spatglm_data,
-  verbose = TRUE, chains = 1, thin = 1, warmup = 500, iter = 1000, pars = spatglm_pars)
+  verbose = TRUE, chains = 3, thin = 1, warmup = 500, iter = 1000, pars = spatglm_pars)
 
 saveRDS(stanMod_norm,"stanMod_norm.rds")
 

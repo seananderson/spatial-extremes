@@ -43,16 +43,16 @@ transformed parameters {
 }
 model {
   # priors on parameters for covariances, etc
-  gp_scale ~ normal(0,1);
-  gp_sigmaSq ~ normal(0,1);
-  CV ~ normal(0,1);
-  B ~ normal(0,1);
-  ar ~ normal(0,1);
-  scaledf ~ gamma(2,0.1); # prior from https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
-  year_sigma ~ normal(0,1);
+  gp_scale ~ student_t(3, 0, 20);
+  gp_sigmaSq ~ student_t(3, 0, 2);
+  CV ~ normal(0,1);#student_t(3, 0, 2);
+  #2 * (ar - 0.5) ~ beta(2, 2);
+  ar ~ normal(0, 1);
+  scaledf ~ gamma(2, 0.1); # https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
+  year_sigma ~ student_t(3, 0, 2);
 
   # random walk / random effects in year terms
-  yearEffects[1] ~ normal(0,1);
+  yearEffects[1] ~ student_t(3, 0, 2);
   for(t in 2:nT) {
     yearEffects[t] ~ normal(yearEffects[t-1],year_sigma);
   }
@@ -62,6 +62,7 @@ model {
   spatialEffectsKnots[t] ~ multi_student_t(scaledf, ar*spatialEffectsKnots[t-1], SigmaKnots);
   }
 
+  # not sure this can be efficiently vectorized. See: http://stackoverflow.com/questions/35271398/simple-gamma-glm-in-stan
   for(i in 1:N) {
     y[i] ~ gamma(gammaA, gammaA/exp(B*x[i] + yearEffects[yearID[i]] + spatialEffects[yearID[i],stationID[i]]));
   }
