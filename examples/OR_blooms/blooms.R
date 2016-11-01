@@ -61,6 +61,12 @@ dsub = as.data.frame(spTransform(dsub, CRS(paste("+proj=utm +zone=10"," ellps=WG
 
 dsub = dsub[which(is.na(dsub$prc_chla_trans)==FALSE),]
 
+filter(dsub, prc_chla_trans < 3, prc_chla_trans > -3) %>%
+  ggplot(aes(lon, lat, fill = prc_chla_trans)) +
+  geom_raster() +
+  scale_fill_gradient2() +
+  facet_wrap(~month)
+
 nKnots = 75
 knots = cluster::pam(dsub[,c("lon","lat")],nKnots)$medoids
 filter(dsub, prc_chla_trans < 3, prc_chla_trans > -3) %>%
@@ -124,7 +130,7 @@ dev.off()
 pdf("examples/OR_blooms/or-blooms-priors-proposed.pdf", width = 8, height = 4)
 par(mfrow = c(2, 3))
 par(cex = 0.8, mar = c(3, 3, 1, 1))
-a <- 2
+a <- 2 # scale
 df <- 3
 plot_prior("scaledf", dgamma, shape = 2, scale = 1/0.1, xlim = c(1, 40))
 plot_prior("gp_sigmaSq", dt2, df = df, mu = 0, a = a, xlim = c(0, 4))

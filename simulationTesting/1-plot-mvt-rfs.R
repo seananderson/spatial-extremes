@@ -15,7 +15,7 @@ draws <- lapply(c(2, 1e9),
   function(x) {
     draws <- 5
     s <- sim_mvt_rf(df = x, grid = g, n_pts = nrow(g), seed = 29,
-      n_draws = draws, gp_scale = 12, sigma_t = 0.2)
+      n_draws = draws, gp_scale = 15, sigma_t = 0.3)
     out <- reshape2::melt(s$proj)
     names(out) <- c("i", "pt", "re")
     out <- arrange(out, i, pt)
@@ -54,7 +54,8 @@ p <- draws %>%
     panel.grid.minor=element_blank(),
     plot.background=element_blank()) +
   theme(panel.margin = unit(0.001, "lines"))
-ggsave("figs/nu-rf-illustration.pdf", width = 7, height = 3)
+# print(p)
+ggsave("figs/nu-rf-illustration-high-gpscale.pdf", width = 7, height = 3)
 
 # for irregular spacing interpolation:
 # ds <- akima::interp(x = lon, y = lat, z = v))
