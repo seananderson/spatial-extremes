@@ -52,6 +52,5 @@ simulationTesting/mvn_vs_mvt_files/figure-latex/stan_mvtNormal2-1.pdf
 
 simulationTesting/mvn_vs_mvt.pdf
 
-*.DS_Store
-
+.DS_Store
 *.pdf
