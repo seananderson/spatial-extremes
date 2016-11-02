@@ -85,21 +85,26 @@ sim_fit <- function(df = 2, n_draws, n_knots = 30, gp_scale = 0.5, cv_obs = 0.2,
     distKnots21Sq = simulation_data$dist_knots21_sq)
 
   pars <- c("scaledf", "gp_scale", "gp_sigmaSq", "CV")
-  m <-  rstan::sampling(stan_mod, data = model_data, chains = 4L, warmup = 200L,
-    iter = 400L, pars = pars)
+  m <- rstan::sampling(stan_mod, data = model_data, chains = 4L, warmup = 300L,
+    iter = 600L, pars = pars)
+
+  b <- broom::tidyMCMC(m, rhat = TRUE, ess = TRUE)
+  if (any(b$ess < 200) | any(b$rhat > 1.05)) {
+    m <- rstan::sampling(stan_mod, data = model_data, chains = 4L, warmup = 2000L,
+      iter = 4000L, pars = pars)
+  }
+
   m
 }
 
 set.seed(1)
 arguments <- readxl::read_excel("simulationTesting/simulation-arguments.xlsx")
-# arguments$case <- c(0, rep(c(-1, 1), 5))
-arguments$count <- 20L
+arguments$count <- 50L
 arguments <- arguments[rep(seq_len(nrow(arguments)), arguments$count), ]
 arguments_apply <- dplyr::select(arguments, -count, -case)
 nrow(arguments)
 
 out <- plyr::mlply(arguments_apply, sim_fit)
-
 saveRDS(out, file = "simulationTesting/gamma-sim-testing.rds")
 
 out <- readRDS("simulationTesting/gamma-sim-testing.rds")
@@ -110,22 +115,20 @@ out_print <- out %>%
       tidyr::spread(term, estimate)})
 names(out_print) <- paste0(names(out_print), "_est")
 
-
 rhat <- out %>%
   map_df(function(x) {
-    broom::tidyMCMC(x, estimate.method = "median", rhat = TRUE, ess = TRUE) %>%
+    broom::tidyMCMC(x, rhat = TRUE, ess = TRUE) %>%
       summarise(rhat = max(rhat), ess = min(ess))
     })
-
 
 out_summary <- data.frame(arguments, out_print, rhat) %>%
   filter(rhat < 1.05, ess > 100) %>%
   select(-count, -rhat, -ess) %>%
-  mutate(sigma_t = 0.5^2)
+  mutate(gp_sigmaSq = 0.5^2)
 
 plot_viol <- function(term, term_true) {
   x <- tidyr::gather(out_summary, parameter, estimate, -df, -n_knots, -n_draws,
-    -gp_scale, -cv_obs, -case, -comment, -sigma_t) %>%
+    -gp_scale, -cv_obs, -case, -comment, -gp_sigmaSq) %>%
     filter(parameter == term)
 
   ggplot(x, aes(paste(comment, case), estimate)) +
@@ -138,7 +141,7 @@ plot_viol <- function(term, term_true) {
 
 p1 <- plot_viol("scaledf_est", "df")
 p2 <- plot_viol("gp_scale_est", "gp_scale")
-p3 <- plot_viol("gp_sigmaSq_est", "sigma_t")
+p3 <- plot_viol("gp_sigmaSq_est", "gp_sigmaSq")
 p4 <- plot_viol("CV_est", "cv_obs")
 
 pdf("simulationTesting/sim-gamma-pars.pdf", width = 7, height = 6)
