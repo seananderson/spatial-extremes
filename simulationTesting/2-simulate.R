@@ -67,22 +67,21 @@ m
 # now try across multiple arguments
 
 sim_fit <- function(df = 2, n_draws, n_knots = 30, gp_scale = 0.5, cv_obs = 0.2,
-  comment = "") {
+  comment = "", sigma_t = 0.5) {
 
-  sigma_t <- 0.5
   nDataPoints <- 100
   g <- data.frame(lon = runif(nDataPoints, 0, 10),
     lat = runif(nDataPoints, 0, 10))
   n_pts <- nrow(g)
 
   simulation_data <- sim_mvt_rf(df = df, grid = g, n_pts = n_pts, seed = NULL,
-    n_draws = draws, n_knots = n_knots, gp_scale = gp_scale, sigma_t = sigma_t)
+    n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale, sigma_t = sigma_t)
 
   gamma.a <- 1/(cv_obs^2)
   gamma.b <- gamma.a/exp(simulation_data$proj)
   y.gamma <- rgamma(nrow(gamma.b)*ncol(gamma.b), shape = gamma.a, rate = c(gamma.b))
   y <- matrix(y.gamma, ncol = ncol(gamma.b))
-  model_data <- list(nKnots = nrow(simulation_data$knots), nLocs = nLocs,
+  model_data <- list(nKnots = nrow(simulation_data$knots), nLocs = n_pts,
     nT = nrow(simulation_data$re_knots), y = y,
     distKnotsSq = simulation_data$dist_knots_sq,
     distKnots21Sq = simulation_data$dist_knots21_sq)
@@ -90,8 +89,15 @@ sim_fit <- function(df = 2, n_draws, n_knots = 30, gp_scale = 0.5, cv_obs = 0.2,
   pars <- c("scaledf", "gp_scale", "gp_sigmaSq", "CV")
   m <- stan(file = 'stan_models/mvtGamma_estSigma.stan',
     data = model_data, chains = 4L, warmup = 300L, iter = 600L, pars = pars)
-  list(model = m, comment = comment)
+  m
 }
 
 arguments <- readxl::read_excel("simulationTesting/simulation-arguments.xlsx")
-out <- pmap(as.list(arguments[1, ]), sim_fit)
+arguments$count <- 15L
+arguments <- arguments[rep(seq_len(nrow(arguments)), arguments$count), ]
+arguments <- select(arguments, -count)
+nrow(arguments)
+
+out <- plyr::mlply(arguments, sim_fit)
+
+saveRDS(out, file = "simulationTesting/gamma-sim-testing.rds")
