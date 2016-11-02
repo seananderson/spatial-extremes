@@ -1,4 +1,3 @@
-# model for presence-absence data
 data {
   int<lower=1> nKnots;
   int<lower=1> nLocs;
@@ -15,28 +14,29 @@ parameters {
   vector[nKnots] spatialEffectsKnots[nT];
 }
 transformed parameters {
-	vector[nKnots] muZeros;
-	vector[nLocs] spatialEffects[nT];
-  #matrix[nKnots, nKnots] SigmaKnots;
+  vector[nKnots] muZeros;
+  vector[nLocs] spatialEffects[nT];
   cov_matrix[nKnots] SigmaKnots;
   matrix[nLocs,nKnots] SigmaOffDiag;
   matrix[nLocs,nKnots] invSigmaKnots;
-  SigmaKnots = gp_sigmaSq * exp(-gp_scale * distKnotsSq);# cov matrix between knots
-  SigmaOffDiag = gp_sigmaSq * exp(-gp_scale * distKnots21Sq);# cov matrix between knots and projected locs
-	for(i in 1:nKnots) {
-		muZeros[i] = 0;
-	}
-	SigmaOffDiag = SigmaOffDiag * inverse_spd(SigmaKnots); # multiply and invert once, used below
-	for(i in 1:nT) {
+  SigmaKnots = gp_sigmaSq * exp(-gp_scale * distKnotsSq); // cov matrix between knots
+  SigmaOffDiag = gp_sigmaSq * exp(-gp_scale * distKnots21Sq); // cov matrix between knots and projected locs
+  for(i in 1:nKnots) {
+    muZeros[i] = 0;
+  }
+  SigmaOffDiag = SigmaOffDiag * inverse_spd(SigmaKnots); # multiply and invert once, used below
+  for(i in 1:nT) {
   spatialEffects[i] = SigmaOffDiag * spatialEffectsKnots[i];
-	}
+  }
 }
 model {
-  # priors on parameters for covariances, etc
-  gp_scale ~ normal(0,1);
-  gp_sigmaSq ~ normal(0,1);
-  sigma ~ normal(0,1);
-  scaledf ~ gamma(2,0.1); # prior from https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
+  // priors on parameters for covariances, etc
+
+  gp_scale ~ student_t(3, 0, 20);
+  gp_sigmaSq ~ student_t(3, 0, 2);
+
+  sigma ~ student_t(3, 0, 2);
+  scaledf ~ gamma(2,0.1); // prior from https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
   for(t in 1:nT) {
   spatialEffectsKnots[t] ~ multi_student_t(scaledf, muZeros, SigmaKnots);
   }
