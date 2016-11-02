@@ -12,7 +12,7 @@ theme_gg <- function(base_size = 11, base_family = "") {
       panel.border = element_rect(fill = NA, colour = "grey70", size = 1),
       legend.key.size = unit(0.8, "lines"),
       legend.text = element_text(size = rel(0.7), colour = "grey30"),
-      legend.title = element_text(size = rel(0.6)),
+      # legend.title = element_text(size = rel(0.6)),
       legend.key = element_rect(colour = NA)
     )
 }
