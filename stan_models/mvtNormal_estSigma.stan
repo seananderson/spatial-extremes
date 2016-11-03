@@ -24,17 +24,15 @@ transformed parameters {
   for(i in 1:nKnots) {
     muZeros[i] = 0;
   }
-  SigmaOffDiag = SigmaOffDiag * inverse_spd(SigmaKnots); # multiply and invert once, used below
+  SigmaOffDiag = SigmaOffDiag * inverse_spd(SigmaKnots); // multiply and invert once, used below
   for(i in 1:nT) {
   spatialEffects[i] = SigmaOffDiag * spatialEffectsKnots[i];
   }
 }
 model {
   // priors on parameters for covariances, etc
-
-  gp_scale ~ student_t(3, 0, 20);
+  gp_scale ~ student_t(3, 0, 10);
   gp_sigmaSq ~ student_t(3, 0, 2);
-
   sigma ~ student_t(3, 0, 2);
   scaledf ~ gamma(2,0.1); // prior from https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
   for(t in 1:nT) {
