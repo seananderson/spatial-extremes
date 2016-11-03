@@ -1,0 +1,13 @@
+# Introduction
+
+# Methods
+
+exponential correlation between points $i$ and $j$:
+$$H(\delta_{ij}) = \mathrm{e}^{-\phi \delta_{ij}}$$
+
+elements of covariance matrix:
+$$\Sigma_{ij}) = \sigma \mathrm{e}^{-\phi \delta_{ij}}$$
+
+# Results
+
+# Discussion
