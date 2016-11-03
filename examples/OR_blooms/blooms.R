@@ -55,9 +55,9 @@ dsub = d[which(d$lat%in% lats & d$lon %in% lons),]
 
 # convert to UTM
 dsub$ID = seq(1,nrow(dsub))
-coordinates(dsub) = c("lon","lat")
-proj4string(dsub) <- CRS("+proj=longlat +datum=WGS84")  ## for example
-dsub = as.data.frame(spTransform(dsub, CRS(paste("+proj=utm +zone=10"," ellps=WGS84",sep=''))))
+sp::coordinates(dsub) = c("lon","lat")
+sp::proj4string(dsub) <- sp::CRS("+proj=longlat +datum=WGS84")  ## for example
+dsub = as.data.frame(sp::spTransform(dsub, sp::CRS(paste("+proj=utm +zone=10"," ellps=WGS84",sep=''))))
 
 dsub = dsub[which(is.na(dsub$prc_chla_trans)==FALSE),]
 
