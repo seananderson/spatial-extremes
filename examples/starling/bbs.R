@@ -3,7 +3,7 @@ library(sp)
 library(rgdal)
 library(ggplot2)
 
-d = readRDS("examples/bbs.rds")
+d = readRDS("examples/starling/bbs.rds")
 d = d[which(d$AOU=="4930"),] # starlings
 d = d[which(d$statenum%in%c(33,69,89) & d$year > 1997),] # ID, WA, OR
 
