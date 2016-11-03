@@ -4,41 +4,51 @@ library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = 4L)
 
-nDataPoints <- 100
-g <- data.frame(lon = runif(nDataPoints, 0, 10),
-  lat = runif(nDataPoints, 0, 10))
-nLocs <- dim(g)[1]
 
-# draws <- 10
-# simulation_data <- sim_mvt_rf(df = 2, grid = g, n_pts = nrow(g), seed = NULL,
-#       n_draws = draws, n_knots = 30, gp_scale = 0.5, sigma_t = 0.5)
-#
-# out <- reshape2::melt(simulation_data$proj)
-# names(out) <- c("i", "pt", "re")
-# out <- arrange(out, i, pt)
-# out$lon <- rep(g$lon, draws)
-# out$lat <- rep(g$lat, draws)
-#
-# p1 <- out %>%
-#   ggplot(aes(x = lon, y = lat, z = re, colour = re)) +
-#   facet_wrap(~i, ncol = 5) +
-#   geom_point(size = 3) +
-#   viridis::scale_color_viridis() +
-#   theme_light()
-#
-# CV <- 0.2
-# gamma.a <- 1/(CV^2)
-# gamma.b <- gamma.a/exp(out$re)
-# out$obs <- rgamma(nrow(out), shape = gamma.a, rate = c(gamma.b))
-#
-# # out <- mutate(out, obs = re + rnorm(nrow(out), sd = 0.5))
-# p2 <- out %>%
-#   ggplot(aes(x = lon, y = lat, z = log(obs), colour = log(obs))) +
-#   facet_wrap(~i, ncol = 5) +
-#   geom_point(size = 3) +
-#   viridis::scale_color_viridis() +
-#   theme_light()
-# gridExtra::grid.arrange(p1, p2)
+
+library(manipulate)
+
+manipulate({
+
+  nDataPoints <- 100
+  g <- data.frame(lon = runif(nDataPoints, 0, upper),
+    lat = runif(nDataPoints, 0, upper))
+  nLocs <- dim(g)[1]
+
+  draws <- 5
+  simulation_data <- sim_mvt_rf(df = df, grid = g, n_pts = nrow(g), seed = NULL,
+    n_draws = draws, n_knots = 30, gp_scale = gp_scale, sigma_t = 0.5)
+
+  out <- reshape2::melt(simulation_data$proj)
+  names(out) <- c("i", "pt", "re")
+  out <- arrange(out, i, pt)
+  out$lon <- rep(g$lon, draws)
+  out$lat <- rep(g$lat, draws)
+
+  p1 <- out %>%
+    ggplot(aes(x = lon, y = lat, z = re, colour = re)) +
+    facet_wrap(~i, ncol = 5) +
+    geom_point(size = 3) +
+    viridis::scale_color_viridis() +
+    theme_light()
+
+  # CV <- 0.2
+  gamma.a <- 1/(CV^2)
+  gamma.b <- gamma.a/exp(out$re)
+  out$obs <- rgamma(nrow(out), shape = gamma.a, rate = c(gamma.b))
+
+  # out <- mutate(out, obs = re + rnorm(nrow(out), sd = 0.5))
+  p2 <- out %>%
+    ggplot(aes(x = lon, y = lat, z = log(obs), colour = log(obs))) +
+    facet_wrap(~i, ncol = 5) +
+    geom_point(size = 3) +
+    viridis::scale_color_viridis() +
+    theme_light()
+  gridExtra::grid.arrange(p1, p2)
+}, gp_scale = slider(0.05, 1.4, 0.25, step = 0.05),
+  df = slider(2, 50, 4, step = 1),
+  CV = slider(0.01, 1.5, 0.2, step = 0.05),
+  upper = slider(1, 30, 10, step = 1))
 #
 # gamma.a <- 1/(CV^2)
 # gamma.b <- gamma.a/exp(simulation_data$proj)
