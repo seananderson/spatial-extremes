@@ -3,10 +3,10 @@
 # Methods
 
 exponential correlation between points $i$ and $j$:
-$$H(\delta_{ij}) = \mathrm{e}^{-\phi \delta_{ij}}$$
+$$H(\delta_{ij}) = \exp(-\phi \delta_{ij}^2)$$
 
 elements of covariance matrix:
-$$\Sigma_{ij}) = \sigma \mathrm{e}^{-\phi \delta_{ij}}$$
+$$\Sigma_{ij} = \sigma \exp (-\phi \delta_{ij}^2 )$$
 
 # Results
 
