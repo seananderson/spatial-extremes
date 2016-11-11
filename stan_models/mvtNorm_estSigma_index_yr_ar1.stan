@@ -46,7 +46,7 @@ transformed parameters {
 }
 model {
   # priors on parameters for covariances, etc
-  gp_scale ~ student_t(3, 0, 20);
+  gp_scale ~ student_t(3, 0, 10);
   gp_sigmaSq ~ student_t(3, 0, 2);
   sigma ~ student_t(3, 0, 2);
   #2 * (ar - 0.5) ~ beta(2, 2);
