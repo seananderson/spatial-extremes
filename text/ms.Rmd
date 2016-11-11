@@ -1,4 +1,13 @@
+---
+title: "Robust spatiotemporal modeling with multivariate-t random fields"
+output: html_document
+bibliography: spatial-extremes.bib
+csl: methods-in-ecology-and-evolution.csl
+---
+
 # Introduction
+
+[@rimstad2014; @davison2012]
 
 # Methods
 
@@ -11,3 +20,7 @@ $$\Sigma_{ij} = \sigma \exp (-\phi \delta_{ij}^2 )$$
 # Results
 
 # Discussion
+
+# References
+
+
