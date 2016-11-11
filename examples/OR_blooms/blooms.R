@@ -86,22 +86,33 @@ yearID = as.numeric(as.factor(dsub$month))
 stationID = seq(1,nrow(dsub))
 
 # create list for STAN
-spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)), "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y, "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq, "x" = rep(0, length(Y)))
-spatglm_pars = c("scaledf","yearEffects", "sigma", "gp_sigmaSq", "gp_scale", "year_sigma","ar","spatialEffectsKnots")
+spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)),
+  "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y,
+  "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq, "x" = rep(0, length(Y)))
+spatglm_pars = c("scaledf","yearEffects", "sigma", "gp_sigmaSq", "gp_scale",
+  "year_sigma","ar","spatialEffectsKnots")
 
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
-stanMod_norm = stan(file = 'stan_models/mvtNorm_estSigma_index_yr_ar1.stan',data = spatglm_data,
-  verbose = TRUE, chains = 3, thin = 1, warmup = 500, iter = 1000, pars = spatglm_pars)
+stanMod_mvt_norm = stan(file = 'stan_models/mvtNorm_estSigma_index_yr_ar1.stan',
+  data = spatglm_data, chains = 4, warmup = 1000, iter = 2000, pars = spatglm_pars)
 
-saveRDS(stanMod_norm,"stanMod_norm.rds")
+saveRDS(stanMod_norm,"stanMod_mvt_norm.rds")
 
+spatglm_pars = c("yearEffects", "sigma", "gp_sigmaSq", "gp_scale",
+  "year_sigma","ar","spatialEffectsKnots")
+stanMod_norm = stan(file = 'stan_models/mvnNorm_estSigma_index_yr_ar1.stan',
+  data = spatglm_data, chains = 4, warmup = 1000, iter = 2000, pars = spatglm_pars)
+
+saveRDS(stanMod_mvn_norm,"stanMod_mvn_norm.rds")
+
+# --------------------------------------
 # check posterior / priors
-stanMod_norm <- readRDS("examples/OR_blooms/stanMod_norm.rds")
+stanMod_mvt_norm <- readRDS("examples/OR_blooms/stanMod_mvt_norm.rds")
 
-e <- extract(stanMod_norm)
+e <- extract(stanMod_mvt_norm)
 names(e)
 dt2 <- function(x, df, mu, a) 1/a * dt((x - mu)/a, df)
 
