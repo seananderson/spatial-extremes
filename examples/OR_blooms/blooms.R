@@ -2,6 +2,7 @@
 # install.packages("rerddap")
 
 library(dplyr)
+library(ggplot2)
 
 rerddap::ed_search(query = "temp") %>% .$info
 
