@@ -56,5 +56,6 @@ simulationTesting/mvn_vs_mvt.pdf
 *.pdf
 
 simulationTesting/gamma-sim-testing.rds
+*.rds
 
 *.html
