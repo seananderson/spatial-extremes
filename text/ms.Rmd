@@ -39,6 +39,11 @@ $${ { W=\Sigma  }_{ \left( W,{ W }^{ * } \right)  }^{ ' } }{ \Sigma  }^{ *-1 }{ 
 A final step in our data simulation was to corrupt true data by including measurement or observation error. We assumed observations to be generated from a Gamma distribution, ${ Y }_{ ijt }\~ Gamma\left( a,\frac { a }{ E[{ Y }_{ ijt }] }  \right)$, where the Gamma shape parameter *a* can be reparameterized into the coefficient of variation (CV), $a=\frac { 1 }{ { CV }^{ 2 } } $.
 
 We used the simulation model described above as the estimation model for each dataset. [Sean - more text here on number of simulations, possibly ranges of parameters, estimation in STAN, etc.]
+ 
+## Oregon Chlorohyll Blooms  
+  
+To illustrate real-world applications of multivariate-t distributed spatiotemporal models and the rrfields package, we first used satellite sampled estimates of chlorophyll-a from the Oregon coast (USA). Seasonal change or anomalies in chlorophyll concentrations has been used to predict blooms of phytoplankton [@mckibben2012] and may be a useful indicator of detecting harmful algal blooms [@tweddle2010]. This chlorophyll dataset was generated on 8-day time steps, so anomalies for any day are presented as the difference between chlorophyll in successive eight day periods [@mckibben2012]. We focused our application on data in spring and summer, when chlorophyll values may be at their peak [@mckibben2012], and recent years have seen particularly elevated levels [@du2016]. We used the ‘rerddap’ package to access the gridded observations at 2-week intervals between February 01 and September 15 2014 (using observations on the 1st and 15th of each month). Because the spatial dimension of this dataset is so large, we used a smaller subset of all grid locations to reduce the dimensionality. Raw data values larger than 3 or smaller than -3 were removed because of potential data errors (representing < 0.4% of all observations).
+
 
 
 
