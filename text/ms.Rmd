@@ -6,11 +6,7 @@ csl: methods-in-ecology-and-evolution.csl
 ---
 
 # Introduction
-
-<<<<<<< Updated upstream
-[@rimstad2014; @davison2012]
-=======
-<<<<<<< HEAD
+  
 Applications of statistical models that allow joint inference about spatial and temporal dynamics have advanced rapidly in ecology over the last several decades [@bascompte1995; @latimer2009]. Spatiotemporal models have also been widely used in other disciplines, including applications to weather, remote sensing, human disease dynamics, and modeling crime [@cressie2011]. Many types of linear and non-linear models that ecologists are accustomed to working with (generalized linear models, generalized additive models) can be modified to include spatiotemporal components, where spatial processes are modeled as multivariate random effects. Many of these methods are available in existing R packages, including but not limited to spBayes [@finley2007], spTimer [@bakar2015], RandomFields [@schlather2016], and spate [@sigrist2015].  
 
 For large datasets that include more than several hundred spatial locations, estimation of multivariate random effects at the locations of the data may be  computationally prohibitive. A first solution to this dimensionality problem is to estimate the random field as correlated random effects at a smaller subset of locations or *m* ‘knots’ [@latimer2009; @shelton2014], where *m* < *n*, the number of data points. The estimated random effects are assumed to be jointly distributed (e.g. multivariate normal). Instead of estimating an unconstrained mxm covariance matrix, a covariance function is specified a priori to estimate the covariance between locations; this function may be isotropic (where covariance is a function of distance, e.g. exponential or Gaussian) or anisotropic (where covariance also depends on direction, e.g. Matern). Given the estimated random effects at the knot locations, and the known distance matrix between the knots and observed data, it is straightforward to project or interpolate those random effects to the locations of observations [@latimer2009; @finley2009].  
@@ -23,11 +19,7 @@ Extreme events in temporal processes have been modeled using a variety of method
 
 Several robust extensions of Gaussian random fields have been proposed to better model extreme spatial events, including applications of max-stable or extreme value theory [@davison2012; @davison2012a]. Many of the applications of these models, such as understanding extremes in rainfall or flooding, are interested in quantifying the probabilities of exceeding some threshold [@davis2008]. Other extensions of spatiotemporal models to model extremes include the use of multivariate-t spatial random fields [@roislien2007]. Focusing on the latter, to our knowledge these methods have not been considered for data in the ecology, fisheries, or environmental sciences.  
 
-The objectives of this paper are to introduce the use of robust spatial models using the multivariate-t distribution, easily implemented in our new R package rrfields (robust random fields). Using simulation testing to compare the multivariate normal to multivariate-t spatial processes, we illustrate that the multivariate-t leads to better prediction (less bias, lower uncertainty). Second, we illustrate applications of these modeling approaches to real world data that include spatial extremes, using chlorophyll data from the west coast of the USA [@mckibben2012], and counts of European starlings (Sturnus vulgaris) from the North American Breeding Bird Survey [@pardieck2016]. These applications differ in their observation error model (normal, Gamma) and treatment of temporal change, illustrating the flexibility of these robust spatial models to other applications.  
-=======
-[@rimstad2014; @davison2012]
->>>>>>> origin/master
->>>>>>> Stashed changes
+The objectives of this paper are to introduce the use of robust spatial models using the multivariate-t distribution, easily implemented in our new R package rrfields (robust random fields). Using simulation testing to compare the multivariate normal to multivariate-t spatial processes, we illustrate that the multivariate-t leads to better prediction (less bias, lower uncertainty). Second, we illustrate applications of these modeling approaches to real world data that include spatial extremes, using chlorophyll data from the west coast of the USA [@mckibben2012], and counts of European starlings (Sturnus vulgaris) from the North American Breeding Bird Survey [@pardieck2016]. These applications differ in their observation error model (normal, Gamma) and treatment of temporal change, illustrating the flexibility of these robust spatial models to other applications.
 
 # Methods
 
