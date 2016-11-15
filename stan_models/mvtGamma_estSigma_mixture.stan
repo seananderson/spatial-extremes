@@ -12,6 +12,7 @@ parameters {
   real<lower=1> scaledf;
   real<lower=0> CV;
   vector[nKnots] spatialEffectsKnots[nT];
+  real<lower=0> W[nT];
 }
 transformed parameters {
 	vector[nKnots] muZeros;
@@ -35,10 +36,13 @@ model {
   // priors on parameters for covariances, etc
   gp_scale ~ student_t(5, 0, 20);
   gp_sigmaSq ~ student_t(5, 0, 2);
-  CV ~ normal(0, 1); // TODO why was N(0, 1)?
-  scaledf ~ gamma(2, 0.1); // prior from https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
+  CV ~ normal(0, 1);
+  scaledf ~ gamma(2, 0.1);
+
+  #W ~ inv_gamma(scaledf/2, gp_sigmaSq*scaledf/2);
+  W ~ scaled_inv_chi_square(scaledf, 1);
   for(t in 1:nT) {
-    spatialEffectsKnots[t] ~ multi_student_t(scaledf, muZeros, SigmaKnots);
+    spatialEffectsKnots[t] ~ multi_normal(muZeros, W[t]*SigmaKnots);
   }
 
   for(t in 1:nT) {
