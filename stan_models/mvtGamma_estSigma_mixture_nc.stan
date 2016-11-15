@@ -9,7 +9,7 @@ data {
 parameters {
   real<lower=0> gp_scale;
   real<lower=0> gp_sigmaSq;
-  real<lower=1> scaledf;
+  real<lower=2> scaledf;
   real<lower=0> CV;
   real<lower=0> W[nT];
   vector[nKnots] spatialEffectsKnots_z[nT]; // has a standard normal prior below

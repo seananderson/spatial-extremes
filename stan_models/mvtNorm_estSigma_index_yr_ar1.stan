@@ -15,7 +15,7 @@ data {
 parameters {
   real<lower=0> gp_scale;
   real<lower=0> gp_sigmaSq;
-  real<lower=1> scaledf;
+  real<lower=2> scaledf;
   real<lower=0> sigma;
   real<lower=-1,upper=1> ar;
   real yearEffects[nT];
