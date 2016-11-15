@@ -45,8 +45,8 @@ sim_fit <- function(df = 4, n_draws = 15, n_knots = 15, gp_scale = 0.25,
   list(model_data = model_data, plot = p1)
 }
 
-set.seed(123)
-out <- sim_fit()
+set.seed(1)
+out <- sim_fit(df = 1, gp_scale = 0.8, n_draws = 8)
 d <- out$model_data
 print(out$plot)
 pars <- c("scaledf", "gp_scale", "gp_sigmaSq", "CV", "spatialEffectsKnots", "SigmaKnots")
@@ -54,17 +54,22 @@ pars <- c("scaledf", "gp_scale", "gp_sigmaSq", "CV", "spatialEffectsKnots", "Sig
 
 m_mvt <- stan("stan_models/mvtGamma_estSigma.stan",
   data = d, chains = 4L, warmup = 500L, iter = 1000L, pars = pars,
-  control = list(adapt_delta = 0.55))
+  control = list(adapt_delta = 0.52))
 b_mvt <- broom::tidyMCMC(m_mvt, rhat = TRUE, ess = TRUE)
 
 m_mvt2 <- stan("stan_models/mvtGamma_estSigma.stan",
   data = d, chains = 4L, warmup = 500L, iter = 1000L, pars = pars,
-  control = list(adapt_delta = 0.999))
+  control = list(adapt_delta = 0.95))
 b_mvt2 <- broom::tidyMCMC(m_mvt2, rhat = TRUE, ess = TRUE)
+
+m_mvt3 <- stan("stan_models/mvtGamma_estSigma.stan",
+  data = d, chains = 4L, warmup = 500L, iter = 1000L, pars = pars,
+  control = list(adapt_delta = 0.8))
+b_mvt3 <- broom::tidyMCMC(m_mvt3, rhat = TRUE, ess = TRUE)
 
 m_mvt_mixture <- stan("stan_models/mvtGamma_estSigma_mixture.stan",
   data = d, chains = 4L, warmup = 500L, iter = 1000L, pars = pars,
-  control = list(adapt_delta = 0.55))
+  control = list(adapt_delta = 0.95))
 b_mvt_mixture <- broom::tidyMCMC(m_mvt_mixture, rhat = TRUE, ess = TRUE)
 
 m_mvt_mixture_nc <- stan("stan_models/mvtGamma_estSigma_mixture_nc.stan",
@@ -74,7 +79,7 @@ b_mvt_mixture_nc <- broom::tidyMCMC(m_mvt_mixture_nc, rhat = TRUE, ess = TRUE)
 
 m_mvt_mixture_nc2 <- stan("stan_models/mvtGamma_estSigma_mixture_nc.stan",
   data = d, chains = 4L, warmup = 500L, iter = 1000L, pars = c(pars, "spatialEffectsKnots_z"),
-  control = list(adapt_delta = 0.8))
+  control = list(adapt_delta = 0.9))
 b_mvt_mixture_nc2 <- broom::tidyMCMC(m_mvt_mixture_nc2, rhat = TRUE, ess = TRUE)
 
 min(broom::tidyMCMC(m_mvt, rhat = TRUE, ess = TRUE)$ess)
@@ -83,8 +88,13 @@ min(broom::tidyMCMC(m_mvt_mixture_nc, rhat = TRUE, ess = TRUE)$ess)
 
 b_mvt %>% filter(term %in% pars)
 b_mvt2 %>% filter(term %in% pars)
+b_mvt3 %>% filter(term %in% pars)
 b_mvt_mixture %>% filter(term %in% pars)
 b_mvt_mixture_nc %>% filter(term %in% pars)
 b_mvt_mixture_nc2 %>% filter(term %in% pars)
 
+pairs(m_mvt, pars = c("scaledf", "gp_scale", "gp_sigmaSq", "SigmaKnots[5,10]", "lp__"))
+pairs(m_mvt3, pars = c("scaledf", "gp_scale", "gp_sigmaSq", "SigmaKnots[5,10]", "lp__"))
+pairs(m_mvt2, pars = c("scaledf", "gp_scale", "gp_sigmaSq", "SigmaKnots[5,10]"))
+pairs(m_mvt_mixture, pars = c("scaledf", "gp_scale", "gp_sigmaSq", "SigmaKnots[5,10]", "lp__"))
 pairs(m_mvt, pars = c("SigmaKnots[5,10]", "spatialEffectsKnots[5,10]"))
