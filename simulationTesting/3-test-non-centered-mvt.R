@@ -1,19 +1,16 @@
 # Test a non-centered version of the multivariate t
 
-The center diversions of our models sometimes end up with divergences, which makes it hard to trust our results. Most likely, switching to a non-centered version should fix that. But we have to make sure that the parameterization is correct. This script will test to make sure that we get the same output with a simulated data set between the centered and non-centered versions with the multivariate t. This requires working with the gamma mixture version of the t, which in itself may help with the divergences. 
+# The center diversions of our models sometimes end up with divergences, which makes it hard to trust our results. Most likely, switching to a non-centered version should fix that. But we have to make sure that the parameterization is correct. This script will test to make sure that we get the same output with a simulated data set between the centered and non-centered versions with the multivariate t. This requires working with the gamma mixture version of the t, which in itself may help with the divergences.
 
-```{r}
 library(tidyverse)
 source("simulationTesting/sim_mvt_rf.R")
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = 4L)
-```
 
-The observation model should be irrelevant so I will work with the gamma parameterization which is already set up to work in this simulation. 
+# The observation model should be irrelevant so I will work with the gamma parameterization which is already set up to work in this simulation.
 
-```{r}
-sim_fit <- function(df = 4, n_draws = 15, n_knots = 15, gp_scale = 0.25, 
+sim_fit <- function(df = 4, n_draws = 15, n_knots = 15, gp_scale = 0.25,
   cv_obs = 0.1, comment = "", sigma_t = 0.5, nDataPoints = 100) {
 
   g <- data.frame(lon = runif(nDataPoints, 0, 10),
@@ -22,13 +19,13 @@ sim_fit <- function(df = 4, n_draws = 15, n_knots = 15, gp_scale = 0.25,
 
   simulation_data <- sim_mvt_rf(df = df, grid = g, n_pts = n_pts, seed = NULL,
     n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale, sigma_t = sigma_t)
-  
+
   # plot:
-  out <- reshape2::melt(d$proj)
+  out <- reshape2::melt(simulation_data$proj)
   names(out) <- c("i", "pt", "re")
   out <- arrange(out, i, pt)
-  out$lon <- rep(g$lon, draws)
-  out$lat <- rep(g$lat, draws)
+  out$lon <- rep(g$lon, n_draws)
+  out$lat <- rep(g$lat, n_draws)
   p1 <- out %>%
     ggplot(aes(x = lon, y = lat, z = re, colour = re)) +
     facet_wrap(~i, ncol = 5) +
@@ -53,26 +50,21 @@ out <- sim_fit()
 d <- out$model_data
 print(out$plot)
 pars <- c("scaledf", "gp_scale", "gp_sigmaSq", "CV", "spatialEffectsKnots")
-```
 
 
-```{r}
-m_mvt <- stan("stan_models/mvtGamma_estSigma.stan", 
+m_mvt <- stan("stan_models/mvtGamma_estSigma.stan",
   data = d, chains = 4L, warmup = 300L, iter = 600L, pars = pars)
 b_mvt <- broom::tidyMCMC(m_mvt, rhat = TRUE, ess = TRUE,
    pars = pars[-5])
-```
 
-```{r}
-m_mvt_mixture <- stan("stan_models/mvtGamma_estSigma_mixture.stan", 
+
+m_mvt_mixture <- stan("stan_models/mvtGamma_estSigma_mixture.stan",
   data = d, chains = 4L, warmup = 300L, iter = 600L, pars = pars)
-b_mvt_mixture <- broom::tidyMCMC(m_mvt_mixture, rhat = TRUE, ess = TRUE, 
+b_mvt_mixture <- broom::tidyMCMC(m_mvt_mixture, rhat = TRUE, ess = TRUE,
   pars = pars[-5])
-```
 
-```{r}
-m_mvt_mixture_nc <- stan("stan_models/mvtGamma_estSigma_mixture_nc.stan", 
+
+m_mvt_mixture_nc <- stan("stan_models/mvtGamma_estSigma_mixture_nc.stan",
   data = d, chains = 4L, warmup = 300L, iter = 600L, pars = pars)
 b_mvt_mixture_nc <- broom::tidyMCMC(m_mvt_mixture_nc, rhat = TRUE, ess = TRUE,
    pars = pars[-5])
-```
