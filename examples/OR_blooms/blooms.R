@@ -105,7 +105,7 @@ saveRDS(stanMod_mvt_norm,"stanMod_mvt_norm.rds")
 
 spatglm_pars = c("yearEffects", "sigma", "gp_sigmaSq", "gp_scale",
   "year_sigma","ar","spatialEffectsKnots")
-stanMod_norm = stan(file = 'stan_models/mvnNorm_estSigma_index_yr_ar1.stan',
+stanMod_mvn_norm = stan(file = 'stan_models/mvnNorm_estSigma_index_yr_ar1.stan',
   data = spatglm_data, chains = 6L, warmup = 500, iter = 1000, pars = spatglm_pars,
   control = list(adapt_delta = 0.95))
 
