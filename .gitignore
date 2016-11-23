@@ -59,3 +59,5 @@ simulationTesting/gamma-sim-testing.rds
 *.rds
 
 *.html
+
+*.vim

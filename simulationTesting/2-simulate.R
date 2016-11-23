@@ -1,123 +1,67 @@
 library(tidyverse)
-source("simulationTesting/sim_mvt_rf.R")
+library(rrfields)
 library(rstan)
-rstan_options(auto_write = TRUE)
-options(mc.cores = 4L)
+options(mc.cores = min(c(4L, parallel::detectCores())))
 
+# ------------------------------------------------------------
+# Pick reasonable values:
+if (interactive()) {
+  library(manipulate)
+  manipulate({
+    set.seed(seed)
+    simulation_data <- sim_rrfield(df = df, n_data_points = 100, seed = NULL,
+      n_draws = 6, n_knots = 7, gp_scale = gp_scale, gp_sigma = gp_sigma,
+      obs_error = "normal", sd_obs = CV)
+    print(simulation_data$plot)
+  }, gp_scale = slider(0.05, 10, 1, step = 0.25),
+    gp_sigma = slider(0.05, 10, 0.5, step = 0.25),
+    df = slider(2, 50, 4, step = 1),
+    CV = slider(0.01, 1, 0.05, step = 0.05),
+    seed = slider(1, 300, 10, step = 1))
+}
 
+# ------------------------------------------------------------
+# Now run across multiple arguments
 
-library(manipulate)
+library(rstanarm) # for student_t()
 
-manipulate({
+sim_fit <- function(df = 2, n_draws, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
+  comment = "", gp_sigma = 0.5) {
 
-  nDataPoints <- 100
-  g <- data.frame(lon = runif(nDataPoints, 0, upper),
-    lat = runif(nDataPoints, 0, upper))
-  nLocs <- dim(g)[1]
+  s <- sim_rrfield(df = df, n_data_points = 100, seed = NULL,
+    n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale, gp_sigma = gp_sigma,
+    obs_error = "normal", sd_obs = sd_obs)
 
-  draws <- 5
-  simulation_data <- sim_mvt_rf(df = df, grid = g, n_pts = nrow(g), seed = NULL,
-    n_draws = draws, n_knots = 30, gp_scale = gp_scale, sigma_t = 0.5)
-
-  out <- reshape2::melt(simulation_data$proj)
-  names(out) <- c("i", "pt", "re")
-  out <- arrange(out, i, pt)
-  out$lon <- rep(g$lon, draws)
-  out$lat <- rep(g$lat, draws)
-
-  p1 <- out %>%
-    ggplot(aes(x = lon, y = lat, z = re, colour = re)) +
-    facet_wrap(~i, ncol = 5) +
-    geom_point(size = 3) +
-    viridis::scale_color_viridis() +
-    theme_light()
-
-  # CV <- 0.2
-  gamma.a <- 1/(CV^2)
-  gamma.b <- gamma.a/exp(out$re)
-  out$obs <- rgamma(nrow(out), shape = gamma.a, rate = c(gamma.b))
-
-  # out <- mutate(out, obs = re + rnorm(nrow(out), sd = 0.5))
-  p2 <- out %>%
-    ggplot(aes(x = lon, y = lat, z = log(obs), colour = log(obs))) +
-    facet_wrap(~i, ncol = 5) +
-    geom_point(size = 3) +
-    viridis::scale_color_viridis() +
-    theme_light()
-  gridExtra::grid.arrange(p1, p2)
-}, gp_scale = slider(0.05, 1.4, 0.25, step = 0.05),
-  df = slider(2, 50, 4, step = 1),
-  CV = slider(0.01, 1.5, 0.2, step = 0.05),
-  upper = slider(1, 30, 10, step = 1))
-#
-# gamma.a <- 1/(CV^2)
-# gamma.b <- gamma.a/exp(simulation_data$proj)
-# y.gamma <- rgamma(nrow(gamma.b)*ncol(gamma.b), shape = gamma.a, rate = c(gamma.b))
-# y <- matrix(y.gamma, ncol = ncol(gamma.b))
-#
-# # y <- simulation_data$proj + matrix(
-# #     rnorm(ncol(simulation_data$proj) * nrow(simulation_data$proj), sd = 0.1),
-# #     nrow(simulation_data$proj), ncol(simulation_data$proj))
-#
-# model_data <- list(nKnots = nrow(simulation_data$knots), nLocs = nLocs,
-#   nT = nrow(simulation_data$re_knots), y = y,
-#   distKnotsSq = simulation_data$dist_knots_sq,
-#   distKnots21Sq = simulation_data$dist_knots21_sq)
-#
-# pars <- c("scaledf", "gp_scale", "gp_sigmaSq", "CV")
-# m <- stan(file = 'stan_models/mvtGamma_estSigma.stan',
-#   data = model_data, chains = 4L, warmup = 200L, iter = 400L, pars = pars)
-# m
-
-# ----------
-# now try across multiple arguments
-
-stan_mod <- rstan::stan_model("stan_models/mvtGamma_estSigma.stan")
-
-sim_fit <- function(df = 2, n_draws, n_knots = 30, gp_scale = 0.5, cv_obs = 0.2,
-  comment = "", sigma_t = 0.5) {
-
-  nDataPoints <- 100
-  g <- data.frame(lon = runif(nDataPoints, 0, 10),
-    lat = runif(nDataPoints, 0, 10))
-  n_pts <- nrow(g)
-
-  simulation_data <- sim_mvt_rf(df = df, grid = g, n_pts = n_pts, seed = NULL,
-    n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale, sigma_t = sigma_t)
-
-  gamma.a <- 1/(cv_obs^2)
-  gamma.b <- gamma.a/exp(simulation_data$proj)
-  y.gamma <- rgamma(nrow(gamma.b)*ncol(gamma.b), shape = gamma.a, rate = c(gamma.b))
-  y <- matrix(y.gamma, ncol = ncol(gamma.b))
-  model_data <- list(nKnots = nrow(simulation_data$knots), nLocs = n_pts,
-    nT = nrow(simulation_data$re_knots), y = y,
-    distKnotsSq = simulation_data$dist_knots_sq,
-    distKnots21Sq = simulation_data$dist_knots21_sq)
-
-  pars <- c("scaledf", "gp_scale", "gp_sigmaSq", "CV")
-  m <- rstan::sampling(stan_mod, data = model_data, chains = 4L, warmup = 300L,
-    iter = 600L, pars = pars)
-
-  b <- broom::tidyMCMC(m, rhat = TRUE, ess = TRUE)
-  if (any(b$ess < 200) | any(b$rhat > 1.05)) {
-    m <- rstan::sampling(stan_mod, data = model_data, chains = 4L, warmup = 2000L,
-      iter = 4000L, pars = pars)
+  fit_model <- function(iter) {
+    rrfield(y ~ 1, data = s$dat, time = "time", lon = "lon", lat = "lat",
+      nknots = n_knots, chains = 4L, iter = iter,
+      prior_gp_scale = student_t(3, 0, 15),
+      prior_gp_sigma = student_t(3, 0, 2.5),
+      prior_sigma = student_t(3, 0, 2.5),
+      prior_intercept = student_t(3, 0, 1),
+      prior_beta = student_t(3, 0, 1))
   }
 
+  m <- fit_model(iter = 800L)
+  b <- broom::tidyMCMC(m$model, rhat = TRUE, ess = TRUE)
+  if (any(b$ess < 200) | any(b$rhat > 1.05)) {
+    m <- fit_model(iter = 3000L)
+  }
   m
 }
 
 set.seed(1)
 arguments <- readxl::read_excel("simulationTesting/simulation-arguments.xlsx")
-arguments$count <- 50L
+arguments$count <- 8L
 arguments <- arguments[rep(seq_len(nrow(arguments)), arguments$count), ]
 arguments_apply <- dplyr::select(arguments, -count, -case)
 nrow(arguments)
 
-out <- plyr::mlply(arguments_apply, sim_fit)
-saveRDS(out, file = "simulationTesting/gamma-sim-testing.rds")
+out <- plyr::mlply(arguments_apply[1,], sim_fit)
+saveRDS(out, file = "simulationTesting/mvt-norm-sim-testing.rds")
 
-out <- readRDS("simulationTesting/gamma-sim-testing.rds")
+# TODO pick only 4 params:
+out <- readRDS("simulationTesting/mvt-norm-sim-testing.rds")
 out_print <- out %>%
   map_df(function(x) {
     broom::tidyMCMC(x, estimate.method = "median") %>%
@@ -149,11 +93,11 @@ plot_viol <- function(term, term_true) {
     labs(title = term_true, x = "")
 }
 
-p1 <- plot_viol("scaledf_est", "df")
+p1 <- plot_viol("df_est", "df")
 p2 <- plot_viol("gp_scale_est", "gp_scale")
-p3 <- plot_viol("gp_sigmaSq_est", "gp_sigmaSq")
-p4 <- plot_viol("CV_est", "cv_obs")
+p3 <- plot_viol("gp_sigma_est", "gp_sigmaSq")
+p4 <- plot_viol("sigma_est", "sd_obs")
 
-pdf("simulationTesting/sim-gamma-pars.pdf", width = 7, height = 6)
+pdf("simulationTesting/sim-mvt-norm-pars.pdf", width = 7, height = 6)
 gridExtra::grid.arrange(p1, p2, p3, p4, nrow = 2)
 dev.off()
