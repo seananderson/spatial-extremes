@@ -100,7 +100,7 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 # estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
 stanMod_mvt_norm = stan(file = 'stan_models/mvtNorm_estSigma_index_yr_ar1.stan',
-  data = spatglm_data, chains = 4L, warmup = 1000, iter = 2000, pars = spatglm_pars,
+  data = spatglm_data, chains = 4L, warmup = 750, iter = 1500, pars = spatglm_pars,
   control = list(adapt_delta = 0.99))
 
 saveRDS(stanMod_mvt_norm,"examples/OR_blooms/stanMod_mvt_norm.rds")
@@ -108,7 +108,7 @@ saveRDS(stanMod_mvt_norm,"examples/OR_blooms/stanMod_mvt_norm.rds")
 spatglm_pars = c("yearEffects", "sigma", "gp_sigmaSq", "gp_scale",
   "year_sigma","ar","spatialEffectsKnots")
 stanMod_mvn_norm = stan(file = 'stan_models/mvnNorm_estSigma_index_yr_ar1.stan',
-  data = spatglm_data, chains = 4L, warmup = 1000, iter = 2000, pars = spatglm_pars,
+  data = spatglm_data, chains = 4L, warmup = 750, iter = 1500, pars = spatglm_pars,
   control = list(adapt_delta = 0.99))
 
 saveRDS(stanMod_mvn_norm,"examples/OR_blooms/stanMod_mvn_norm.rds")
