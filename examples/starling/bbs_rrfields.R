@@ -14,14 +14,19 @@ coordinates(d) = c("Longitude", "Latitude")
 proj4string(d) <- CRS("+proj=longlat +datum=WGS84")  ## for example
 d = as.data.frame(spTransform(d, CRS(paste("+proj=utm +zone=11"," ellps=WGS84",sep=''))))
 
+d$RouteID = as.numeric(as.factor(d$Route))
 #plot of data
 #ggplot(d, aes(Longitude,Latitude,color=log(sum))) + geom_point(alpha=1,size=1) + facet_wrap(~year)
 
-mvt_gamma = rrfield(sum ~ 1, data=d, time = "year", lon="Longitude", lat="Latitude",
-  nknots = 30L, obs_error = "gamma", covariance="squared-exponential",
+mvt_gamma = rrfield(sum ~ -1, data=d, time = "year", lon="Longitude", lat="Latitude",
+  station = "RouteID", nknots = 30L, obs_error = "gamma", covariance="squared-exponential",
   algorithm="sampling", year_re = TRUE, chains = 3L, iter=1000,
   control = list(adapt_delta = 0.99))
 
+mvn_gamma = rrfield(sum ~ 1, data=d, time = "year", lon="Longitude", lat="Latitude",
+  nknots = 30L, obs_error = "gamma", covariance="squared-exponential",
+  algorithm="sampling", year_re = TRUE, chains = 3L, iter=1000,
+  control = list(adapt_delta = 0.99))
 
 yearID = as.numeric((d$year))
 yearID = 1 + yearID - min(yearID)
