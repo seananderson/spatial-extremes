@@ -21,14 +21,14 @@ d$RouteID = as.numeric(as.factor(d$Route))
 # fit model with MVT random field
 mvt_gamma = rrfield(sum ~ -1, data=d, time = "year", lon="Longitude", lat="Latitude",
   station = "RouteID", nknots = 30L, obs_error = "gamma", covariance="squared-exponential",
-  algorithm="sampling", year_re = TRUE, chains = 3L, iter=1000,
-  control = list(adapt_delta = 0.99))
+  estimate_df = TRUE, estimate_ar = TRUE, algorithm="sampling", year_re = TRUE,
+  chains = 3L, iter=1000, control = list(adapt_delta = 0.99))
 
 # fit model with MVN random field
 mvn_gamma = rrfield(sum ~ -1, data=d, time = "year", lon="Longitude", lat="Latitude",
-  nknots = 30L, obs_error = "gamma", covariance="squared-exponential", estimate_df = FALSE,
-  fixed_df_value = 100, algorithm="sampling", year_re = TRUE, chains = 3L, iter=1000,
-  control = list(adapt_delta = 0.99))
+  station = "RouteID", nknots = 30L, obs_error = "gamma", covariance="squared-exponential",
+  estimate_df = FALSE, fixed_df_value = 100, estimate_ar = TRUE, algorithm="sampling",
+  year_re = TRUE, chains = 3L, iter=1000, control = list(adapt_delta = 0.99))
 
 save.image("starling_rrfields.Rdata")
 
