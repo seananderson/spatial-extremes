@@ -15,9 +15,18 @@ coordinates(d) = c("Longitude", "Latitude")
 proj4string(d) <- CRS("+proj=longlat +datum=WGS84")  ## for example
 d = as.data.frame(spTransform(d, CRS(paste("+proj=utm +zone=11"," ellps=WGS84",sep=''))))
 
+# Hold out 10% for test data set
+set.seed(123)
+s = sample(seq(1,nrow(d)), size = floor(nrow(d)*0.1), replace=F)
+holdout = d[s,]
+d = d[-s,]
+
 d$RouteID = as.numeric(as.factor(d$Route))
 #plot of data
 #ggplot(d, aes(Longitude,Latitude,color=log(sum))) + geom_point(alpha=1,size=1) + facet_wrap(~year)
+
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
 
 # fit model with MVT random field
 mvt_gamma = rrfield(sum ~ -1, data=d, time = "year", lon="Longitude", lat="Latitude",
@@ -40,14 +49,20 @@ ggplot(data=df, aes(x=x)) + geom_histogram(alpha=0.5) + xlab("MVT degrees of fre
 dev.off()
 
 # Plot the predictions from each object to the fitted data
-mvt_pred = predict(mvt_gamma, mcmc_draws = 500)$summary$mean
-mvn_pred = predict(mvn_gamma, mcmc_draws = 500)$summary$mean
+mvt_pred = predict(mvt_gamma, newdata = holdout, mcmc_draws = 1000)$summary
+mvn_pred = predict(mvn_gamma, newdata = holdout, mcmc_draws = 1000)$summary
+
+mvn_coverage = length(which(holdout[,"sum"] > mvn_pred$lower2.5 & holdout[,"sum"] < mvn_pred$upper97.5))
+mvt_coverage = length(which(holdout[,"sum"] > mvt_pred$lower2.5 & holdout[,"sum"] < mvt_pred$upper97.5))
 
 pdf("figs/predictions_vs_observed.pdf")
-plot(log(mvn_pred), log(d[,"sum"]), col="grey",
+plot(log(mvn_pred$mean), log(holdout[,"sum"]), col="red",
   pch = 16, cex=0.6, xlab = "Prediction", ylab = "Observed")
-points(log(mvt_pred), log(d[,"sum"]), cex=0.8)
+points(log(mvt_pred$mean), log(holdout[,"sum"]), cex=0.8, col="blue")
+abline(0,1)
 dev.off()
+
+
 
 # plot year effects with ribbon plot
 mvt_year=extract(mvt_gamma$model)[["yearEffects"]]
