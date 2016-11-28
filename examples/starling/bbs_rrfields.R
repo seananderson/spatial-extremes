@@ -18,25 +18,19 @@ d$RouteID = as.numeric(as.factor(d$Route))
 #plot of data
 #ggplot(d, aes(Longitude,Latitude,color=log(sum))) + geom_point(alpha=1,size=1) + facet_wrap(~year)
 
+# fit model with MVT random field
 mvt_gamma = rrfield(sum ~ -1, data=d, time = "year", lon="Longitude", lat="Latitude",
   station = "RouteID", nknots = 30L, obs_error = "gamma", covariance="squared-exponential",
   algorithm="sampling", year_re = TRUE, chains = 3L, iter=1000,
   control = list(adapt_delta = 0.99))
 
-mvn_gamma = rrfield(sum ~ 1, data=d, time = "year", lon="Longitude", lat="Latitude",
-  nknots = 30L, obs_error = "gamma", covariance="squared-exponential",
-  algorithm="sampling", year_re = TRUE, chains = 3L, iter=1000,
+# fit model with MVN random field
+mvn_gamma = rrfield(sum ~ -1, data=d, time = "year", lon="Longitude", lat="Latitude",
+  nknots = 30L, obs_error = "gamma", covariance="squared-exponential", estimate_df = FALSE,
+  fixed_df_value = 100, algorithm="sampling", year_re = TRUE, chains = 3L, iter=1000,
   control = list(adapt_delta = 0.99))
 
-yearID = as.numeric((d$year))
-yearID = 1 + yearID - min(yearID)
-stationID = seq(1,nrow(d))
-
-# create list for STAN
-spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)), "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y, "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq, "x"=rep(0,length(Y)))
-spatglm_pars = c("scaledf","yearEffects", "CV", "gp_sigmaSq", "gp_scale", "year_sigma","ar","spatialEffectsKnots")
-
-save.image("starling_bbs_mvtmvn.Rdata")
+save.image("starling_rrfields.Rdata")
 
 # plot df
 df=data.frame("x"=extract(mvt_gamma)[["scaledf"]])
