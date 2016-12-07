@@ -40,7 +40,7 @@ mvn_gamma = rrfield(sum ~ -1, data=d, time = "year", lon="Longitude", lat="Latit
   estimate_df = FALSE, fixed_df_value = 100, estimate_ar = TRUE, algorithm="sampling",
   year_re = TRUE, chains = 3L, iter=1000, control = list(adapt_delta = 0.99))
 
-save.image("starling_rrfields.Rdata")
+#save.image("starling_rrfields.Rdata")
 
 # plot df
 df=data.frame("x"=extract(mvt_gamma$model)[["df"]])
@@ -49,11 +49,12 @@ ggplot(data=df, aes(x=x)) + geom_histogram(alpha=0.5) + xlab("MVT degrees of fre
 dev.off()
 
 # Plot the predictions from each object to the fitted data
-mvt_pred = predict(mvt_gamma, newdata = holdout, mcmc_draws = 1000)$summary
-mvn_pred = predict(mvn_gamma, newdata = holdout, mcmc_draws = 1000)$summary
+mvt_pred = predict(mvt_gamma, newdata = holdout, mcmc_draws = 1000, quantiles=c(0.025,0.975))$summary
+mvn_pred = predict(mvn_gamma, newdata = holdout, mcmc_draws = 1000, quantiles=c(0.025,0.975))$summary
 
-mvn_coverage = length(which(holdout[,"sum"] > mvn_pred$lower2.5 & holdout[,"sum"] < mvn_pred$upper97.5))
-mvt_coverage = length(which(holdout[,"sum"] > mvt_pred$lower2.5 & holdout[,"sum"] < mvt_pred$upper97.5))
+# Calculate coverage of confidence intervals (including observation model). Defaults to 95%
+mvn_coverage = length(which(holdout[,"sum"] > mvn_pred$confint_lower & holdout[,"sum"] < mvn_pred$confint_upper))
+mvt_coverage = length(which(holdout[,"sum"] > mvt_pred$confint_lower & holdout[,"sum"] < mvt_pred$confint_upper))
 
 pdf("figs/predictions_vs_observed.pdf")
 plot(log(mvn_pred$mean), log(holdout[,"sum"]), col="red",
@@ -62,7 +63,11 @@ points(log(mvt_pred$mean), log(holdout[,"sum"]), cex=0.8, col="blue")
 abline(0,1)
 dev.off()
 
-
+# Make plot of the ratio of confidence intervals from the mvn to mvt
+ratio = log((mvn_pred$confint_upper - mvn_pred$confint_lower) / (mvt_pred$confint_upper - mvt_pred$confint_lower))
+pdf("histogram of ratio of CI widths.pdf")
+hist(ratio, 40, col="grey", xlab = paste0("MVN CI widths : MVT CI widths"), main="")
+dev.off()
 
 # plot year effects with ribbon plot
 mvt_year=extract(mvt_gamma$model)[["yearEffects"]]
