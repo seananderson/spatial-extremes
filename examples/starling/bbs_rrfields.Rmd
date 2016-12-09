@@ -1,11 +1,22 @@
+
+# Starling example
+
+```{r packages, echo=FALSE, silent=FALSE, warning=FALSE}
 library(sp)
 library(rgdal)
 library(ggplot2)
 library(rrfields)
 library(rstan)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
 
-# Load data
-d = readRDS("examples/starling/bbs.rds")# load in 50 - stop data, summed at route level
+```
+
+## Load data
+
+```{r load}
+d = readRDS("bbs.rds")
+
 d = d[which(d$AOU=="4930"),] # use only starling data
 d = d[which(d$statenum%in%c(33,69,89) & d$year > 1997),] # data from ID, WA, OR
 
@@ -25,10 +36,15 @@ d$RouteID = as.numeric(as.factor(d$Route))
 #plot of data
 #ggplot(d, aes(Longitude,Latitude,color=log(sum))) + geom_point(alpha=1,size=1) + facet_wrap(~year)
 
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
+```
 
-# fit model with MVT random field
+## Run model if output doesn't exist, otherwise load workspace
+
+```{r}
+fname = "starling_rrfields.Rdata"
+runModel = !file.exists(fname)
+if(runModel) {
+  # fit model with MVT random field
 mvt_gamma = rrfield(sum ~ -1, data=d, time = "year", lon="Longitude", lat="Latitude",
   station = "RouteID", nknots = 30L, obs_error = "gamma", covariance="squared-exponential",
   estimate_df = TRUE, estimate_ar = TRUE, algorithm="sampling", year_re = TRUE,
@@ -40,41 +56,50 @@ mvn_gamma = rrfield(sum ~ -1, data=d, time = "year", lon="Longitude", lat="Latit
   estimate_df = FALSE, fixed_df_value = 100, estimate_ar = TRUE, algorithm="sampling",
   year_re = TRUE, chains = 3L, iter=1000, control = list(adapt_delta = 0.99))
 
-#save.image("starling_rrfields.Rdata")
-load("examples/starling/starling_rrfields.Rdata")
+save.image(fname)
+}
 
-# plot df
-df=data.frame("x"=extract(mvt_gamma$model)[["df"]])
-pdf("figs/starling_df.pdf")
-ggplot(data=df, aes(x=x)) + geom_histogram(alpha=0.5) + xlab("MVT degrees of freedom")
-dev.off()
+if(!runModel) {
+  load(fname)
+  mvt_gamma$obs_model = 0
+  mvn_gamma$obs_model = 0
+}
+```
 
-mvt_gamma$obs_model = 0
-mvn_gamma$obs_model = 0
+## Calculate prediction intervals
+
+```{r intervals}
 # Plot the predictions from each object to the fitted data
 mvt_pred = predict(mvt_gamma, newdata = holdout, mcmc_draws = 1000,
   conf_level = 0.95, interval = "prediction")
 mvn_pred = predict(mvn_gamma, newdata = holdout, mcmc_draws = 1000,
   conf_level = 0.95, interval = "prediction")
+```
 
-# Calculate coverage of confidence intervals (including observation model). Defaults to 95%
-mvn_coverage = length(which(holdout[,"sum"] > mvn_pred$conf_low & holdout[,"sum"] < mvn_pred$conf_high))
-mvt_coverage = length(which(holdout[,"sum"] > mvt_pred$conf_low & holdout[,"sum"] < mvt_pred$conf_high))
 
-pdf("figs/predictions_vs_observed.pdf")
+```{r, fig.pos="placeHere", fig.cap = "Estimated posterior degrees of freedom for the multivariate-t distribution"}
+df=data.frame("x"=extract(mvt_gamma$model)[["df"]])
+ggplot(data=df, aes(x=x)) + geom_histogram(alpha=0.5) + xlab("MVT degrees of freedom")
+```
+
+
+```{r, fig.pos="placeHere", fig.cap = "Estimated predicted vs observed (blue = mvt)"}
 plot(log(mvn_pred$estimate), log(holdout[,"sum"]), col="red",
   pch = 16, cex=0.6, xlab = "Prediction", ylab = "Observed")
 points(log(mvt_pred$estimate), log(holdout[,"sum"]), cex=0.8, col="blue")
 abline(0,1)
-dev.off()
+```
 
-# Make plot of the ratio of confidence intervals from the mvn to mvt
+```{r, fig.pos="placeHere", fig.cap = "Ratio of MVN CI widths : MVT CI widtsh"}
+
 ratio = log((mvn_pred$conf_high - mvn_pred$conf_low) / (mvt_pred$conf_high - mvt_pred$conf_low))
-pdf("histogram of ratio of CI widths.pdf")
-hist(ratio, 40, col="grey", xlab = paste0("MVN CI widths : MVT CI widths"), main="")
-dev.off()
 
-# plot year effects with ribbon plot
+hist(ratio, 40, col="grey", xlab = paste0("MVN CI widths : MVT CI widths"), main="")
+```
+
+
+```{r, fig.pos="placeHere", fig.cap = "Estimated year effects"}
+
 mvt_year=extract(mvt_gamma$model)[["yearEffects"]]
 mvt_year = data.frame("year"=seq(min(d$year),max(d$year)), "mean"=apply(mvt_year,2,mean), "lower"=apply(mvt_year,2,quantile,0.025),
   "upper"=apply(mvt_year,2,quantile,0.975),"model"="mvt")
@@ -83,7 +108,13 @@ mvn_year = data.frame("year"=seq(min(d$year),max(d$year)), "mean"=apply(mvn_year
   "upper"=apply(mvn_year,2,quantile,0.975),"model"="mvn")
 mvt_year = rbind(mvt_year,mvn_year)
 
-pdf("figs/starling_yearEffects.pdf")
 ggplot(data=mvt_year) + geom_ribbon(aes(x=year,ymin=lower,ymax=upper,group=model,fill=model),alpha=0.2) + xlab("Year") + ylab("Estimated year effect")
-dev.off()
+```
 
+```{r, fig.pos="placeHere", fig.cap = "Histogram of raw data and estimated values"}
+
+par(mfrow = c(3,1), mai=c(0.5,0.5,0.1,0.1))
+hist(holdout[,"sum"], 40, col="grey", main="Raw", xlab="", ylab="")
+hist(mvt_pred$estimate, 40, col="grey", main="MVT", xlab="", ylab="")
+hist(mvn_pred$estimate, 40, col="grey", main="MVN", xlab="", ylab="")
+```
