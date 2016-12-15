@@ -37,18 +37,18 @@ d <- d %>% group_by(month) %>%
   ungroup()
 
 library(ggplot2)
-filter(d, prc_chla_trans < 3, prc_chla_trans > -3) %>%
-  ggplot(aes(lon, lat, fill = prc_chla_trans)) +
-  geom_raster() +
-  scale_fill_gradient2() +
-  facet_wrap(~month)
+# filter(d, prc_chla_trans < 3, prc_chla_trans > -3) %>%
+#   ggplot(aes(lon, lat, fill = prc_chla_trans)) +
+#   geom_raster() +
+#   scale_fill_gradient2() +
+#   facet_wrap(~month)
 
 
 # convert to UTMs
 # sample grid - at ?
 # fiddle with downsampling (500?), fiddle with knots (30-50)
 
-# try downsampling of every 20th lat/lon
+# try downsampling of every nth lat/lon
 dowsample=20
 lons = unique(d$lon)[seq(1, length(unique(d$lon)), dowsample)]
 lats = unique(d$lat)[seq(1, length(unique(d$lat)), dowsample)]
@@ -62,24 +62,67 @@ dsub = as.data.frame(sp::spTransform(dsub, sp::CRS(paste("+proj=utm +zone=10"," 
 
 dsub = dsub[which(is.na(dsub$prc_chla_trans)==FALSE),]
 
-filter(dsub, prc_chla_trans < 3, prc_chla_trans > -3) %>%
-  ggplot(aes(lon, lat, fill = prc_chla_trans)) +
-  geom_raster() +
-  scale_fill_gradient2() +
-  facet_wrap(~month)
-
-nKnots = 75
-knots = cluster::pam(dsub[,c("lon","lat")],nKnots)$medoids
-
 # filter(dsub, prc_chla_trans < 3, prc_chla_trans > -3) %>%
+#   ggplot(aes(lon, lat, fill = prc_chla_trans)) +
+#   geom_raster() +
+#   scale_fill_gradient2() +
+#   facet_wrap(~month)
+
+nKnots = 35L
+
+dsub <- mutate(dsub, lat_scaled = lat / 100000, lon_scaled = lon / 100000,
+  stationID = as.integer(as.factor(paste(lon_scaled, lat_scaled))), timeID = as.integer(as.factor(month)))
+
 dsub %>%
   ggplot() + geom_point(data=dsub, aes(lon, lat, color = prc_chla_trans)) +
   facet_wrap(~month) + scale_color_gradient2()
-distKnots = as.matrix(dist(knots)/100000)
-distKnotsSq = distKnots^2 # squared distances
 
+# ------------------------------
+# new model
+
+library(rrfields)
+library(rstan)
+options(mc.cores = parallel::detectCores())
+# mvt_norm <- rrfield(prc_chla_trans ~ 0, data = filter(dsub, timeID > 4),
+#   time = "timeID", lon="lon_scaled", lat="lat_scaled",
+#   nknots = nKnots, estimate_df = TRUE,
+#   algorithm = "sampling", station = "stationID",
+#   chains = 3L, iter = 1000L)
+
+mvt_norm <- rrfield(prc_chla_trans ~ 0, data = dsub,
+  time = "timeID", lon="lon_scaled", lat="lat_scaled",
+  nknots = nKnots, estimate_df = TRUE,
+  algorithm = "sampling",
+  chains = 4L, iter = 2000L, cores = 4L)
+
+mvn_norm <- rrfield(prc_chla_trans ~ 0, data = dsub,
+  time = "timeID", lon="lon_scaled", lat="lat_scaled",
+  nknots = nKnots, estimate_df = FALSE, fixed_df_value = 1e6,
+  algorithm = "sampling",
+  chains = 4L, iter = 2000L, cores = 4L)
+
+mvt_norm2
+
+saveRDS(mvt_norm, file = "examples/OR_blooms/blooms-2016-12-14.rds")
+mvt_norm <- readRDS("examples/OR_blooms/blooms-2016-12-14.rds")
+
+obs <- mvt_norm2$data$prc_chla_trans
+p <- predict(mvt_norm2)
+# pp <- predict(mvt_norm2, interval = "prediction")
+plot(obs, p$estimate, col = "#00000030")
+cor(obs, p$estimate)
+# segments(obs, pp$conf_low, obs, pp$conf_high, lwd = 0.5, col = "#00000020")
+segments(obs, p$conf_low, obs, p$conf_high, lwd = 0.5, col = "#00000030")
+abline(a = 0, b = 1)
+# (coverage <- mean(obs > pp$conf_low & obs < pp$conf_high))
+
+# ------------------
+# old model
+knots = cluster::pam(dsub[,c("lon_scaled","lat_scaled")],nKnots)$medoids
+distKnots = as.matrix(dist(knots))
+distKnotsSq = distKnots^2 # squared distances
 # Calculate distance from knots to grid
-distAll = as.matrix(dist(rbind(dsub[,c("lon","lat")], knots))/100000)^2
+distAll = as.matrix(dist(rbind(dsub[,c("lon_scaled","lat_scaled")], knots)))^2
 # this is the transpose of the lower left corner
 nLocs = nrow(dsub)
 distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
