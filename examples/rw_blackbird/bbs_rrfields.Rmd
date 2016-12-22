@@ -23,7 +23,7 @@ options(mc.cores = parallel::detectCores())
 
 d = readRDS("examples/starling/bbs.rds")
 d = d[which(d$AOU=="4980"),] # RW blackbirds
-d = d[which(d$statenum%in%c(83) & d$year > 1997),] 
+d = d[which(d$statenum%in%c(83) & d$year > 2010),] 
 
 d$ID = seq(1,nrow(d))
 coordinates(d) = c("Longitude", "Latitude")
@@ -36,16 +36,16 @@ d[,"year"] = d[,"year"] - min(d[,"year"]) + 1
 d$StationID = as.integer(as.factor(d$Route))
 
 mvt_gamma = rrfield(sum ~ as.factor(year), data=d, time = "year", 
-  lon="Longitude", lat="Latitude", station = "StationID", nknots = 30, obs_error = "gamma", covariance="squared-exponential",prior_gp_sigma = half_t(100, 0, 0.1), prior_gp_scale = half_t(10, 0, 0.1), prior_intercept = student_t(100, 3.6, 0.5), prior_sigma = half_t(10, 0, 0.5), prior_rw_sigma = half_t(10, 0, 0.3), prior_beta = student_t(30, 0, 1), 
-  estimate_df = TRUE, estimate_ar = FALSE, fixed_ar_value = 1, year_re = FALSE, algorithm="sampling", chains = 4L, warmup = 1000, iter=1500, thin=1, control = list(adapt_delta = 0.99))
+  lon="Longitude", lat="Latitude", station = "StationID", nknots = 30, obs_error = "gamma", covariance="squared-exponential",prior_gp_sigma = half_t(100, 0, 0.1), prior_gp_scale = half_t(100, 0, 0.05), prior_intercept = student_t(100, 3.5, 0.3), prior_beta = student_t(100, 0, 1), prior_sigma = half_t(10, 0, 0.5), 
+  estimate_df = TRUE, estimate_ar = FALSE, fixed_ar_value = 1, algorithm="sampling", chains = 5L, warmup = 500, iter=1000, thin=1, control = list(adapt_delta = 0.99))
 
-mvn_gamma = rrfield(sum ~ as.numeric(year), data=d, time = "year", 
-  lon="Longitude", lat="Latitude", station = "StationID", nknots = 30, obs_error = "gamma", covariance="squared-exponential",prior_gp_sigma = half_t(100, 0, 0.1), prior_gp_scale = half_t(10, 0, 0.1), prior_intercept = student_t(100, 3.6, 0.5), prior_sigma = half_t(10, 0, 0.5), prior_rw_sigma = half_t(10, 0, 0.3), prior_beta = student_t(30, 0, 1), 
-  estimate_df = FALSE, estimate_ar = FALSE, fixed_ar_value = 1, year_re = FALSE, algorithm="sampling", chains = 4L, warmup = 1000, iter=1500, iter=4000, thin=1, control = list(adapt_delta = 0.99))
+mvn_gamma = rrfield(sum ~ as.factor(year), data=d, time = "year", 
+  lon="Longitude", lat="Latitude", station = "StationID", nknots = 30, obs_error = "gamma", covariance="squared-exponential",prior_gp_sigma = half_t(100, 0, 0.1), prior_gp_scale = half_t(100, 0, 0.05), prior_intercept = student_t(100, 3.5, 0.3), prior_beta = student_t(100, 0, 1), prior_sigma = half_t(10, 0, 0.5), 
+  estimate_df = FALSE, estimate_ar = FALSE, fixed_ar_value = 1, algorithm="sampling", chains = 5L, warmup = 500, iter=1000, thin=1, control = list(adapt_delta = 0.99))
 
 #plot of data
-#ggplot(d, aes(Longitude,Latitude,color=log(sum))) + 
-# geom_point(alpha=1,size=1) + facet_wrap(~year)
+ggplot(d, aes(Longitude,Latitude,color=log(sum))) + 
+ geom_point(alpha=1,size=1) + facet_wrap(~year)
 ```
 
 ## Calculate prediction intervals
