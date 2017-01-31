@@ -61,3 +61,7 @@ simulationTesting/gamma-sim-testing.rds
 *.html
 
 *.vim
+
+examples/moths/moth-dat.csv
+
+examples/moths/moth-sites.csv

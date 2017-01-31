@@ -37,6 +37,10 @@ d <- d %>% group_by(month) %>%
   ungroup()
 
 library(ggplot2)
+
+# shortbelly
+# english sole, petrole
+
 # filter(d, prc_chla_trans < 3, prc_chla_trans > -3) %>%
 #   ggplot(aes(lon, lat, fill = prc_chla_trans)) +
 #   geom_raster() +
@@ -68,7 +72,7 @@ dsub = dsub[which(is.na(dsub$prc_chla_trans)==FALSE),]
 #   scale_fill_gradient2() +
 #   facet_wrap(~month)
 
-nKnots = 35L
+nKnots = 20L
 
 dsub <- mutate(dsub, lat_scaled = lat / 100000, lon_scaled = lon / 100000,
   stationID = as.integer(as.factor(paste(lon_scaled, lat_scaled))), timeID = as.integer(as.factor(month)))
@@ -93,26 +97,29 @@ mvt_norm <- rrfield(prc_chla_trans ~ 0, data = dsub,
   time = "timeID", lon="lon_scaled", lat="lat_scaled",
   nknots = nKnots, estimate_df = TRUE,
   algorithm = "sampling",
-  chains = 4L, iter = 2000L, cores = 4L)
+  chains = 2L, iter = 800L, cores = 2L, control = list(adapt_delta = 0.95))
 
 mvn_norm <- rrfield(prc_chla_trans ~ 0, data = dsub,
   time = "timeID", lon="lon_scaled", lat="lat_scaled",
   nknots = nKnots, estimate_df = FALSE, fixed_df_value = 1e6,
   algorithm = "sampling",
-  chains = 4L, iter = 2000L, cores = 4L)
-
-mvt_norm2
+  chains = 4L, iter = 2000L, cores = 4L, )
 
 saveRDS(mvt_norm, file = "examples/OR_blooms/blooms-2016-12-14.rds")
-mvt_norm <- readRDS("examples/OR_blooms/blooms-2016-12-14.rds")
+mvt_norm <- readRDS("examples/OR_blooms/mvt-blooms-2016-12-14.rds")
 
-obs <- mvt_norm2$data$prc_chla_trans
-p <- predict(mvt_norm2)
+mvt_norm
+
+plot(mvt_norm)
+
+obs <- mvt_norm$data$prc_chla_trans
+p <- predict(mvt_norm)
 # pp <- predict(mvt_norm2, interval = "prediction")
 plot(obs, p$estimate, col = "#00000030")
+plot(p$estimate, obs - p$estimate, col = "#00000030");abline(h = 0)
 cor(obs, p$estimate)
 # segments(obs, pp$conf_low, obs, pp$conf_high, lwd = 0.5, col = "#00000020")
-segments(obs, p$conf_low, obs, p$conf_high, lwd = 0.5, col = "#00000030")
+# segments(obs, p$conf_low, obs, p$conf_high, lwd = 0.5, col = "#00000030")
 abline(a = 0, b = 1)
 # (coverage <- mean(obs > pp$conf_low & obs < pp$conf_high))
 

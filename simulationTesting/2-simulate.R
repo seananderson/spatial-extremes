@@ -30,27 +30,27 @@ sim_fit <- function(df = 2, n_draws, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
 
   s <- sim_rrfield(df = df, n_data_points = 100, seed = NULL,
     n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale, gp_sigma = gp_sigma,
-    obs_error = "normal", sd_obs = sd_obs)
+    sd_obs = sd_obs, obs_error = "gamma")
 
   fit_model <- function(iter) {
     rrfield(y ~ 1, data = s$dat, time = "time", lon = "lon", lat = "lat",
-      nknots = n_knots, chains = 4L, iter = iter,
-      prior_gp_scale = student_t(3, 0, 15),
-      prior_gp_sigma = student_t(3, 0, 2.5),
+      nknots = n_knots, chains = 2L, iter = iter, obs_error = "gamma",
+      prior_gp_scale = student_t(3, 0, 5),
+      prior_gp_sigma = student_t(3, 0, 5),
       prior_sigma = student_t(3, 0, 2.5),
-      prior_intercept = student_t(3, 0, 1),
+      prior_intercept = student_t(999, 0, 0.2),
       prior_beta = student_t(3, 0, 1))
   }
 
-  m <- fit_model(iter = 800L)
+  m <- fit_model(iter = 400L)
   b <- broom::tidyMCMC(m$model, rhat = TRUE, ess = TRUE)
-  if (any(b$ess < 200) | any(b$rhat > 1.05)) {
-    m <- fit_model(iter = 3000L)
-  }
+  # if (any(b$ess < 200) | any(b$rhat > 1.05)) {
+    # m <- fit_model(iter = 3000L)
+  # }
   m
 }
 
-set.seed(1)
+set.seed(12)
 arguments <- readxl::read_excel("simulationTesting/simulation-arguments.xlsx")
 arguments$count <- 8L
 arguments <- arguments[rep(seq_len(nrow(arguments)), arguments$count), ]
