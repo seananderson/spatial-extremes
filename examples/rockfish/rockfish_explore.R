@@ -16,7 +16,7 @@ catch_dat = filter(catch_dat, catch_dat$year >= 2003)
 for(i in 1:length(spp)) {
 
 # merge df for a single spp
-catch = left_join(haul_chars, filter(catch_dat, common_name == "darkblotched rockfish")) %>%
+catch = left_join(haul_chars, filter(catch_dat, common_name == spp[i])) %>%
   filter(!is.na(cpue_kg_per_ha_der)) %>%
   select(latitude_dd, longitude_dd, temperature_at_gear_c_der, cpue_kg_per_ha_der,
     depth_m, year)
