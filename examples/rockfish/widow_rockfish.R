@@ -55,4 +55,5 @@ mvt_gamma = rrfield(log(cpue_kg_per_ha_der) ~ as.factor(year), data = catch[-hol
   estimate_df = TRUE,
   chains = 4, iter = 700)
 
+saveRDS(mvt_gamma,"widow.rds")
 pred = predict(mvt_gamma)
