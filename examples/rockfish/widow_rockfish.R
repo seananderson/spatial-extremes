@@ -40,16 +40,19 @@ catch = select(catch, ID, latitude_dd, longitude_dd, temperature_at_gear_c_der, 
   depth_m, year)
 holdout = sample(1:nrow(catch), size=round(nrow(catch)*0.1,0), replace=F)
 
+catch$cpue_kg_per_km2 = catch$cpue_kg_per_ha_der*100
+
 mvt_gamma = rrfield(log(cpue_kg_per_ha_der) ~ as.factor(year), data = catch[-holdout,],
   time = "year", lon = "longitude_dd", lat = "latitude_dd", station = "ID",
   nknots = 20,
   obs_error = "normal",
   prior_gp_sigma = half_t(100, 0, 3),
   prior_gp_scale = half_t(100, 0, 5),
-  prior_intercept = student_t(100, 0, 50),
+  prior_intercept = student_t(100, 0, 10),
   prior_beta = student_t(100, 0, 10),
   prior_sigma = half_t(100, 0, 3),
   estimate_ar = FALSE,
   estimate_df = TRUE,
-  chains = 2, iter = 700)
+  chains = 4, iter = 700)
 
+pred = predict(mvt_gamma)
