@@ -13,7 +13,7 @@ spp = unique(catch_dat$common_name)
 catch_dat$year = as.numeric(substr(catch_dat$date_dim.full_date,1,4))
 catch_dat = filter(catch_dat, catch_dat$year >= 2003)
 
-for(i in 1:length(spp)) {
+for(i in 22:length(spp)) {
 
 # merge df for a single spp
 catch = left_join(haul_chars, filter(catch_dat, common_name == spp[i])) %>%
@@ -59,3 +59,8 @@ else {
 }
 ggsave(filename = paste0("examples/rockfish/",spp[i],".png"), plot=g1)
 }
+
+saveRDS(out_df,"explore_out_df.rds")
+group_by(out_df,spp) %>%
+  mutate(rmse2 = rmse - mean(rmse)) %>%
+ggplot(aes(year, rmse2, group = spp, col=spp)) + geom_line() + facet_wrap(~spp)
