@@ -25,8 +25,8 @@ sp::proj4string(catch) <- sp::CRS("+proj=longlat +datum=WGS84")  ## for example
 catch = as.data.frame(sp::spTransform(catch, sp::CRS(paste("+proj=utm +zone=10"," ellps=WGS84",sep=''))))
 
 # rescale
-catch$latitude_dd = catch$latitude_dd/1000000
-catch$longitude_dd = catch$longitude_dd/1000000
+catch$latitude_dd = catch$latitude_dd/100000
+catch$longitude_dd = catch$longitude_dd/100000
 
 ggplot(catch, aes(longitude_dd, latitude_dd, color = log(cpue_kg_per_ha_der))) + geom_point() + facet_wrap(~year)
 
@@ -38,22 +38,23 @@ ggplot(catch, aes(longitude_dd, latitude_dd, color = log(cpue_kg_per_ha_der))) +
 
 catch = select(catch, ID, latitude_dd, longitude_dd, temperature_at_gear_c_der, cpue_kg_per_ha_der,
   depth_m, year)
-holdout = sample(1:nrow(catch), size=round(nrow(catch)*0.1,0), replace=F)
+set.seed(1)
+holdout = sample(1:nrow(catch), size=round(nrow(catch)*0.1,0))
 
 catch$cpue_kg_per_km2 = catch$cpue_kg_per_ha_der*100
 
-mvt_gamma = rrfield(log(cpue_kg_per_ha_der) ~ as.factor(year), data = catch[-holdout,],
+mvt_gamma = rrfield(I(cpue_kg_per_ha_der*10000) ~ -1 + as.factor(year), data = catch[,],
   time = "year", lon = "longitude_dd", lat = "latitude_dd", station = "ID",
-  nknots = 20,
-  obs_error = "normal",
-  prior_gp_sigma = half_t(100, 0, 3),
-  prior_gp_scale = half_t(100, 0, 5),
+  nknots = 25,
+  obs_error = "gamma",
+  prior_gp_sigma = half_t(7, 0, 2),
+  prior_gp_scale = half_t(7, 0, 2),
   prior_intercept = student_t(100, 0, 10),
   prior_beta = student_t(100, 0, 10),
-  prior_sigma = half_t(100, 0, 3),
+  prior_sigma = half_t(7, 0, 5),
   estimate_ar = FALSE,
   estimate_df = TRUE,
-  chains = 4, iter = 700)
+  chains = 2, iter = 1000, control = list(adapt_delta = 0.99))
 
 saveRDS(mvt_gamma,"widow.rds")
 pred = predict(mvt_gamma)
