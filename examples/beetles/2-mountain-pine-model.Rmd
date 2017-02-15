@@ -23,8 +23,8 @@ nbin <- 30
 d <- readRDS(paste0(id, "-", "dataframe", "-", nbin, "x", nbin, ".rds"))
 
 # rescale
-d$x = d$x/1e5
-d$y = d$y/1e5
+d$x <- d$x/1e5
+d$y <- d$y/1e5
 
 d <- dplyr::filter(d, cover > 0)
 
@@ -59,10 +59,11 @@ saveRDS(mvt_lognormal, paste0(id, "-", "lognormal", "-", nbin, "x", nbin, ".rds"
 mvt_lognormal
 ```
 
-```{r plots, dependson="model"}
+```{r plots, cache=TRUE, dependson="model"}
 g <- plot(mvt_lognormal, type = "prediction")
-g <- g + scale_fill_viridis(option = "D") + 
-  theme_light() + coord_fixed()
+g <- g + scale_color_viridis(option = "D") + 
+  theme_light()
+print(g)
     
 plot(mvt_lognormal, type = "spatial-residual")
 plot(mvt_lognormal, type = "residual-vs-fitted")
