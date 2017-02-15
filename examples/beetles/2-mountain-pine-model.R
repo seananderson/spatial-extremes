@@ -45,7 +45,8 @@ mvt_lognormal <- rrfield(log(cover) ~ -1 + as.factor(year), data = d,
 
 saveRDS(mvt_lognormal, paste0(id, "-", "lognormal", "-", nbin, "x", nbin, ".rds"))
 
-plot(mvt_lognormal, type = "prediction")
+g <- plot(mvt_lognormal, type = "prediction")
+print(g + viridis::scale_color_viridis())
 plot(mvt_lognormal, type = "spatial-residual")
 plot(mvt_lognormal, type = "residual-vs-fitted")
 
@@ -54,7 +55,7 @@ pred$observed <- log(d$cover)
 pred$year <- d$year
 ggplot(pred, aes(observed, estimate)) +
   geom_point() +
-  # geom_pointrange()
+  geom_pointrange(aes(ymin = conf_low, ymax = conf_high)) +
   theme_light() +
   coord_fixed() +
   facet_wrap(~year) +
