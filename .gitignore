@@ -54,14 +54,12 @@ simulationTesting/mvn_vs_mvt.pdf
 
 .DS_Store
 *.pdf
-
 simulationTesting/gamma-sim-testing.rds
 *.rds
-
 *.html
-
 *.vim
-
 examples/moths/moth-dat.csv
 
 examples/moths/moth-sites.csv
+examples/beetles/Washington*
+examples/beetles/Pacific*
