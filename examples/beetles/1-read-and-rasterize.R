@@ -90,7 +90,7 @@ assert_that(nrow(ids_dat2@data) > 100)
 
 # Create raster with desired resolution or rows/columns
 bb <- bbox(ids_dat2)
-nbin <- 400
+nbin <- 500
 bins <- raster(extent(matrix(c(bb["x", "min"], bb["y", "min"],
   bb["x", "max"], bb["y", "max"]), nrow = 2)),
   nrow = length(seq(bb["y", "min"], bb["y", "max"], length.out = nbin)),
@@ -118,6 +118,10 @@ saveRDS(rra,
   file = paste0("examples/beetles/", id, "-", nbin, "x", nbin, ".rds"))
 rra <- readRDS(paste0("examples/beetles/", id, "-", nbin, "x", nbin, ".rds"))
 
+d_highres <- data.frame(rasterToPoints(rr))
+d_highres <- gather(d_highres, year, cover, -x, -y)
+d_highres <- d_highres %>% mutate(year = as.numeric(sub("X", "", year)))
+
 d <- data.frame(rasterToPoints(rra))
 d <- gather(d, year, cover, -x, -y)
 d <- d %>% mutate(year = as.numeric(sub("X", "", year)))
@@ -136,3 +140,6 @@ ggsave(paste0("examples/beetles/", id, "-", nbin, "x", nbin, ".pdf"), width = 10
 
 saveRDS(d,
   file = paste0("examples/beetles/", id, "-", "dataframe", "-", nbin, "x", nbin, ".rds"))
+
+saveRDS(d_highres,
+  file = paste0("examples/beetles/", id, "-", "dataframe", "-", nbin, "x", nbin, "highres.rds"))

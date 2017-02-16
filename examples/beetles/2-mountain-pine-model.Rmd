@@ -25,16 +25,27 @@ Read in and set up the data.
 ```{r preparation, cache=FALSE, eval=TRUE}
 id <- "mountain-pine-beetle-pnw-raster"
 # id <- "mountain-pine-beetle-northern-raster"
-nbin <- 400
+nbin <- 500
 
 d <- readRDS(paste0("examples/beetles/", 
   id, "-", "dataframe", "-", nbin, "x", nbin, ".rds"))
+
+d_highres <- readRDS(paste0("examples/beetles/", 
+  id, "-", "dataframe", "-", nbin, "x", nbin, "highres.rds"))
 
 # rescale
 d$x <- d$x/1e5
 d$y <- d$y/1e5
 
 d <- dplyr::filter(d, cover > 0)
+d_highres <- dplyr::filter(d_highres, cover > 0)
+
+ggplot(d_highres, aes(x/1e5, y/1e5, colour = log(cover))) + 
+  geom_point(size = 0.04) +
+  facet_wrap(~year) +
+  scale_color_viridis(option = "D") +
+  theme_light() +
+  coord_fixed()
 
 ggplot(d, aes(x, y, fill = log(cover))) + geom_tile() +
   facet_wrap(~year) +
@@ -75,9 +86,9 @@ if (!file.exists(model_file)) {
     prior_sigma = half_t(7, 0, 5),
     estimate_ar = FALSE,
     estimate_df = TRUE,
-    chains = 2, iter = 700, 
+    chains = 4, iter = 600, 
     fixed_ar_value = 1,
-    control = list(adapt_delta = 0.8))
+    control = list(adapt_delta = 0.85))
   save(mvt_lognormal, file = model_file)
 } else {
   load(model_file)
