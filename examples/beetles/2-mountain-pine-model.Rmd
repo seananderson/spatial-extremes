@@ -40,16 +40,15 @@ d$y <- d$y/1e5
 d <- dplyr::filter(d, cover > 0)
 d_highres <- dplyr::filter(d_highres, cover > 0)
 
-ggplot(d_highres, aes(x/1e5, y/1e5, colour = log(cover))) + 
-  geom_point(size = 0.04) +
+ggplot(d_highres, aes(x/1e5, y/1e5)) + 
+  geom_point(size = 0.1, alpha = 0.1) +
   facet_wrap(~year) +
-  scale_color_viridis(option = "D") +
   theme_light() +
   coord_fixed()
 
 ggplot(d, aes(x, y, fill = log(cover))) + geom_tile() +
   facet_wrap(~year) +
-  scale_fill_viridis(option = "D") +
+  scale_fill_viridis(option = "B") +
   theme_light() +
   coord_fixed()
 
@@ -69,11 +68,11 @@ assert_that(nrow(d) < 5000)
 
 Fit the model. 
 
-```{r model, cache=TRUE, dependson="preparation",eval=TRUE}
+```{r model, cache=FALSE, dependson="preparation",eval=TRUE}
 model_file <- paste0("examples/beetles/", id, "-", 
   "lognormal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
-  mvt_lognormal <- rrfield(log(cover) ~ -1 + as.factor(year), 
+  mvt_lognormal <- rrfield(log(cover) ~ as.factor(year), 
     data = d,
     time = "year", lon = "x", lat = "y",
     station = "station",
@@ -81,50 +80,80 @@ if (!file.exists(model_file)) {
     obs_error = "normal",
     prior_gp_sigma = half_t(7, 0, 2),
     prior_gp_scale = half_t(7, 0, 2),
-    prior_intercept = student_t(100, 0, 10),
-    prior_beta = student_t(100, 0, 10),
+    prior_intercept = student_t(1e6, 0, 20),
+    prior_beta = student_t(1e6, 0, 5),
     prior_sigma = half_t(7, 0, 5),
     estimate_ar = FALSE,
     estimate_df = TRUE,
-    chains = 4, iter = 600, 
+    chains = 4, iter = 2000,
     fixed_ar_value = 1,
-    control = list(adapt_delta = 0.85))
+    control = list(adapt_delta = 0.95))
   save(mvt_lognormal, file = model_file)
 } else {
   load(model_file)
 }
 print(mvt_lognormal)
+# shinystan::launch_shinystan(mvt_lognormal$model)
 ```
 
 Plot the predictions and check the model. 
 
 ```{r plots, cache=TRUE, dependson="model", eval=TRUE}
-g <- plot(mvt_lognormal, type = "prediction")
-g <- g + scale_color_viridis(option = "D") + 
-  theme_light()
-print(g)
+# g <- plot(mvt_lognormal, type = "prediction")
+# g <- g + scale_color_viridis(option = "D") + 
+# theme_light() + coord_fixed()
+# print(g)
+# g <- plot(mvt_lognormal, type = "spatial-residual")
+# print(g)
 
-g <- plot(mvt_lognormal, type = "spatial-residual")
-print(g)
+# g <- plot(mvt_lognormal, type = "residual-vs-fitted")
+# print(g)
 
-g <- plot(mvt_lognormal, type = "residual-vs-fitted")
-print(g)
-
+# Let's make these plots ourselves so they can be more customized:
 pred <- predict(mvt_lognormal, interval = "prediction", conf_level = 0.8)
-pred$observed <- log(d$cover)
-pred$year <- d$year
+pred <- pred %>% mutate(x = d$x, y = d$y, observed = log(d$cover), 
+  year = d$year, residual = observed - estimate)
+
+g <- ggplot(pred, aes(x, y, fill = estimate)) + 
+  geom_tile() + facet_wrap(~year) +
+  scale_fill_viridis(option = "B") +
+  theme_light() +
+  coord_fixed()
+print(g)
+
+# Example of the upper 80% credible interval:
+g <- ggplot(pred, aes(x, y, fill = conf_high)) + 
+  geom_tile() + facet_wrap(~year) +
+  scale_fill_viridis(option = "B") +
+  theme_light() +
+  coord_fixed()
+print(g)
+
+g <- ggplot(pred, aes(x, y, fill = residual)) + 
+  geom_tile() + facet_wrap(~year) +
+  scale_fill_gradient2() +
+  theme_light() +
+  coord_fixed()
+print(g)
+
+ggplot(pred, aes(estimate, residual)) + 
+  geom_point(alpha = 0.5) + facet_wrap(~year) +
+  theme_light() +
+  geom_hline(yintercept = 0, lty = 2) + 
+  geom_smooth(method = "loess", se = FALSE, colour = "red")
+
 ggplot(pred, aes(observed, estimate)) +
   geom_point(alpha = 0.2) +
   geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
   theme_light() +
   coord_fixed() +
   facet_wrap(~year) +
-  geom_abline(intercept = 0, slope = 1)
+  geom_abline(intercept = 0, slope = 1, colour = "red")
 
 ggplot(pred, aes(observed, estimate)) +
   geom_point(alpha = 0.2) +
   geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
   theme_light() +
   coord_fixed() +
-  geom_abline(intercept = 0, slope = 1)
+  geom_abline(intercept = 0, slope = 1, colour = "red")
 ```
