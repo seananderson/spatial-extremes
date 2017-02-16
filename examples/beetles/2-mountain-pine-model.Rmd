@@ -1,28 +1,34 @@
 # Robust spatiotemporal mountain pine beetle example 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, cache=FALSE, message=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.height=8.5,
+  fig.width=9
 )
-```
-
-```{r preparation, cache=TRUE}
+knitr::opts_knit$set(root.dir = "../../") 
 library(dplyr)
 library(ggplot2)
 library(rrfields)
 library(rstan)
 library(viridis)
+library(assertthat)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
+# print(getwd())
+# assert_that(rev(strsplit(getwd(), "/")[[1]])[[1]] == "spatiotemporal-extremes")
+```
 
-gdb_folder <- "Pacific_Northwest"
-# gdb_folder <- "Northern"
+Read in and set up the data.
+
+```{r preparation, cache=FALSE, eval=TRUE}
 id <- "mountain-pine-beetle-pnw-raster"
 # id <- "mountain-pine-beetle-northern-raster"
-nbin <- 20
+nbin <- 400
 
-d <- readRDS(paste0(id, "-", "dataframe", "-", nbin, "x", nbin, ".rds"))
+d <- readRDS(paste0("examples/beetles/", 
+  id, "-", "dataframe", "-", nbin, "x", nbin, ".rds"))
 
 # rescale
 d$x <- d$x/1e5
@@ -30,63 +36,84 @@ d$y <- d$y/1e5
 
 d <- dplyr::filter(d, cover > 0)
 
-ggplot(d, aes(x, y, fill = log10(cover))) + geom_tile() +
+ggplot(d, aes(x, y, fill = log(cover))) + geom_tile() +
   facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
   theme_light() +
   coord_fixed()
 
-if (id == "mountain-pine-beetle-northern-raster")
-  d <- dplyr::filter(d, x < -10) # almost no observations east of here 
-
-ggplot(d, aes(x, y, fill = log10(cover))) + geom_tile() +
-  facet_wrap(~year) +
-  scale_fill_viridis(option = "D") +
-  theme_light() +
-  coord_fixed()
+# if (id == "mountain-pine-beetle-northern-raster")
+# d <- dplyr::filter(d, x < -10) # almost no observations east of here 
 
 d <- mutate(d, station = paste(x, y))
 set.seed(1)
 holdout <- sample(1:nrow(d), size = round(nrow(d) * 0.1, 0))
 
-mean(log(d$cover))
+# or the intercept prior will be off:
+assert_that(mean(log(d$cover+0.5)) > -5 & mean(log(d$cover+0.5)) < 5)
+# make sure data volume is reasonable:
+assert_that(nrow(d) > 500)
+assert_that(nrow(d) < 5000)
 ```
 
-```{r model, cache=TRUE, dependson="preparation"}
-mvt_lognormal <- rrfield(log(cover) ~ -1 + as.factor(year), data = d,
-  time = "year", lon = "x", lat = "y",
-  station = "station",
-  nknots = 25,
-  obs_error = "normal",
-  prior_gp_sigma = half_t(7, 0, 2),
-  prior_gp_scale = half_t(7, 0, 2),
-  prior_intercept = student_t(100, 0, 10),
-  prior_beta = student_t(100, 0, 10),
-  prior_sigma = half_t(7, 0, 5),
-  estimate_ar = FALSE,
-  estimate_df = TRUE,
-  chains = 2, iter = 700, control = list(adapt_delta = 0.95))
-saveRDS(mvt_lognormal, paste0(id, "-", "lognormal", "-", nbin, "x", nbin, ".rds"))
-mvt_lognormal
+Fit the model. 
+
+```{r model, cache=TRUE, dependson="preparation",eval=TRUE}
+model_file <- paste0("examples/beetles/", id, "-", 
+  "lognormal", "-", nbin, "x", nbin, ".rda")
+if (!file.exists(model_file)) {
+  mvt_lognormal <- rrfield(log(cover) ~ -1 + as.factor(year), 
+    data = d,
+    time = "year", lon = "x", lat = "y",
+    station = "station",
+    nknots = 25,
+    obs_error = "normal",
+    prior_gp_sigma = half_t(7, 0, 2),
+    prior_gp_scale = half_t(7, 0, 2),
+    prior_intercept = student_t(100, 0, 10),
+    prior_beta = student_t(100, 0, 10),
+    prior_sigma = half_t(7, 0, 5),
+    estimate_ar = FALSE,
+    estimate_df = TRUE,
+    chains = 2, iter = 700, 
+    fixed_ar_value = 1,
+    control = list(adapt_delta = 0.8))
+  save(mvt_lognormal, file = model_file)
+} else {
+  load(model_file)
+}
+print(mvt_lognormal)
 ```
 
-```{r plots, cache=TRUE, dependson="model"}
+Plot the predictions and check the model. 
+
+```{r plots, cache=TRUE, dependson="model", eval=TRUE}
 g <- plot(mvt_lognormal, type = "prediction")
 g <- g + scale_color_viridis(option = "D") + 
   theme_light()
 print(g)
-    
-plot(mvt_lognormal, type = "spatial-residual")
-plot(mvt_lognormal, type = "residual-vs-fitted")
+
+g <- plot(mvt_lognormal, type = "spatial-residual")
+print(g)
+
+g <- plot(mvt_lognormal, type = "residual-vs-fitted")
+print(g)
 
 pred <- predict(mvt_lognormal, interval = "prediction", conf_level = 0.8)
 pred$observed <- log(d$cover)
 pred$year <- d$year
 ggplot(pred, aes(observed, estimate)) +
-  geom_point() +
-  geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.3) +
+  geom_point(alpha = 0.2) +
+  geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
   theme_light() +
   coord_fixed() +
   facet_wrap(~year) +
+  geom_abline(intercept = 0, slope = 1)
+
+ggplot(pred, aes(observed, estimate)) +
+  geom_point(alpha = 0.2) +
+  geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
+  theme_light() +
+  coord_fixed() +
   geom_abline(intercept = 0, slope = 1)
 ```
