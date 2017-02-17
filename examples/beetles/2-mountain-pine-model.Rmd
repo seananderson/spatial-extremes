@@ -99,7 +99,7 @@ model_file <- paste0("examples/beetles/", id, "-",
   "mvt-normal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
   mvt <- rrfield(log(cover) ~ as.factor(year), 
-    data = subset(d, !hold_out),
+    data = dplyr::filter(d, !hold_out),
     time = "year", lon = "x", lat = "y",
     station = "station",
     nknots = 20,
@@ -129,7 +129,7 @@ model_file <- paste0("examples/beetles/", id, "-",
   "mvn-lognormal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
   mvn <- rrfield(log(cover) ~ as.factor(year), 
-    data = subset(d, !hold_out),
+    data = dplyr::filter(d, !hold_out),
     time = "year", lon = "x", lat = "y",
     station = "station",
     nknots = 20,
@@ -155,7 +155,7 @@ print(mvn)
 
 Plot the predictions and check the model. 
 
-```{r plots, cache=TRUE, dependson="model", eval=TRUE}
+```{r plots, cache=FALSE, dependson="model", eval=TRUE}
 # Let's make these plots ourselves so they can be more customized:
 pred <- predict(mvt, interval = "confidence", conf_level = 0.95, 
   newdata = d)
@@ -169,7 +169,8 @@ g <- ggplot(pred, aes(x, y, fill = estimate)) +
   coord_fixed()
 print(g)
 
-g <- ggplot(subset(pred, hold_out), aes(x, y, fill = exp(estimate))) + 
+g <- ggplot(dplyr::filter(pred), 
+  aes(x, y, fill = exp(estimate))) + 
   geom_tile() + facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
   theme_light() +
@@ -253,7 +254,7 @@ What about the holdout data?
 ```{r}
 combined$hold_out <- c(d$hold_out, d$hold_out)
 
-subset(combined, hold_out) %>% 
+dplyr::filter(combined, hold_out) %>% 
   ggplot(aes(log(observed), estimate)) +
   geom_point(alpha = 0.2) +
   geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
@@ -263,16 +264,37 @@ subset(combined, hold_out) %>%
   facet_wrap(~model)
 ```
 
-Let's look at the mean squared error between the 2 models. 
+Let's look at the mean squared error between the 2 models for the holdout data: 
 
 ```{r}
-mse <- subset(combined, hold_out) %>%
+mse <- dplyr::filter(combined, hold_out) %>%
+  group_by(model, year) %>%
+  summarize(mse = round(mean(residual^2), 6))
+ggplot(mse, aes(year, mse, color = model)) +
+  geom_line()
+
+mse <- dplyr::filter(combined, hold_out) %>%
   group_by(model) %>%
-  summarize(round(mean(residual^2), 2))
+  summarize(mse = round(mean(residual^2), 2))
 print(mse)
 ```
 
-Let's look at the observed and predicted values with confidence intervals for 10 of the holdout data points. In the simulations we've shown that's the predictions in years with moderately large spikes can get inflated if we use the MVN model and the confidence intervals inflate to obtain the same correct coverage. 
+What about the mean squared error for all of the data?
+
+```{r}
+mse <- dplyr::filter(combined) %>%
+  group_by(model, year) %>%
+  summarize(mse = round(mean(residual^2), 6))
+ggplot(mse, aes(year, mse, color = model)) +
+  geom_line()
+
+mse <- dplyr::filter(combined) %>%
+  group_by(model) %>%
+  summarize(mse = round(mean(residual^2), 2))
+print(mse)
+```
+
+Let's look at the observed and predicted values with confidence intervals for 10 of the holdout data points. In the simulations we've shown that the predictions in years with moderately large spikes can get inflated if we use the MVN model and the confidence intervals inflate to obtain the same correct coverage. 
 
 ```{r}
 jitter <- 0.2
@@ -292,7 +314,7 @@ dplyr::filter(combined, hold_out) %>%
   xlab("y") + ylab("Point ID")
 ```
 
-What about the width of the confidence intervals? 
+What about the width of the confidence intervals?
 
 ```{r}
 cis <- mutate(combined, conf_width = conf_high - conf_low) %>%
@@ -317,4 +339,26 @@ dplyr::filter(cis) %>%
   xlab("Ratio of prediction confidence intervals (MVN/MVT)")
 
 median(cis$conf_width_ratio)
+```
+
+How are the model parameters themselves different? 
+
+```{r}
+pars <- c("gp_sigma", "gp_scale", "sigma[1]")
+
+bt <- broom::tidyMCMC(mvt$model, estimate.method = "median", conf.int = TRUE)
+bn <- broom::tidyMCMC(mvn$model, estimate.method = "median", conf.int = TRUE)
+bt$model <- "mvt"
+bn$model <- "mvn"
+b <- bind_rows(bt, bn)
+
+dplyr::filter(b, term %in% pars) %>%
+  ggplot(aes(term, estimate, ymin = conf.low, 
+    ymax = conf.high, color = model)) +
+  geom_pointrange(position = position_dodge(width = 0.2)) +
+  coord_flip()
+
+# bayesplot::mcmc_areas(as.matrix(mvt$model), pars = pars)
+# bayesplot::mcmc_areas(as.matrix(mvn$model), pars = pars)
+bayesplot::mcmc_areas(as.matrix(mvt$model), pars = "df[1]")
 ```
