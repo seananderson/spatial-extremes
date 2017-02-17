@@ -94,7 +94,7 @@ assert_that(nrow(d) < 5000)
 
 Fit the model. First the multivariate t model. 
 
-```{r model, cache=FALSE, dependson="preparation",eval=TRUE}
+```{r model, cache=FALSE, warning=FALSE, message=FALSE, results='hide'}
 model_file <- paste0("examples/beetles/", id, "-", 
   "mvt-normal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
@@ -124,7 +124,7 @@ print(mvt)
 
 Now the multivariate normal model. 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, results='hide'}
 model_file <- paste0("examples/beetles/", id, "-", 
   "mvn-lognormal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
@@ -155,7 +155,7 @@ print(mvn)
 
 Plot the predictions and check the model. 
 
-```{r plots, cache=FALSE, dependson="model", eval=TRUE}
+```{r plots, cache=FALSE, eval=TRUE}
 # Let's make these plots ourselves so they can be more customized:
 pred <- predict(mvt, interval = "confidence", conf_level = 0.95, 
   newdata = d)
