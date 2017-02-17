@@ -16,8 +16,25 @@ library(viridis)
 library(assertthat)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
-# print(getwd())
-# assert_that(rev(strsplit(getwd(), "/")[[1]])[[1]] == "spatiotemporal-extremes")
+```
+
+```{r, echo = FALSE}
+theme_gg <- function(base_size = 11, base_family = "") {
+  theme_light() +
+    theme(
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      strip.background = element_rect(fill = NA, colour = NA),
+      strip.text.x = element_text(colour = "grey10"),
+      axis.text = element_text(colour = "grey30"),
+      axis.title = element_text(colour = "grey30"),
+      legend.title = element_text(colour = "grey30", size = rel(0.9)),
+      panel.border = element_rect(fill = NA, colour = "grey70", size = 1),
+      legend.key.size = unit(0.8, "lines"),
+      legend.text = element_text(size = rel(0.7), colour = "grey30"),
+      legend.key = element_rect(colour = NA)
+    )
+}
 ```
 
 Read in and set up the data.
@@ -43,21 +60,30 @@ d_highres <- dplyr::filter(d_highres, cover > 0)
 ggplot(d_highres, aes(x/1e5, y/1e5)) + 
   geom_point(size = 0.1, alpha = 0.1) +
   facet_wrap(~year) +
-  theme_light() +
+  theme_gg() +
   coord_fixed()
 
 ggplot(d, aes(x, y, fill = log(cover))) + geom_tile() +
   facet_wrap(~year) +
-  scale_fill_viridis(option = "B") +
-  theme_light() +
+  scale_fill_viridis(option = "D") +
+  theme_gg() +
+  coord_fixed()
+
+ggplot(d, aes(x, y, fill = cover)) + geom_tile() +
+  facet_wrap(~year) +
+  scale_fill_viridis(option = "D") +
+  theme_gg() +
   coord_fixed()
 
 # if (id == "mountain-pine-beetle-northern-raster")
 # d <- dplyr::filter(d, x < -10) # almost no observations east of here 
 
-d <- mutate(d, station = paste(x, y))
+d <- mutate(d, station = paste(x, y), row_number = seq_len(nrow(d)))
 set.seed(1)
-holdout <- sample(1:nrow(d), size = round(nrow(d) * 0.1, 0))
+d <- group_by(d, year) %>% 
+  mutate(hold_out = row_number %in% 
+          sample(row_number, size = 25L)) %>% 
+  ungroup()
 
 # or the intercept prior will be off:
 assert_that(mean(log(d$cover+0.5)) > -5 & mean(log(d$cover+0.5)) < 5)
@@ -66,68 +92,97 @@ assert_that(nrow(d) > 500)
 assert_that(nrow(d) < 5000)
 ```
 
-Fit the model. 
+Fit the model. First the multivariate t model. 
 
 ```{r model, cache=FALSE, dependson="preparation",eval=TRUE}
 model_file <- paste0("examples/beetles/", id, "-", 
-  "lognormal", "-", nbin, "x", nbin, ".rda")
+  "mvt-normal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
-  mvt_lognormal <- rrfield(log(cover) ~ as.factor(year), 
-    data = d,
+  mvt <- rrfield(log(cover) ~ as.factor(year), 
+    data = subset(d, !hold_out),
     time = "year", lon = "x", lat = "y",
     station = "station",
-    nknots = 25,
+    nknots = 20,
     obs_error = "normal",
     prior_gp_sigma = half_t(7, 0, 2),
     prior_gp_scale = half_t(7, 0, 2),
-    prior_intercept = student_t(1e6, 0, 20),
-    prior_beta = student_t(1e6, 0, 5),
+    prior_intercept = student_t(1e9, 0, 20),
+    prior_beta = student_t(1e9, 0, 5),
     prior_sigma = half_t(7, 0, 5),
     estimate_ar = FALSE,
     estimate_df = TRUE,
-    chains = 4, iter = 2000,
+    chains = 2, iter = 700,
     fixed_ar_value = 1,
-    control = list(adapt_delta = 0.95))
-  save(mvt_lognormal, file = model_file)
+    control = list(adapt_delta = 0.85))
+  save(mvt, file = model_file)
 } else {
   load(model_file)
 }
-print(mvt_lognormal)
-# shinystan::launch_shinystan(mvt_lognormal$model)
+print(mvt)
+# shinystan::launch_shinystan(mvt$model)
+```
+
+Now the multivariate normal model. 
+
+```{r}
+model_file <- paste0("examples/beetles/", id, "-", 
+  "mvn-lognormal", "-", nbin, "x", nbin, ".rda")
+if (!file.exists(model_file)) {
+  mvn <- rrfield(log(cover) ~ as.factor(year), 
+    data = subset(d, !hold_out),
+    time = "year", lon = "x", lat = "y",
+    station = "station",
+    nknots = 20,
+    obs_error = "normal",
+    prior_gp_sigma = half_t(7, 0, 2),
+    prior_gp_scale = half_t(7, 0, 2),
+    prior_intercept = student_t(1e9, 0, 20),
+    prior_beta = student_t(1e9, 0, 5),
+    prior_sigma = half_t(7, 0, 5),
+    estimate_ar = FALSE,
+    estimate_df = FALSE,
+    fixed_df_value = 1e9,
+    chains = 2, iter = 700,
+    fixed_ar_value = 1,
+    control = list(adapt_delta = 0.85))
+  save(mvn, file = model_file)
+} else {
+  load(model_file)
+}
+print(mvn)
+# shinystan::launch_shinystan(mvn$model)
 ```
 
 Plot the predictions and check the model. 
 
 ```{r plots, cache=TRUE, dependson="model", eval=TRUE}
-# g <- plot(mvt_lognormal, type = "prediction")
-# g <- g + scale_color_viridis(option = "D") + 
-# theme_light() + coord_fixed()
-# print(g)
-# g <- plot(mvt_lognormal, type = "spatial-residual")
-# print(g)
-
-# g <- plot(mvt_lognormal, type = "residual-vs-fitted")
-# print(g)
-
 # Let's make these plots ourselves so they can be more customized:
-pred <- predict(mvt_lognormal, interval = "prediction", conf_level = 0.8)
-pred <- pred %>% mutate(x = d$x, y = d$y, observed = log(d$cover), 
-  year = d$year, residual = observed - estimate)
+pred <- predict(mvt, interval = "prediction", conf_level = 0.8, 
+  newdata = d)
+pred <- pred %>% mutate(x = d$x, y = d$y, observed = d$cover, 
+  year = d$year, residual = log(observed) - estimate)
 
 g <- ggplot(pred, aes(x, y, fill = estimate)) + 
   geom_tile() + facet_wrap(~year) +
-  scale_fill_viridis(option = "B") +
+  scale_fill_viridis(option = "D") +
   theme_light() +
   coord_fixed()
 print(g)
 
-# Example of the upper 80% credible interval:
-g <- ggplot(pred, aes(x, y, fill = conf_high)) + 
+g <- ggplot(pred, aes(x, y, fill = exp(estimate))) + 
   geom_tile() + facet_wrap(~year) +
-  scale_fill_viridis(option = "B") +
+  scale_fill_viridis(option = "D") +
   theme_light() +
   coord_fixed()
 print(g)
+
+# Example of the upper 80% (prediction) credible interval:
+# g <- ggplot(pred, aes(x, y, fill = conf_high)) + 
+#   geom_tile() + facet_wrap(~year) +
+#   scale_fill_viridis(option = "B") +
+#   theme_light() +
+#   coord_fixed()
+# print(g)
 
 g <- ggplot(pred, aes(x, y, fill = residual)) + 
   geom_tile() + facet_wrap(~year) +
@@ -157,3 +212,46 @@ ggplot(pred, aes(observed, estimate)) +
   coord_fixed() +
   geom_abline(intercept = 0, slope = 1, colour = "red")
 ```
+
+Let's compare the multivariate t and multivariate normal predictions. 
+
+```{r}
+pred_mvn <- predict(mvn, interval = "prediction", conf_level = 0.8,
+  newdata = d)
+pred$mvn_estimate <- pred_mvn$estimate
+pred$mvt_estimate <- pred$estimate
+g <- ggplot(pred, aes(mvt_estimate, mvn_estimate)) + 
+  geom_point() + facet_wrap(~year) +
+  theme_gg() +
+  coord_fixed() +
+  geom_abline(intercept = 0, slope = 1, colour = "red")
+print(g)
+```
+
+```{r}
+pred_mvn <- pred_mvn %>% mutate(x = d$x, y = d$y, observed = d$cover, 
+  year = d$year, residual = log(observed) - estimate)
+
+combined <- bind_rows(
+  mutate(select(pred, -mvn_estimate, -mvt_estimate), model = "mvt"), 
+  mutate(pred_mvn, model = "mvn"))
+
+combined <- mutate(combined, id = paste(x, y))
+
+set.seed(1234)
+ids <- sample(unique(combined$id), size = 10)
+jitter <- 0.2
+dplyr::filter(combined, id %in% ids) %>%
+  mutate(id_numeric = as.numeric(as.factor(id))) %>% 
+  mutate(id_numeric = ifelse(model == "mvn", id_numeric - jitter, 
+    id_numeric + jitter)) %>% 
+  ggplot(aes(x = id_numeric, y = estimate, ymin = conf_low,
+    ymax = conf_high, color = model)) +
+  geom_pointrange(size = 0.25) +
+  facet_wrap(~year) + 
+  coord_flip() + theme_light() +
+  geom_point(aes(x = round(id_numeric), y = log(observed)), 
+    color = "black", pch = 21) +
+  xlab("y") + ylab("Point ID")
+```
+
