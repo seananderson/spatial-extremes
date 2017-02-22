@@ -16,25 +16,7 @@ library(viridis)
 library(assertthat)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
-```
-
-```{r, echo = FALSE}
-theme_gg <- function(base_size = 11, base_family = "") {
-  theme_light() +
-    theme(
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank(),
-      strip.background = element_rect(fill = NA, colour = NA),
-      strip.text.x = element_text(colour = "grey10"),
-      axis.text = element_text(colour = "grey30"),
-      axis.title = element_text(colour = "grey30"),
-      legend.title = element_text(colour = "grey30", size = rel(0.9)),
-      panel.border = element_rect(fill = NA, colour = "grey70", size = 1),
-      legend.key.size = unit(0.8, "lines"),
-      legend.text = element_text(size = rel(0.7), colour = "grey30"),
-      legend.key = element_rect(colour = NA)
-    )
-}
+library(ggsidekick) # devtools::install_github("seananderson/ggsidekick")
 ```
 
 Read in and set up the data.
@@ -60,19 +42,19 @@ d_highres <- dplyr::filter(d_highres, cover > 0)
 ggplot(d_highres, aes(x/1e5, y/1e5)) + 
   geom_point(size = 0.1, alpha = 0.1) +
   facet_wrap(~year) +
-  theme_gg() +
+  theme_sleek() +
   coord_fixed()
 
 ggplot(d, aes(x, y, fill = log(cover))) + geom_tile() +
   facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
-  theme_gg() +
+  theme_sleek() +
   coord_fixed()
 
 ggplot(d, aes(x, y, fill = cover)) + geom_tile() +
   facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
-  theme_gg() +
+  theme_sleek() +
   coord_fixed()
 
 # if (id == "mountain-pine-beetle-northern-raster")
@@ -216,7 +198,7 @@ pred2$mvn_estimate <- pred_mvn$estimate
 pred2$mvt_estimate <- pred$estimate
 g <- ggplot(pred2, aes(mvt_estimate, mvn_estimate)) + 
   geom_point() + facet_wrap(~year) +
-  theme_gg() +
+  theme_sleek() +
   coord_fixed() +
   geom_abline(intercept = 0, slope = 1, colour = "red")
 print(g)
