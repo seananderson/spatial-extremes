@@ -2,6 +2,7 @@ library(tidyverse)
 library(rrfields)
 library(rstan)
 options(mc.cores = min(c(4L, parallel::detectCores())))
+library(ggsidekick) # devtools::install_github("seananderson/ggsidekick")
 
 # ------------------------------------------------------------
 # Pick reasonable values:
@@ -23,7 +24,7 @@ if (interactive()) {
 # ------------------------------------------------------------
 # Now run across multiple arguments
 
-sim_fit <- function(df = 2, n_draws, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
+sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
   comment = "", gp_sigma = 0.5) {
 
   s <- sim_rrfield(df = df, n_data_points = 100, seed = NULL,
@@ -34,10 +35,10 @@ sim_fit <- function(df = 2, n_draws, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
     rrfield(y ~ 1, data = s$dat, time = "time", lon = "lon", lat = "lat",
       nknots = n_knots, chains = 4L, iter = iter, obs_error = "normal",
       prior_gp_scale = half_t(3, 0, 5),
-      prior_gp_sigma = half_t(3, 0, 5),
-      prior_sigma = half_t(3, 0, 2.5),
-      prior_intercept = student_t(999, 0, 0.2),
-      prior_beta = student_t(3, 0, 1))
+      prior_gp_sigma = half_t(3, 0, 3),
+      prior_sigma = half_t(3, 0, 3),
+      prior_intercept = student_t(1e6, 0, 1),
+      prior_beta = student_t(1e6, 0, 1))
   }
 
   m <- fit_model(iter = 500L)
@@ -48,9 +49,9 @@ sim_fit <- function(df = 2, n_draws, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
   m
 }
 
-set.seed(12)
+set.seed(123)
 arguments <- readxl::read_excel("simulationTesting/simulation-arguments.xlsx")
-arguments$count <- 8L
+arguments$count <- 5L
 arguments <- arguments[rep(seq_len(nrow(arguments)), arguments$count), ]
 arguments_apply <- dplyr::select(arguments, -count, -case)
 nrow(arguments)
@@ -87,7 +88,7 @@ plot_viol <- function(term, term_true) {
     geom_violin(draw_quantiles = c(0.5), trim = TRUE, fill = "grey93") +
     coord_flip() +
     geom_point(aes_string(y = term_true), colour = "red", size = 2) +
-    theme_light() +
+    theme_sleek() +
     labs(title = term_true, x = "")
 }
 
