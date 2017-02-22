@@ -23,30 +23,28 @@ if (interactive()) {
 # ------------------------------------------------------------
 # Now run across multiple arguments
 
-library(rstanarm) # for student_t()
-
 sim_fit <- function(df = 2, n_draws, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
   comment = "", gp_sigma = 0.5) {
 
   s <- sim_rrfield(df = df, n_data_points = 100, seed = NULL,
     n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale, gp_sigma = gp_sigma,
-    sd_obs = sd_obs, obs_error = "gamma")
+    sd_obs = sd_obs, obs_error = "normal")
 
   fit_model <- function(iter) {
     rrfield(y ~ 1, data = s$dat, time = "time", lon = "lon", lat = "lat",
-      nknots = n_knots, chains = 2L, iter = iter, obs_error = "gamma",
-      prior_gp_scale = student_t(3, 0, 5),
-      prior_gp_sigma = student_t(3, 0, 5),
-      prior_sigma = student_t(3, 0, 2.5),
+      nknots = n_knots, chains = 4L, iter = iter, obs_error = "normal",
+      prior_gp_scale = half_t(3, 0, 5),
+      prior_gp_sigma = half_t(3, 0, 5),
+      prior_sigma = half_t(3, 0, 2.5),
       prior_intercept = student_t(999, 0, 0.2),
       prior_beta = student_t(3, 0, 1))
   }
 
-  m <- fit_model(iter = 400L)
+  m <- fit_model(iter = 500L)
   b <- broom::tidyMCMC(m$model, rhat = TRUE, ess = TRUE)
-  # if (any(b$ess < 200) | any(b$rhat > 1.05)) {
-    # m <- fit_model(iter = 3000L)
-  # }
+  if (any(b$ess < 100) | any(b$rhat > 1.05)) {
+    m <- fit_model(iter = 1000L)
+  }
   m
 }
 
