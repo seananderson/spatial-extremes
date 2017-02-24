@@ -1,0 +1,241 @@
+# Robust spatiotemporal chlorophyll bloom example 
+
+```{r, echo = FALSE, cache=FALSE, message=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.height=8.5,
+  fig.width=9
+)
+knitr::opts_knit$set(root.dir = "../../") 
+library(dplyr)
+library(ggplot2)
+library(rrfields)
+library(rstan)
+library(viridis)
+library(assertthat)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+# devtools::install_github("seananderson/ggsidekick")
+theme_set(ggsidekick::theme_sleek())
+
+```
+
+Let's grab the chlorophyll bloom data for a selection of dates. We will start in February and grab every second week. This will be for 2014, which is the latest data available. 
+
+```{r}
+rerddap::ed_search(query = "temp") %>% .$info
+out <- rerddap::info("osuBloomsModisChla")
+d <- list()
+m <- c("02-01", "02-15", "03-01", "03-15",
+  "04-01", "04-15", "05-01", "05-15",
+  "06-01", "06-15", "07-01", "07-15",
+  "08-01", "08-15", "09-01", "09-15")
+t1 <- paste0("2014-", m, "T00:00:00Z")
+t2 <- paste0("2014-", m, "T00:00:01Z")
+
+for (i in seq_along(m)) {
+  message(m[[i]])
+  d[[i]] <- rerddap::griddap(out,
+    time = c(t1[[i]], t2[[i]]),
+    longitude = c(-126, -124),
+    latitude = c(42, 48.5))$data
+  d[[i]]$month <- m[[i]]
+  d[[i]] <- as_data_frame(d[[i]])
+}
+d <- bind_rows(d)
+```
+
+Let's transform these percent change values of chlorophyll a into something we can easily work with from modeling. 
+
+These values range from negative values to enormous positive values. 
+
+```{r}
+range(d$prc_chla, na.rm = TRUE)
+hist(d$prc_chla)
+```
+
+We will add the lowest value and then log transform the resulting values. 
+
+```{r}
+x <- d$prc_chla+abs(min(d$prc_chla, na.rm = T))
+x[x == 0] <- NA
+hist(log(x))
+d$prc_chla_trans <- log(x)
+```
+
+Now we will center the bi-weekly values to focus on the special anomalies. 
+
+```{r}
+d <- d %>% group_by(month) %>%
+  mutate(prc_chla_trans = prc_chla_trans - mean(prc_chla_trans, na.rm = TRUE)) %>%
+  ungroup()
+```
+
+This data set is extremely high resolution and for the purposes of this example, we will downsample to every 20th observation. 
+
+```{r}
+# sample grid - at ?
+# fiddle with downsampling (500?), fiddle with knots (30-50)
+
+# try downsampling of every nth lat/lon
+dowsample=20
+lons = unique(d$lon)[seq(1, length(unique(d$lon)), dowsample)]
+lats = unique(d$lat)[seq(1, length(unique(d$lat)), dowsample)]
+dsub = d[which(d$lat%in% lats & d$lon %in% lons),]
+```
+
+Now let's convert to UTMs.
+
+```{r}
+dsub$ID = seq_len(nrow(dsub))
+sp::coordinates(dsub) = c("lon","lat")
+sp::proj4string(dsub) <- sp::CRS("+proj=longlat +datum=WGS84")  ## for example
+dsub = as.data.frame(sp::spTransform(dsub, sp::CRS(paste("+proj=utm +zone=10"," ellps=WGS84",sep=''))))
+dsub = dsub[which(is.na(dsub$prc_chla_trans)==FALSE),]
+```
+
+Let's rescale the coordinates and plot the data. 
+
+```{r}
+dsub <- mutate(dsub, lat_scaled = lat / 100000, lon_scaled = lon / 100000,
+  stationID = as.integer(as.factor(paste(lon_scaled, lat_scaled))), timeID = as.integer(as.factor(month)))
+
+dsub %>%
+  ggplot() + geom_point(data=dsub, aes(lon_scaled, lat_scaled, color = prc_chla_trans)) +
+  facet_wrap(~month) + scale_color_gradient2()
+```
+
+Now we can fit the model. We will fit one with the multivariate t and another with a multivariate normal. 
+
+```{r, cache=FALSE, warning=FALSE, message=FALSE, results='hide}
+library(rrfields)
+options(mc.cores = parallel::detectCores())
+
+if (!file.exists("examples/OR_blooms/blooms-mvt.rds")) {
+  mvt <- rrfield(
+    prc_chla_trans ~ 1, # TODO working without?
+    data = dsub,
+    time = "timeID",
+    lon = "lon_scaled",
+    lat = "lat_scaled",
+    nknots = 20L,
+    station = "stationID",
+    algorithm = "sampling",
+    chains = 2L,
+    iter = 600L,
+    prior_gp_sigma = half_t(7, 0, 2),
+    prior_gp_scale = half_t(7, 0, 2),
+    prior_sigma = half_t(7, 0, 2)
+    )
+  saveRDS(mvt, file = "examples/OR_blooms/blooms-mvt.rds")
+} else {
+  mvt <- readRDS("examples/OR_blooms/blooms-mvt.rds")
+}
+print(mvt)
+
+if (!file.exists("examples/OR_blooms/blooms-mvn.rds")) {
+  mvn <- rrfield(
+    prc_chla_trans ~ 1, # TODO working without?
+    data = dsub,
+    time = "timeID",
+    lon = "lon_scaled",
+    lat = "lat_scaled",
+    nknots = 20L,
+    estimate_df = FALSE,
+      station = "stationID",
+    fixed_df_value = 1e6,
+    algorithm = "sampling",
+    chains = 2L,
+    iter = 600L,
+    prior_gp_sigma = half_t(7, 0, 2),
+    prior_gp_scale = half_t(7, 0, 2),
+    prior_sigma = half_t(7, 0, 2)
+    )
+  saveRDS(mvn, file = "examples/OR_blooms/blooms-mvn.rds")
+} else {
+  mvn <- readRDS("examples/OR_blooms/blooms-mvn.rds")
+}
+print(mvn)
+```
+
+Plot the predictions and check the model. 
+
+```{r plots}
+pred <- predict(mvt, interval = "confidence", conf_level = 0.95)
+pred <- pred %>% mutate(x = dsub$lon_scaled, y = dsub$lat_scaled, 
+  observed = dsub$prc_chla_trans, 
+  month = dsub$month, residual = observed - estimate)
+
+g <- ggplot(pred, aes(x, y, colour = estimate)) + 
+  geom_point() + facet_wrap(~month) +
+  scale_color_gradient2() +
+print(g)
+
+g <- ggplot(pred, aes(x, y, colour = residual)) + 
+  geom_point() + facet_wrap(~month) +
+  scale_color_gradient2() +
+  coord_fixed()
+print(g)
+
+ggplot(pred, aes(estimate, residual)) + 
+  geom_point(alpha = 0.5) + facet_wrap(~month) +
+  geom_hline(yintercept = 0, lty = 2) + 
+  geom_smooth(method = "loess", se = FALSE, colour = "red")
+
+ggplot(pred, aes(observed, estimate)) +
+  geom_point(alpha = 0.2) +
+  geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
+  coord_fixed() +
+  facet_wrap(~month) +
+  geom_abline(intercept = 0, slope = 1, colour = "red")
+
+ggplot(pred, aes(observed, estimate)) +
+  geom_point(alpha = 0.2) +
+  geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
+  theme_light() +
+  coord_fixed() +
+  geom_abline(intercept = 0, slope = 1, colour = "red")
+```
+
+Let's compare the multivariate t and multivariate normal predictions. 
+
+```{r}
+pred_mvn <- predict(mvn, interval = "confidence", conf_level = 0.95)
+pred2 <- pred
+pred2$mvn_estimate <- pred_mvn$estimate
+pred2$mvt_estimate <- pred$estimate
+g <- ggplot(pred2, aes(mvt_estimate, mvn_estimate)) + 
+  geom_point() + facet_wrap(~month) +
+  coord_fixed() +
+  geom_abline(intercept = 0, slope = 1, colour = "red")
+print(g)
+```
+
+```{r}
+pred_mvn <- pred_mvn %>% mutate(x = dsub$lon_scaled, y = dsub$lat_scaled, 
+  observed = dsub$prc_chla_trans, 
+  month = dsub$month, residual = observed - estimate)
+
+combined <- bind_rows(
+  mutate(pred, model = "mvt"), 
+  mutate(pred_mvn, model = "mvn"))
+
+combined <- mutate(combined, id = paste(x, y))
+
+set.seed(1234)
+ids <- sample(unique(combined$id), size = 10)
+jitter <- 0.2
+dplyr::filter(combined, id %in% ids) %>%
+  mutate(id_numeric = as.numeric(as.factor(id))) %>% 
+  mutate(id_numeric = ifelse(model == "mvn", id_numeric - jitter, 
+    id_numeric + jitter)) %>% 
+  ggplot(aes(x = id_numeric, y = estimate, ymin = conf_low,
+    ymax = conf_high, color = model)) +
+  geom_pointrange(size = 0.25) +
+  facet_wrap(~month) + 
+  coord_flip() + 
+  geom_point(aes(x = round(id_numeric), y = log(observed)), 
+    color = "black", pch = 21) +
+  xlab("y") + ylab("Point ID")
+```
