@@ -16,7 +16,8 @@ library(viridis)
 library(assertthat)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
-library(ggsidekick) # devtools::install_github("seananderson/ggsidekick")
+# devtools::install_github("seananderson/ggsidekick")
+theme_set(ggsidekick::theme_sleek())
 ```
 
 Read in and set up the data.
@@ -42,19 +43,16 @@ d_highres <- dplyr::filter(d_highres, cover > 0)
 ggplot(d_highres, aes(x/1e5, y/1e5)) + 
   geom_point(size = 0.1, alpha = 0.1) +
   facet_wrap(~year) +
-  theme_sleek() +
   coord_fixed()
 
 ggplot(d, aes(x, y, fill = log(cover))) + geom_tile() +
   facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
-  theme_sleek() +
   coord_fixed()
 
 ggplot(d, aes(x, y, fill = cover)) + geom_tile() +
   facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
-  theme_sleek() +
   coord_fixed()
 
 # if (id == "mountain-pine-beetle-northern-raster")
@@ -147,7 +145,6 @@ pred <- pred %>% mutate(x = d$x, y = d$y, observed = d$cover,
 g <- ggplot(pred, aes(x, y, fill = estimate)) + 
   geom_tile() + facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
-  theme_light() +
   coord_fixed()
 print(g)
 
@@ -155,27 +152,23 @@ g <- ggplot(dplyr::filter(pred),
   aes(x, y, fill = exp(estimate))) + 
   geom_tile() + facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
-  theme_light() +
   coord_fixed()
 print(g)
 
 g <- ggplot(pred, aes(x, y, fill = residual)) + 
   geom_tile() + facet_wrap(~year) +
   scale_fill_gradient2() +
-  theme_light() +
   coord_fixed()
 print(g)
 
 ggplot(pred, aes(estimate, residual)) + 
   geom_point(alpha = 0.5) + facet_wrap(~year) +
-  theme_light() +
   geom_hline(yintercept = 0, lty = 2) + 
   geom_smooth(method = "loess", se = FALSE, colour = "red")
 
 ggplot(pred, aes(log(observed), estimate)) +
   geom_point(alpha = 0.2) +
   geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
-  theme_light() +
   coord_fixed() +
   facet_wrap(~year) +
   geom_abline(intercept = 0, slope = 1, colour = "red")
@@ -183,7 +176,6 @@ ggplot(pred, aes(log(observed), estimate)) +
 ggplot(pred, aes(log(observed), estimate)) +
   geom_point(alpha = 0.2) +
   geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
-  theme_light() +
   coord_fixed() +
   geom_abline(intercept = 0, slope = 1, colour = "red")
 ```
@@ -198,7 +190,6 @@ pred2$mvn_estimate <- pred_mvn$estimate
 pred2$mvt_estimate <- pred$estimate
 g <- ggplot(pred2, aes(mvt_estimate, mvn_estimate)) + 
   geom_point() + facet_wrap(~year) +
-  theme_sleek() +
   coord_fixed() +
   geom_abline(intercept = 0, slope = 1, colour = "red")
 print(g)
@@ -225,7 +216,7 @@ dplyr::filter(combined, id %in% ids) %>%
     ymax = conf_high, color = model)) +
   geom_pointrange(size = 0.25) +
   facet_wrap(~year) + 
-  coord_flip() + theme_light() +
+  coord_flip() + 
   geom_point(aes(x = round(id_numeric), y = log(observed)), 
     color = "black", pch = 21) +
   xlab("y") + ylab("Point ID")
@@ -240,7 +231,6 @@ dplyr::filter(combined, hold_out) %>%
   ggplot(aes(log(observed), estimate)) +
   geom_point(alpha = 0.2) +
   geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
-  theme_light() +
   coord_fixed() +
   geom_abline(intercept = 0, slope = 1, colour = "red") +
   facet_wrap(~model)
@@ -290,7 +280,7 @@ dplyr::filter(combined, hold_out) %>%
     ymax = conf_high, color = model)) +
   geom_pointrange(size = 0.25) +
   facet_wrap(~year, scales = "free_x") + 
-  coord_flip() + theme_light() +
+  coord_flip() + 
   geom_point(aes(x = round(id_numeric), y = log(observed)), 
     color = "black", pch = 21) +
   xlab("y") + ylab("Point ID")
