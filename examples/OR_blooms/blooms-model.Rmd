@@ -21,16 +21,16 @@ theme_set(ggsidekick::theme_sleek())
 
 ```
 
-Let's grab the chlorophyll bloom data for a selection of dates. We will start in February and grab every second week. This will be for 2014, which is the latest data available. 
+Let's grab the chlorophyll bloom data for a selection of dates. We will start in January and grab every second week. This will be for 2014, which is the latest data available. 
 
 ```{r}
-rerddap::ed_search(query = "temp") %>% .$info
+# rerddap::ed_search(query = "temp") %>% .$info
 out <- rerddap::info("osuBloomsModisChla")
 d <- list()
-m <- c("02-01", "02-15", "03-01", "03-15",
+m <- c("01-01", "01-15", "02-01", "02-15", "03-01", "03-15",
   "04-01", "04-15", "05-01", "05-15",
   "06-01", "06-15", "07-01", "07-15",
-  "08-01", "08-15", "09-01", "09-15")
+  "08-01", "08-15", "09-01", "09-15", "10-01", "10-15")
 t1 <- paste0("2014-", m, "T00:00:00Z")
 t2 <- paste0("2014-", m, "T00:00:01Z")
 
@@ -75,10 +75,6 @@ d <- d %>% group_by(month) %>%
 This data set is extremely high resolution and for the purposes of this example, we will downsample to every 20th observation. 
 
 ```{r}
-# sample grid - at ?
-# fiddle with downsampling (500?), fiddle with knots (30-50)
-
-# try downsampling of every nth lat/lon
 dowsample=20
 lons = unique(d$lon)[seq(1, length(unique(d$lon)), dowsample)]
 lats = unique(d$lat)[seq(1, length(unique(d$lat)), dowsample)]
@@ -103,12 +99,14 @@ dsub <- mutate(dsub, lat_scaled = lat / 100000, lon_scaled = lon / 100000,
 
 dsub %>%
   ggplot() + geom_point(data=dsub, aes(lon_scaled, lat_scaled, color = prc_chla_trans)) +
-  facet_wrap(~month) + scale_color_gradient2()
+  facet_wrap(~month) +  
+  scale_color_gradient2(low = RColorBrewer::brewer.pal(3, "PRGn")[[1]], high = RColorBrewer::brewer.pal(3, "PRGn")[[3]], mid = "grey97") +
+  coord_fixed()
 ```
 
 Now we can fit the model. We will fit one with the multivariate t and another with a multivariate normal. 
 
-```{r, cache=FALSE, warning=FALSE, message=FALSE, results='hide}
+```{r, cache=FALSE, warning=FALSE, message=FALSE, results='hide'}
 library(rrfields)
 options(mc.cores = parallel::detectCores())
 
@@ -122,11 +120,11 @@ if (!file.exists("examples/OR_blooms/blooms-mvt.rds")) {
     nknots = 20L,
     station = "stationID",
     algorithm = "sampling",
-    chains = 2L,
-    iter = 600L,
-    prior_gp_sigma = half_t(7, 0, 2),
-    prior_gp_scale = half_t(7, 0, 2),
-    prior_sigma = half_t(7, 0, 2)
+    chains = 3L,
+    iter = 700L,
+    prior_gp_sigma = half_t(7, 0, 5),
+    prior_gp_scale = half_t(7, 0, 5),
+    prior_sigma = half_t(7, 0, 5)
     )
   saveRDS(mvt, file = "examples/OR_blooms/blooms-mvt.rds")
 } else {
@@ -143,14 +141,14 @@ if (!file.exists("examples/OR_blooms/blooms-mvn.rds")) {
     lat = "lat_scaled",
     nknots = 20L,
     estimate_df = FALSE,
-      station = "stationID",
-    fixed_df_value = 1e6,
+    station = "stationID",
+    fixed_df_value = 1000,
     algorithm = "sampling",
-    chains = 2L,
-    iter = 600L,
-    prior_gp_sigma = half_t(7, 0, 2),
-    prior_gp_scale = half_t(7, 0, 2),
-    prior_sigma = half_t(7, 0, 2)
+    chains = 3L,
+    iter = 700L,
+    prior_gp_sigma = half_t(7, 0, 5),
+    prior_gp_scale = half_t(7, 0, 5),
+    prior_sigma = half_t(7, 0, 5)
     )
   saveRDS(mvn, file = "examples/OR_blooms/blooms-mvn.rds")
 } else {
@@ -162,14 +160,16 @@ print(mvn)
 Plot the predictions and check the model. 
 
 ```{r plots}
-pred <- predict(mvt, interval = "confidence", conf_level = 0.95)
+pred <- predict(mvt, interval = "confidence")
 pred <- pred %>% mutate(x = dsub$lon_scaled, y = dsub$lat_scaled, 
   observed = dsub$prc_chla_trans, 
   month = dsub$month, residual = observed - estimate)
 
 g <- ggplot(pred, aes(x, y, colour = estimate)) + 
   geom_point() + facet_wrap(~month) +
-  scale_color_gradient2() +
+  # scale_color_distiller(type = "div", palette = "PRGn", direction = 1) +
+  scale_color_gradient2(low = RColorBrewer::brewer.pal(3, "PRGn")[[1]], high = RColorBrewer::brewer.pal(3, "PRGn")[[3]], mid = "grey97") +
+  coord_fixed()
 print(g)
 
 g <- ggplot(pred, aes(x, y, colour = residual)) + 
@@ -201,7 +201,7 @@ ggplot(pred, aes(observed, estimate)) +
 Let's compare the multivariate t and multivariate normal predictions. 
 
 ```{r}
-pred_mvn <- predict(mvn, interval = "confidence", conf_level = 0.95)
+pred_mvn <- predict(mvn, interval = "confidence")
 pred2 <- pred
 pred2$mvn_estimate <- pred_mvn$estimate
 pred2$mvt_estimate <- pred$estimate
@@ -224,7 +224,7 @@ combined <- bind_rows(
 combined <- mutate(combined, id = paste(x, y))
 
 set.seed(1234)
-ids <- sample(unique(combined$id), size = 10)
+ids <- sample(unique(combined$id), size = 15)
 jitter <- 0.2
 dplyr::filter(combined, id %in% ids) %>%
   mutate(id_numeric = as.numeric(as.factor(id))) %>% 
@@ -233,9 +233,57 @@ dplyr::filter(combined, id %in% ids) %>%
   ggplot(aes(x = id_numeric, y = estimate, ymin = conf_low,
     ymax = conf_high, color = model)) +
   geom_pointrange(size = 0.25) +
-  facet_wrap(~month) + 
+  facet_wrap(~month, scales = "free_x") + 
   coord_flip() + 
-  geom_point(aes(x = round(id_numeric), y = log(observed)), 
+  geom_point(aes(x = round(id_numeric), y = observed), 
     color = "black", pch = 21) +
   xlab("y") + ylab("Point ID")
+```
+
+What about the width of the confidence intervals?
+
+```{r}
+cis <- mutate(combined, conf_width = conf_high - conf_low) %>%
+  group_by(month, x, y) %>%
+  summarize(conf_width_ratio = conf_width[model=="mvn"]/conf_width[model=="mvt"]) %>%
+  ungroup() %>%
+  group_by(month) %>%
+  mutate(median_ratio = median(conf_width_ratio))
+
+dplyr::filter(cis) %>%
+  ggplot(aes(conf_width_ratio)) +
+  geom_histogram() +
+  geom_vline(aes(xintercept = median(conf_width_ratio))) 
+
+dplyr::filter(cis) %>%
+  ggplot(aes(conf_width_ratio)) +
+  geom_histogram() +
+  facet_wrap(~month) +
+  geom_vline(xintercept = 1) +
+  geom_vline(aes(xintercept = median_ratio), color = "red") +
+  xlab("Ratio of prediction confidence intervals (MVN/MVT)")
+
+median(cis$conf_width_ratio)
+```
+
+How are the model parameters themselves different? 
+
+```{r}
+pars <- c("gp_sigma", "gp_scale", "sigma[1]")
+
+bt <- broom::tidyMCMC(mvt$model, estimate.method = "median", conf.int = TRUE)
+bn <- broom::tidyMCMC(mvn$model, estimate.method = "median", conf.int = TRUE)
+bt$model <- "mvt"
+bn$model <- "mvn"
+b <- bind_rows(bt, bn)
+
+dplyr::filter(b, term %in% pars) %>%
+  ggplot(aes(term, estimate, ymin = conf.low, 
+    ymax = conf.high, color = model)) +
+  geom_pointrange(position = position_dodge(width = 0.2)) +
+  coord_flip()
+
+# bayesplot::mcmc_areas(as.matrix(mvt$model), pars = pars)
+# bayesplot::mcmc_areas(as.matrix(mvn$model), pars = pars)
+bayesplot::mcmc_areas(as.matrix(mvt$model), pars = "df[1]")
 ```
