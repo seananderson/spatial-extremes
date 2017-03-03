@@ -21,7 +21,9 @@ theme_set(ggsidekick::theme_sleek())
 
 ```
 
-Let's grab the chlorophyll bloom data for a selection of dates. We will start in January and grab every second week. This will be for 2014, which is the latest data available. 
+Let's grab the chlorophyll bloom data for a selection of dates. We will start
+in January and grab every second week. This will be for 2014, which is the
+latest data available. 
 
 ```{r}
 # rerddap::ed_search(query = "temp") %>% .$info
@@ -72,12 +74,13 @@ d <- d %>% group_by(month) %>%
   ungroup()
 ```
 
-This data set is extremely high resolution and for the purposes of this example, we will downsample to every 20th observation. 
+This data set is extremely high resolution and for the purposes of this
+example, we will downsample to every 20th observation. 
 
 ```{r}
-dowsample=20
-lons = unique(d$lon)[seq(1, length(unique(d$lon)), dowsample)]
-lats = unique(d$lat)[seq(1, length(unique(d$lat)), dowsample)]
+downsample=20
+lons = unique(d$lon)[seq(1, length(unique(d$lon)), downsample)]
+lats = unique(d$lat)[seq(1, length(unique(d$lat)), downsample)]
 dsub = d[which(d$lat%in% lats & d$lon %in% lons),]
 ```
 
@@ -117,11 +120,12 @@ if (!file.exists("examples/OR_blooms/blooms-mvt.rds")) {
     time = "timeID",
     lon = "lon_scaled",
     lat = "lat_scaled",
-    nknots = 20L,
+    nknots = 25L,
     station = "stationID",
     algorithm = "sampling",
     chains = 3L,
     iter = 700L,
+    estimate_ar = FALSE,
     prior_gp_sigma = half_t(7, 0, 5),
     prior_gp_scale = half_t(7, 0, 5),
     prior_sigma = half_t(7, 0, 5)
@@ -139,7 +143,7 @@ if (!file.exists("examples/OR_blooms/blooms-mvn.rds")) {
     time = "timeID",
     lon = "lon_scaled",
     lat = "lat_scaled",
-    nknots = 20L,
+    nknots = 25L,
     estimate_df = FALSE,
     station = "stationID",
     fixed_df_value = 1000,
