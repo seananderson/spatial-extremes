@@ -29,10 +29,11 @@ latest data available.
 # rerddap::ed_search(query = "temp") %>% .$info
 out <- rerddap::info("osuBloomsModisChla")
 d <- list()
-m <- c("01-01", "01-15", "02-01", "02-15", "03-01", "03-15",
-  "04-01", "04-15", "05-01", "05-15",
-  "06-01", "06-15", "07-01", "07-15",
-  "08-01", "08-15", "09-01", "09-15", "10-01", "10-15")
+# m <- c("01-01", "01-15", "02-01", "02-15", "03-01", "03-15",
+#   "04-01", "04-15", "05-01", "05-15",
+#   "06-01", "06-15", "07-01", "07-15",
+#   "08-01", "08-15", "09-01", "09-15", "10-01", "10-15")
+m <- sub("2014-", "", seq(lubridate::ymd("2014-04-01"), lubridate::ymd("2014-08-31"), by = "8 days"))
 t1 <- paste0("2014-", m, "T00:00:00Z")
 t2 <- paste0("2014-", m, "T00:00:01Z")
 
@@ -46,6 +47,31 @@ for (i in seq_along(m)) {
   d[[i]] <- as_data_frame(d[[i]])
 }
 d <- bind_rows(d)
+# ------------------------------------------
+# m <- sub("2008-", "", seq(lubridate::ymd("2008-06-16"), lubridate::ymd("2008-06-16"), by = "7 days"))
+# t1 <- paste0("2008-", m, "T00:00:00Z")
+# t2 <- paste0("2008-", m, "T00:00:01Z")
+
+# out <- rerddap::info("erdSW1chlamday")
+# d <- list()
+# for (i in seq_along(m)) {
+#   message(m[[i]])
+#   d[[i]] <- rerddap::griddap(out,
+#     time = c(t1[[i]], t2[[i]]),
+#     longitude = c(-126, -124),
+#     latitude = c(42, 48.5))$data
+#   d[[i]]$month <- m[[i]]
+#   d[[i]] <- as_data_frame(d[[i]])
+# }
+# d <- bind_rows(d)
+# downsample=1
+# lons = unique(d$lon)[seq(1, length(unique(d$lon)), downsample)]
+# lats = unique(d$lat)[seq(1, length(unique(d$lat)), downsample)]
+# dsub = d[which(d$lat%in% lats & d$lon %in% lons),]
+# dsub %>%
+#   ggplot() + geom_point(aes(lon, lat, color = chlorophyll)) +
+#   facet_wrap(~month) +  
+#   viridis::scale_color_viridis()
 ```
 
 Let's transform these percent change values of chlorophyll a into something we can easily work with from modeling. 
@@ -69,9 +95,12 @@ d$prc_chla_trans <- log(x)
 Now we will center the bi-weekly values to focus on the special anomalies. 
 
 ```{r}
-d <- d %>% group_by(month) %>%
-  mutate(prc_chla_trans = prc_chla_trans - mean(prc_chla_trans, na.rm = TRUE)) %>%
-  ungroup()
+# d <- d %>% group_by(month) %>%
+  # mutate(prc_chla_trans = prc_chla_trans - mean(prc_chla_trans, na.rm = TRUE)) %>%
+  # ungroup()
+
+d <- d %>%
+  mutate(prc_chla_trans = prc_chla_trans - mean(prc_chla_trans, na.rm = TRUE))
 ```
 
 This data set is extremely high resolution and for the purposes of this
@@ -103,8 +132,20 @@ dsub <- mutate(dsub, lat_scaled = lat / 100000, lon_scaled = lon / 100000,
 dsub %>%
   ggplot() + geom_point(data=dsub, aes(lon_scaled, lat_scaled, color = prc_chla_trans)) +
   facet_wrap(~month) +  
-  scale_color_gradient2(low = RColorBrewer::brewer.pal(3, "PRGn")[[1]], high = RColorBrewer::brewer.pal(3, "PRGn")[[3]], mid = "grey97") +
-  coord_fixed()
+  scale_color_gradient2()
+  # scale_color_gradient2(low = RColorBrewer::brewer.pal(3, "Blues")[[1]], high = RColorBrewer::brewer.pal(3, "Greens")[[3]], mid = "grey97")
+  # coord_fixed()
+```
+
+Let's hold out some data to check the predictive accuracy:
+
+```{r}
+dsub <- mutate(dsub, row_number = seq_len(nrow(dsub)))
+set.seed(1)
+dsub <- group_by(dsub, month) %>% 
+  mutate(hold_out = row_number %in% 
+          sample(row_number, size = 20L)) %>% 
+  ungroup()
 ```
 
 Now we can fit the model. We will fit one with the multivariate t and another with a multivariate normal. 
@@ -113,58 +154,64 @@ Now we can fit the model. We will fit one with the multivariate t and another wi
 library(rrfields)
 options(mc.cores = parallel::detectCores())
 
-if (!file.exists("examples/OR_blooms/blooms-mvt.rds")) {
+# if (!file.exists("examples/or-blooms/blooms-mvt.rds")) {
   mvt <- rrfield(
-    prc_chla_trans ~ 1, # TODO working without?
-    data = dsub,
+    prc_chla_trans ~ month,
+    data = dplyr::filter(dsub, !hold_out),
     time = "timeID",
     lon = "lon_scaled",
     lat = "lat_scaled",
-    nknots = 25L,
+    nknots = 22L,
     station = "stationID",
     algorithm = "sampling",
-    chains = 3L,
-    iter = 700L,
+    chains = 4L,
+    iter = 400L,
     estimate_ar = FALSE,
     prior_gp_sigma = half_t(7, 0, 5),
     prior_gp_scale = half_t(7, 0, 5),
-    prior_sigma = half_t(7, 0, 5)
+    prior_sigma = half_t(7, 0, 5),
+    prior_intercept = student_t(1e9, 0, 10),
+    prior_beta = student_t(1e9, 0, 2),
+    save_log_lik = TRUE
     )
-  saveRDS(mvt, file = "examples/OR_blooms/blooms-mvt.rds")
-} else {
-  mvt <- readRDS("examples/OR_blooms/blooms-mvt.rds")
-}
+  saveRDS(mvt, file = "examples/or-blooms/blooms-mvt.rds")
+# } else {
+  mvt <- readRDS("examples/or-blooms/blooms-mvt.rds")
+# }
 print(mvt)
 
-if (!file.exists("examples/OR_blooms/blooms-mvn.rds")) {
+# if (!file.exists("examples/or-blooms/blooms-mvn.rds")) {
   mvn <- rrfield(
-    prc_chla_trans ~ 1, # TODO working without?
-    data = dsub,
+    prc_chla_trans ~ month,
+    data = dplyr::filter(dsub, !hold_out),
     time = "timeID",
     lon = "lon_scaled",
     lat = "lat_scaled",
-    nknots = 25L,
+    nknots = 22L,
     estimate_df = FALSE,
     station = "stationID",
-    fixed_df_value = 1000,
+    fixed_df_value = 1e6,
     algorithm = "sampling",
-    chains = 3L,
-    iter = 700L,
+    chains = 4L,
+    iter = 400L,
     prior_gp_sigma = half_t(7, 0, 5),
     prior_gp_scale = half_t(7, 0, 5),
-    prior_sigma = half_t(7, 0, 5)
+    prior_sigma = half_t(7, 0, 5),
+    prior_intercept = student_t(1e9, 0, 10),
+    prior_beta = student_t(1e9, 0, 2),
+    save_log_lik = TRUE
     )
-  saveRDS(mvn, file = "examples/OR_blooms/blooms-mvn.rds")
-} else {
-  mvn <- readRDS("examples/OR_blooms/blooms-mvn.rds")
-}
+  saveRDS(mvn, file = "examples/or-blooms/blooms-mvn.rds")
+# } else {
+  mvn <- readRDS("examples/or-blooms/blooms-mvn.rds")
+# }
 print(mvn)
 ```
 
 Plot the predictions and check the model. 
 
 ```{r plots}
-pred <- predict(mvt, interval = "confidence")
+pred <- predict(mvt, interval = "confidence", newdata = dsub)
 pred <- pred %>% mutate(x = dsub$lon_scaled, y = dsub$lat_scaled, 
   observed = dsub$prc_chla_trans, 
   month = dsub$month, residual = observed - estimate)
@@ -172,7 +219,8 @@ pred <- pred %>% mutate(x = dsub$lon_scaled, y = dsub$lat_scaled,
 g <- ggplot(pred, aes(x, y, colour = estimate)) + 
   geom_point() + facet_wrap(~month) +
   # scale_color_distiller(type = "div", palette = "PRGn", direction = 1) +
-  scale_color_gradient2(low = RColorBrewer::brewer.pal(3, "PRGn")[[1]], high = RColorBrewer::brewer.pal(3, "PRGn")[[3]], mid = "grey97") +
+  scale_color_gradient2(low = RColorBrewer::brewer.pal(3, "PRGn")[[1]], 
+    high = RColorBrewer::brewer.pal(3, "PRGn")[[3]], mid = "grey97") +
   coord_fixed()
 print(g)
 
@@ -205,7 +253,7 @@ ggplot(pred, aes(observed, estimate)) +
 Let's compare the multivariate t and multivariate normal predictions. 
 
 ```{r}
-pred_mvn <- predict(mvn, interval = "confidence")
+pred_mvn <- predict(mvn, interval = "confidence", newdata = dsub)
 pred2 <- pred
 pred2$mvn_estimate <- pred_mvn$estimate
 pred2$mvt_estimate <- pred$estimate
@@ -270,6 +318,50 @@ dplyr::filter(cis) %>%
 median(cis$conf_width_ratio)
 ```
 
+What about the holdout data? 
+
+```{r}
+combined$hold_out <- c(dsub$hold_out, dsub$hold_out)
+
+dplyr::filter(combined, hold_out) %>%
+  ggplot(aes(log(observed), estimate)) +
+  geom_point(alpha = 0.2) +
+  geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
+  coord_fixed() +
+  geom_abline(intercept = 0, slope = 1, colour = "red") +
+  facet_wrap(~model)
+```
+
+Let's look at the mean squared error between the 2 models: 
+
+```{r}
+mse <- dplyr::filter(combined, hold_out) %>%
+  group_by(model, month) %>%
+  summarize(rmse = round(sqrt(mean(residual^2)), 6))
+ggplot(mse, aes(month, rmse, color = model)) +
+  geom_point()
+
+mse <- dplyr::filter(combined, hold_out) %>%
+  group_by(model) %>%
+  summarize(rmse = round(sqrt(mean(residual^2)), 2))
+print(mse)
+```
+
+What about the mean squared error for all of the data?
+
+```{r}
+mse <- dplyr::filter(combined) %>%
+  group_by(model, year) %>%
+  summarize(mse = round(mean(residual^2), 6))
+ggplot(mse, aes(year, mse, color = model)) +
+  geom_line()
+
+mse <- dplyr::filter(combined) %>%
+  group_by(model) %>%
+  summarize(mse = round(mean(residual^2), 2))
+print(mse)
+```
+
 How are the model parameters themselves different? 
 
 ```{r}
@@ -287,7 +379,22 @@ dplyr::filter(b, term %in% pars) %>%
   geom_pointrange(position = position_dodge(width = 0.2)) +
   coord_flip()
 
-# bayesplot::mcmc_areas(as.matrix(mvt$model), pars = pars)
-# bayesplot::mcmc_areas(as.matrix(mvn$model), pars = pars)
 bayesplot::mcmc_areas(as.matrix(mvt$model), pars = "df[1]")
 ```
+
+Let's look at the information criteria. 
+
+```{r}
+library(rstan)
+library(loo)
+waic_t <- waic(extract_log_lik(mvt$model))
+waic_n <- waic(extract_log_lik(mvn$model))
+waic_t$waic
+waic_n$waic
+
+loo_t <- loo(extract_log_lik(mvt$model))
+loo_n <- loo(extract_log_lik(mvn$model))
+loo_t$looic
+loo_n$looic
+```
+
