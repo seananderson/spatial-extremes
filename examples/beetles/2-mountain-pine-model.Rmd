@@ -22,6 +22,35 @@ theme_set(ggsidekick::theme_sleek())
 
 Read in and set up the data.
 
+```{r, echo=FALSE}
+library(mapdata)
+library(maps)
+library(rgdal)
+mpc <- ggplot2::map_data("worldHires", "Canada")
+mps <- ggplot2::map_data("state")
+
+mpc$group <- mpc$group + max(mps$group)
+mp <- rbind(mpc,mps)
+
+# ggplot(mp, aes(long,lat, group=group)) + 
+#   geom_polygon(fill = NA, colour = "grey50") +
+#   coord_equal(xlim = c(-150, -80), ylim = c(20, 70))
+
+mp2 <- mp
+coordinates(mp2) <- c("long", "lat")
+proj <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"
+proj4string(mp2) <- CRS("+proj=longlat +datum=NAD83")
+proj4string(mp2)
+
+mp2 <- spTransform(mp2, CRS(proj))
+proj4string(mp2)
+
+# mp2 <- fortify(as.data.frame(mp2))
+# ggplot(mp2, aes(long,lat, group=group)) + 
+#   geom_polygon(fill = NA, colour = "grey50") +
+#   coord_equal(xlim = range(d$x), ylim = range(d$y))
+```
+
 ```{r preparation, cache=FALSE, eval=TRUE}
 id <- "mountain-pine-beetle-pnw-raster"
 # id <- "mountain-pine-beetle-northern-raster"
@@ -40,15 +69,23 @@ d$y <- d$y/1e5
 d <- dplyr::filter(d, cover > 0)
 d_highres <- dplyr::filter(d_highres, cover > 0)
 
-ggplot(d_highres, aes(x/1e5, y/1e5)) + 
+ggplot(d_highres, aes(x, y)) + 
+  # geom_polygon(data = mp2, aes(long, lat, group = group), 
+    # inherit.aes = FALSE, fill = "white", col = "grey40", lwd = 0.3) +
   geom_point(size = 0.1, alpha = 0.1) +
-  facet_wrap(~year) +
-  coord_fixed()
+  facet_wrap(~year)
+  # theme(panel.background = element_rect(fill="#e6e8ed")) +
+  # coord_fixed(xlim = range(d_highres$x), ylim = range(d_highres$y))
 
-ggplot(d, aes(x, y, fill = log(cover))) + geom_tile() +
+ggplot(d, aes(x, y, fill = log(cover))) + 
+  # geom_polygon(data = mp2, aes(long/1e5, lat/1e5, group = group), 
+    # inherit.aes = FALSE, fill = "white", col = "grey40", lwd = 0.3) +
+  geom_tile() +
   facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
   coord_fixed()
+  # theme(panel.background = element_rect(fill="#e6e8ed")) +
+  # coord_fixed(xlim = range(d$x), ylim = range(d$y))
 
 ggplot(d, aes(x, y, fill = cover)) + geom_tile() +
   facet_wrap(~year) +
@@ -62,7 +99,7 @@ d <- mutate(d, station = paste(x, y), row_number = seq_len(nrow(d)))
 set.seed(1)
 d <- group_by(d, year) %>% 
   mutate(hold_out = row_number %in% 
-          sample(row_number, size = 25L)) %>% 
+      sample(row_number, size = 25L)) %>% 
   ungroup()
 
 # or the intercept prior will be off:
@@ -91,9 +128,9 @@ if (!file.exists(model_file)) {
     prior_sigma = half_t(7, 0, 5),
     estimate_ar = FALSE,
     estimate_df = TRUE,
-    chains = 2, iter = 700,
+    chains = 2, iter = 1000,
     fixed_ar_value = 1,
-    control = list(adapt_delta = 0.85))
+    control = list(adapt_delta = 0.95))
   save(mvt, file = model_file)
 } else {
   load(model_file)
@@ -122,9 +159,9 @@ if (!file.exists(model_file)) {
     estimate_ar = FALSE,
     estimate_df = FALSE,
     fixed_df_value = 1e9,
-    chains = 2, iter = 700,
+    chains = 2, iter = 1000,
     fixed_ar_value = 1,
-    control = list(adapt_delta = 0.85))
+    control = list(adapt_delta = 0.95))
   save(mvn, file = model_file)
 } else {
   load(model_file)
