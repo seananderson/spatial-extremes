@@ -42,7 +42,7 @@ Eric J. Ward$^2$
 
 \begin{spacing}{1.05}
 
-\section{Abstract}
+\begin{abstract}
 
 Understanding biological responses to environmental perturbations in time and
 space is critical for conservation planning. With projected trends in climate
@@ -68,6 +68,7 @@ creating realistic models of anomalies, and allows us to improve predictions
 that feed into conservation decisions. Distributing this tool as an R package
 should make these models accessible to a wide range of conservation biologists
 and scientists in other disciplines interested in predicting extreme events.
+\end{abstract}
 
 \section{Introduction}
 
@@ -154,24 +155,18 @@ applications in ecology and related fields.
 
 \section{Methods}
 
-\subsection{Simulated Data}
-
-\begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.8\textwidth]{../figs/pp-illustration.pdf}
-\caption{caption}
-\label{fig:didactic}
-\end{center}
-\end{figure}
+\subsection{Simulated data}
 
 To evaluate the utility and limitations of spatiotemporal models with
 multivariate-t spatial predictive models, we first simulated spatial data and
 evaluated our ability to recover the known simulation parameters. Each
-simulated data set was generated with 100 random locations, and consisted of
-$n_t$ replicates in time (e.g.~simulated years). We used the random locations
-for each dataset and the partitioning around medoids algorithm
-\citep[\texttt{pam()} in the R package \textbf{cluster};][]{reynolds2006} to
-calculate the location of knots. The locations of the data were constant
+simulated data set was generated with data collected at 
+100 random locations, and consisted of
+$n_t$ replicates in time (e.g.~simulated years). 
+We used the random locations for each dataset 
+and the partitioning around medoids algorithm
+\citep[\texttt{pam()} in the R package \textbf{cluster};][]{reynolds2006}
+to calculate the location of knots. The locations of the data were constant
 through time such that simulated survey locations (or locations of knots) did
 not vary through time.
 
@@ -190,7 +185,15 @@ and the elements of the covariance matrix at the \emph{m} knot locations:
 \Sigma_{ij}^*=\sigma^2 \left( -\phi \delta_{ij}^2 \right)
 \end{equation}
 
-Each element of the covariance matrix $\Sigma^{*}$ is thus dependent on
+\begin{figure}[htb]
+\begin{center}
+  \includegraphics[width=0.8\textwidth]{../figs/pp-illustration.pdf}
+\caption{caption}
+\label{fig:didactic}
+\end{center}
+\end{figure}
+
+Each element of the covariance matrix $\Sigma^*$ is thus dependent on
 three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
 $j$ squared, (2) the scale parameter $\phi$, which determines how steeply the
 correlation declines with increasing distance, and (3) the variance $\sigma^2$.
@@ -198,18 +201,17 @@ Following \citep{latimer2009}, we can also calculate the covariance matrix
 between the locations of the data and the knots, 
 $\Sigma_{\left(W, W^* \right)}$. 
 Given $\Sigma^*$, we generated random effects at knot
-locations by drawing from a multivariate-t distribution for each time step
-$t$, $W_t^*\sim \mathrm{MVT}\left( \Sigma^{*},\nu \right)$ .
-These random effects at the knots are then projected to the data locations
-using 
-$\Sigma_{\left( W,W^{*} \right)}$ \citep{latimer2009}. 
+locations by drawing from a multivariate-t distribution for each time step $t$, 
+$W_t^*\sim \mathrm{MVT}\left( \Sigma^{*},\nu \right)$ .
+These random effects at the knots are then projected to the data locations using
+$\Sigma_{\left( W,W^{*} \right)}$ \citep{latimer2009}.
 Given ${\Sigma}^{*}$:
 
 \begin{equation}
 W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*
 \end{equation}
     
-A final step in our data simulation was to corrupt true data by
+A final step in our data simulation was to corrupt the `true' data by
 including measurement or observation error. We assumed observations to be
 generated from a Gamma distribution, 
 $Y_{it}\sim \mathrm{Gamma}\left(a,\frac {a}{E[Y_{it}]} \right)$, 
@@ -218,7 +220,11 @@ $a$ can be reparameterized into the coefficient of variation (CV),
 $a=\frac{1}{CV^2}$.
 
 We used the simulation model described above as the estimation model for each
-dataset. Sean - more text here on number of simulations, possibly ranges of
+dataset.
+
+We evaluated a range of parameter values \ldots
+
+Sean - more text here on number of simulations, possibly ranges of
 parameters, estimation in STAN, etc.
 
 \begin{figure}[htb]
