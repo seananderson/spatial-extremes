@@ -47,3 +47,7 @@ examples/OR_blooms/stanMod_norm.rds
 examples/OR_blooms/or-blooms-priors.pdf
 examples/OR_blooms/stanMod_norm.rds
 bound0m_shp_nt00298
+
+*.bbl
+
+*.blg
