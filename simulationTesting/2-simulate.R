@@ -24,8 +24,13 @@ if (interactive()) {
 # ------------------------------------------------------------
 # Now run across multiple arguments
 
+i <<- 0
+
 sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
   comment = "", gp_sigma = 0.5) {
+
+  i <<- i + 1
+  message(i)
 
   s <- sim_rrfield(df = df, n_data_points = 100, seed = NULL,
     n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale,
@@ -36,9 +41,9 @@ sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
       nknots = n_knots,
       station = "station_id",
       chains = 4L, iter = iter, obs_error = "normal",
-      prior_gp_scale = half_t(3, 0, 5),
-      prior_gp_sigma = half_t(3, 0, 5),
-      prior_sigma = half_t(3, 0, 5),
+      prior_gp_scale = half_t(3, 0, 3),
+      prior_gp_sigma = half_t(3, 0, 3),
+      prior_sigma = half_t(3, 0, 3),
       prior_intercept = student_t(1e6, 0, 1),
       prior_beta = student_t(1e6, 0, 1))
   }
@@ -63,11 +68,11 @@ arguments <- expand.grid(
   n_knots = 15,
   n_draws = c(10, 20),
   gp_scale = 1,
-  gp_sigma = 0.5,
+  gp_sigma = 1,
   sd_obs = c(0.1, 0.3, 1)
 )
 nrow(arguments)
-arguments$count <- 1L
+arguments$count <- 20L
 arguments <-
   arguments[rep(seq_len(nrow(arguments)), arguments$count),]
 arguments_apply <- dplyr::select(arguments,-count)
