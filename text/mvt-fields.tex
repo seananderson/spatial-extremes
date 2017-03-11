@@ -31,7 +31,7 @@
 
 \title{Modelling spatiotemporal extremes in ecology}
 \author{
-Sean C. Anderson$^1$,
+Sean C. Anderson$^1$ and
 Eric J. Ward$^2$
 }
 \date{}
@@ -103,7 +103,7 @@ it is straightforward to project or interpolate those random effects to the
 locations of observations \citep{latimer2009, finley2009}.
 
 Reducing the spatial dimension of a dataset yields a smaller covariance matrix,
-but may still me computationally intensive because the covariance matrix is
+but may still be computationally intensive because the covariance matrix is
 dense (most elements are non-zero). For some spatial problems, inference about
 the covariance between points separated by large distances may not be of
 interest because the correlation is negligible. In geostatistics, the `range'
@@ -123,8 +123,9 @@ A limitation of models that include Gaussian random fields is that they may
 perform poorly when underlying data include anomalous or extreme events. More
 on dragon kings and stuff here? Extreme events in temporal processes have been
 modeled using a variety of methods in ecology, typically by including finite
-mixtures of `normal' and `heavy-tailed' distributions \citep{everitt1996,
-  ward2007, thorson2011}. More recently, the use of the Student-t distribution
+mixtures of normal and
+heavy-tailed distributions \citep{everitt1996, ward2007, thorson2011}.
+More recently, the use of the Student-t distribution
 has been proposed as a robust solution to modeling process variation in
 population dynamics (Anderson et al. in press).
 
