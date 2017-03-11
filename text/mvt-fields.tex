@@ -29,13 +29,18 @@
 \bibpunct{(}{)}{;}{a}{}{;}
 \bibliographystyle{mee}
 
-\title{Robust spatiotemporal modeling with multivariate-t random fields}
+\title{Modelling spatiotemporal extremes in ecology}
 \author{
 Sean C. Anderson$^1$,
 Eric J. Ward$^2$
 }
+\date{}
 
 \begin{document}
+
+\maketitle
+
+\begin{spacing}{1.05}
 
 \section{Abstract}
 
@@ -51,9 +56,8 @@ and space. Specifically, our model is a Bayesian predictive-process model that
 uses a multivariate-t distribution to describe spatial random effects. The
 model is easily implemented with our flexible new R package \textbf{rrfields},
 which uses an interface that should be familiar to anyone who has worked with
-regression in R. We illustrate applications of our model and R package with two
-real-world datasets. First, we predict seasonal chlorophyll-a anomalies off the
-coast of Oregon, US, which may be a useful indicator of harmful algal blooms.
+regression in R. We illustrate applications of our model and R package simulated and
+real-world data. First, we \ldots
 Second, we predict tree mortality from mountain pine beetle (\emph{Dendroctonus
   ponderosae}) outbreaks in the US Pacific Northwest over the last 16 years. In
 both cases, we show that our model provides more accurate and certain
@@ -136,7 +140,7 @@ sciences.
 
 The objectives of this paper are to introduce the use of robust spatial
 predictive models using the multivariate-t distribution, easily implemented in
-our new R package \emph{rrfields} (robust random fields). Using simulation
+our new R package \textbf{rrfields} (robust random fields). Using simulation
 testing to compare the multivariate normal to multivariate-t spatial processes,
 we illustrate that the multivariate-t leads to better prediction (less bias,
 lower uncertainty). Second, we illustrate applications of these modeling
@@ -154,7 +158,7 @@ applications in ecology and related fields.
 
 \begin{figure}[htb]
 \begin{center}
-  \includegraphics[width=0.7\textwidth]{../figs/pp-illustration.pdf}
+  \includegraphics[width=0.8\textwidth]{../figs/pp-illustration.pdf}
 \caption{caption}
 \label{fig:didactic}
 \end{center}
@@ -176,13 +180,17 @@ locations because this is one of the most commonly adopted covariance functions
 for spatiotemporal models. The Gaussian function (also known as the squared
 exponential) models the correlation between points $i$ and $j$:
 
-\[H(\delta_{ij}) = \exp \left(-\phi \delta_{ij}^2 \right)\]
+\begin{equation}
+H(\delta_{ij}) = \exp \left(-\phi \delta_{ij}^2 \right)
+\end{equation}
 
 and the elements of the covariance matrix at the \emph{m} knot locations:
 
-\[\Sigma_{ij}^*=\sigma^2 \left( -\phi \delta_{ij}^2 \right)\]
+\begin{equation}
+\Sigma_{ij}^*=\sigma^2 \left( -\phi \delta_{ij}^2 \right)
+\end{equation}
 
-Each element of the covariance matrix ${{\Sigma}}^{*}$ is thus dependent on
+Each element of the covariance matrix $\Sigma^{*}$ is thus dependent on
 three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
 $j$ squared, (2) the scale parameter $\phi$, which determines how steeply the
 correlation declines with increasing distance, and (3) the variance $\sigma^2$.
@@ -193,79 +201,57 @@ Given $\Sigma^*$, we generated random effects at knot
 locations by drawing from a multivariate-t distribution for each time step
 $t$, $W_t^*\sim \mathrm{MVT}\left( \Sigma^{*},\nu \right)$ .
 These random effects at the knots are then projected to the data locations
-using $\Sigma_{\left( W,{W}^{*} \right)}$ \citep{latimer2009}. Given
-${\Sigma}^{*}$:
+using 
+$\Sigma_{\left( W,W^{*} \right)}$ \citep{latimer2009}. 
+Given ${\Sigma}^{*}$:
 
-\[{{W=\Sigma }_{\left( W,{W}^{*} \right) }^{'}}{\Sigma }^{*-1}{
-    W}^{*}\] A final step in our data simulation was to corrupt true data by
+\begin{equation}
+W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*
+\end{equation}
+    
+A final step in our data simulation was to corrupt true data by
 including measurement or observation error. We assumed observations to be
-generated from a Gamma distribution, ${Y}_{it}\sim \mathrm{Gamma}\left(
-    a,\frac {a}{E[{Y}_{it}]} \right)$, where the Gamma shape parameter
-$a$ can be reparameterized into the coefficient of variation (CV), $a=\frac
-  {1}{{CV}^{2}}$.
+generated from a Gamma distribution, 
+$Y_{it}\sim \mathrm{Gamma}\left(a,\frac {a}{E[Y_{it}]} \right)$, 
+where the Gamma shape parameter
+$a$ can be reparameterized into the coefficient of variation (CV), 
+$a=\frac{1}{CV^2}$.
 
 We used the simulation model described above as the estimation model for each
 dataset. Sean - more text here on number of simulations, possibly ranges of
 parameters, estimation in STAN, etc.
 
-\subsection{Oregon Chlorophyll Blooms}
+\begin{figure}[htb]
+\begin{center}
+  \includegraphics[width=0.9\textwidth]{../figs/nu-rf-illustration.pdf}
+\caption{caption}
+\label{fig:didactic}
+\end{center}
+\end{figure}
+
+
+\subsection{Mountain pine beetles in the US Pacific Northwest}
 
 To illustrate real-world applications of multivariate-t distributed
-spatiotemporal models and the rrfields package, we first used satellite sampled
-estimates of chlorophyll-a from the Oregon coast (USA). Seasonal change or
-anomalies in chlorophyll concentrations has been used to predict blooms of
-phytoplankton \citep{mckibben2012} and may be a useful indicator of detecting
-harmful algal blooms \citep{tweddle2010}. This chlorophyll dataset was
-generated on 8-day time steps, so anomalies for any day are presented as the
-difference between chlorophyll in successive eight day periods
-\citep{mckibben2012}. We focused our application on data in spring and summer,
-when chlorophyll values may be at their peak \citep{mckibben2012}, and recent
-years have seen particularly elevated levels \citep{du2016}. We used the
-`rerddap' package to access the gridded observations at 2-week intervals
-between February 01 and September 15 2014 (using observations on the 1st and
-15th of each month). Because the spatial dimension of this dataset is so large,
-we used a smaller subset of all grid locations to reduce the dimensionality.
+spatiotemporal models and the rrfields package, 
 
-We fit two spatial models to the Oregon chlorophyll data, (1) a model with
+We fit two spatial models to the data, (1) a model with
 multivariate-t random fields and (2) a model with multivariate-normal random
 fields. For both models, we expanded on the estimation model applied to
 simulated data to include variable random effects by time step (representing
 seasonal anomalies in the mean across the entire field). We also assumed normal
-residual error, so that the data for location \emph{i} in time \emph{t} is
-assumed to be $Y_{it}\sim \mathrm{Normal}\left(W_{it}+{y}_{t
-   },\sigma \right)$, where ${W}_{it}$ is the estimated random effect
-at location $i$ in time $t$, ${y}_{t}$ is the intercept for each time
-step, and $\sigma$ represents residual error. We modeled the temporal
-intercepts as an autoregressive random walk, so that ${y}_{t}\sim
-  \mathrm{Normal}\left( {y}_{t-1},{\sigma}_{t} \right)$ , and
-${\sigma}_{t}$ represents the standard deviation of the temporal
-intercepts.
+residual error, so that the data for location $i$ in time $t$ is
+assumed to be 
+$Y_{it}\sim \mathrm{Normal}\left(W_{it}+y_t, \sigma \right)$, 
+where $W_{it}$ is the estimated random effect
+at location $i$ in time $t$, $y_t$ is the intercept for each time
+step, and $\sigma$ represents residual error. 
+We modeled the temporal intercepts as an autoregressive random walk, 
+so that 
+$y_t\sim \mathrm{Normal}\left( y_{t-1},\sigma_t \right)$ , and
+$\sigma_t$ represents the standard deviation of the temporal intercepts.
 
 Expand on this when we figure out how we're evaluating predictive accuracy
-
-\subsection{Starling Counts from BBS}
-
-As a second example, we used spatially referenced counts of European starlings
-in the North American Breeding Bird Survey (BBS) \citep{pardieck2016}.
-Understanding starling population dynamics in space and time is important
-because starlings are an invasive species to North America and can damage
-agricultural crops \citep{linz2007}. To model the spatiotemporal dynamics of
-starlings in the Pacific Northwest, we used recent data from the BBS,
-1998-2015, collected in Washington, Oregon, and Idaho. Each route in the BBS
-survey routes consist of 50 roadside stops that are observed for three minutes.
-Because our interest was at a larger spatial scale than at the level of
-individual stops within a route, we summed counts of starlings across stops to
-produce total sums by route (ranging from 1 to 1981 birds). We did not include
-totals of zero counts, so are only modeling the dynamics of starlings when
-present.
-
-We performed the same comparison with the starling count dataset as with the
-Oregon chlorophyll bloom dataset, fitting both the multivariate-t and
-multivariate normal spatial fields. Again, we included year effects as an
-autoregressive process. Though the raw counts were discrete integers, we used
-the gamma distribution as an approximation to the zero-truncated negative
-binomial. Eric: I initially didn't use the delta- or tweedie model here,
-thinking it'd be good to avoid that
 
 \section{Results}
 
@@ -273,4 +259,5 @@ thinking it'd be good to avoid that
 
 \bibliography{spatial-extremes}
 
+\end{spacing}
 \end{document}
