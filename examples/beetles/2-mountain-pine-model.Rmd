@@ -115,11 +115,11 @@ Fit the model. First the multivariate t model.
 model_file <- paste0("examples/beetles/", id, "-", 
   "mvt-normal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
-  mvt <- rrfield(log(cover) ~ as.factor(year), 
+  mvt <- rrfield(log(cover) ~ as.factor(year)-1, 
     data = dplyr::filter(d, !hold_out),
     time = "year", lon = "x", lat = "y",
     station = "station",
-    nknots = 20,
+    nknots = 10,
     obs_error = "normal",
     prior_gp_sigma = half_t(7, 0, 2),
     prior_gp_scale = half_t(7, 0, 2),
@@ -128,9 +128,9 @@ if (!file.exists(model_file)) {
     prior_sigma = half_t(7, 0, 5),
     estimate_ar = FALSE,
     estimate_df = TRUE,
-    chains = 2, iter = 1000,
+    chains = 2, iter = 400,
     fixed_ar_value = 1,
-    control = list(adapt_delta = 0.95))
+    control = list(adapt_delta = 0.85))
   save(mvt, file = model_file)
 } else {
   load(model_file)
