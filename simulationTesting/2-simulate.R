@@ -10,7 +10,7 @@ if (interactive()) {
   library(manipulate)
   manipulate({
     set.seed(seed)
-    simulation_data <- sim_rrfield(df = df, n_data_points = 100, seed = NULL,
+    simulation_data <- sim_rrfield(df = df, n_data_points = 50, seed = NULL,
       n_draws = 6, n_knots = 7, gp_scale = gp_scale, gp_sigma = gp_sigma,
       obs_error = "normal", sd_obs = CV)
     print(simulation_data$plot)
@@ -28,15 +28,17 @@ sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
   comment = "", gp_sigma = 0.5) {
 
   s <- sim_rrfield(df = df, n_data_points = 100, seed = NULL,
-    n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale, gp_sigma = gp_sigma,
-    sd_obs = sd_obs, obs_error = "normal")
+    n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale,
+    gp_sigma = gp_sigma, sd_obs = sd_obs, obs_error = "normal")
 
   fit_model <- function(iter) {
-    rrfield(y ~ 1, data = s$dat, time = "time", lon = "lon", lat = "lat",
-      nknots = n_knots, chains = 4L, iter = iter, obs_error = "normal",
+    rrfield(y ~ 0, data = s$dat, time = "time", lon = "lon", lat = "lat",
+      nknots = n_knots,
+      station = "station_id",
+      chains = 4L, iter = iter, obs_error = "normal",
       prior_gp_scale = half_t(3, 0, 5),
-      prior_gp_sigma = half_t(3, 0, 3),
-      prior_sigma = half_t(3, 0, 3),
+      prior_gp_sigma = half_t(3, 0, 5),
+      prior_sigma = half_t(3, 0, 5),
       prior_intercept = student_t(1e6, 0, 1),
       prior_beta = student_t(1e6, 0, 1))
   }
@@ -44,19 +46,34 @@ sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
   m <- fit_model(iter = 500L)
   b <- broom::tidyMCMC(m$model, rhat = TRUE, ess = TRUE)
   if (any(b$ess < 100) | any(b$rhat > 1.05)) {
-    m <- fit_model(iter = 1000L)
+    m <- fit_model(iter = 2000L)
   }
   m
 }
 
 set.seed(123)
-arguments <- readxl::read_excel("simulationTesting/simulation-arguments.xlsx")
-arguments$count <- 5L
-arguments <- arguments[rep(seq_len(nrow(arguments)), arguments$count), ]
-arguments_apply <- dplyr::select(arguments, -count, -case)
-nrow(arguments)
+# arguments <- readxl::read_excel("simulationTesting/simulation-arguments.xlsx")
+# arguments$count <- 5L
+# arguments <- arguments[rep(seq_len(nrow(arguments)), arguments$count), ]
+# arguments_apply <- dplyr::select(arguments, -count, -case)
+# nrow(arguments)
 
-out <- plyr::mlply(arguments_apply[1,], sim_fit)
+arguments <- expand.grid(
+  df = c(2, 5, 20),
+  n_knots = 15,
+  n_draws = c(10, 20),
+  gp_scale = 1,
+  gp_sigma = 0.5,
+  sd_obs = c(0.1, 0.3, 1)
+)
+nrow(arguments)
+arguments$count <- 1L
+arguments <-
+  arguments[rep(seq_len(nrow(arguments)), arguments$count),]
+arguments_apply <- dplyr::select(arguments,-count)
+nrow(arguments_apply)
+
+out <- plyr::mlply(arguments_apply, sim_fit)
 saveRDS(out, file = "simulationTesting/mvt-norm-sim-testing.rds")
 
 # TODO pick only 4 params:
