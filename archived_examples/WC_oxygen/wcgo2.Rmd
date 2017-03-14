@@ -1,105 +1,164 @@
----
-title: "Comparing MVN and MVT spatial random effects"
-output:
-  pdf_document:
-    fig_caption: yes
----
 
-# This is an example using oxygen data from the coast of Washington in the trawl survey -- index of hypoxia, etc. 
+# Robust spatiotemporal model of dissolved oxygen off the coast of Washington state, USA.
 
-Recent paper by keller et al. here:
-http://onlinelibrary.wiley.com/doi/10.1111/fog.12100/abstract
+## Background
 
-```{r chunkSet, cache=FALSE, echo=FALSE,warning=FALSE,message=FALSE,results="hide"}
-library(cluster)
-library(mvtnorm)
-library(R2jags)
-library(fields)
+The Northwest Fisheries Science Center (NWFSC) conducts an annual trawl survey off the coast of Washington, Oregon, and California, to sample fish communities and collect data that are used to generate fishery independent indices of abundance for stock assessments. As part of that work, several environmental or physical samples are also collected from each haul. Examples include sea surface and bottom temperature, as well as dissolved oxygen (DO, mL / L). Oxygen may directly affect the probability of species occurence as well as the community composition of groundfish assemblages ([Keller et al. 2015](http://onlinelibrary.wiley.com/doi/10.1111/fog.12100/abstract
+)).  
+  
+The data from the trawl survey - both biotic and environmental variables - are publicly availbale from the NWFSC, [https://www.nwfsc.noaa.gov/data/map](https://www.nwfsc.noaa.gov/data/map).  
+
+## Load packages  
+```{r chunkSet, warning=FALSE,message=FALSE,results="hide"}
 library(ggplot2)
 library(knitr)
-library(MASS)
 library(rstan)
 library(reshape2)
+library(rrfields)
+library(dplyr)
 opts_chunk$set(tidy=TRUE, message=FALSE,warning=FALSE)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 ```
 
-```{r}
-d = read.csv("crabs/data/TrawlHaulChars_since2002.csv")
-d = d[which(is.na(d$o2_at_gear_ml_per_l_der)==FALSE & d$date_dim.year > 2008),]
-d = d[,c("haul_latitude_dim.latitude_in_degrees","haul_longitude_dim.longitude_in_degrees","date_dim.year","o2_at_gear_ml_per_l_der","seafloor_depth_m_der")]
+## Prepare data  
+
+Dissolved oxygen data have been reliably collected since 2008. We'll restrict the analysis geographically for this example to just include Washington state.  
+  
+```{r, fig.pos="placeHere", fig.cap = "Dissolved oxygen samples from the NWFSC trawl survey (2009 - 2015). Oxygen samples are quantified as millileters per liter."}
+d = read.csv("../../crabs/data/TrawlHaulChars_since2002.csv")
+d = d[which(is.na(d$o2_at_gear_ml_per_l_der) == FALSE &
+d$date_dim.year > 2008), ]
+d = d[, c(
+"haul_latitude_dim.latitude_in_degrees",
+"haul_longitude_dim.longitude_in_degrees",
+"date_dim.year",
+"o2_at_gear_ml_per_l_der",
+"seafloor_depth_m_der"
+)]
 
 d$year = as.numeric(d$date_dim.year)
 
-#d = d[which(d$haul_latitude_dim.latitude_in_degrees > 46.260987),]
-d = d[which(d$haul_latitude_dim.latitude_in_degrees > 42),]
-#which(locs[,2] < 46.260987 & locs[,2] > 41.99)
-# only use data from WA coast
+# Data north of 42 are WA coast
+d = d[which(d$haul_latitude_dim.latitude_in_degrees > 42), ]
 
-ggplot(d, aes(haul_longitude_dim.longitude_in_degrees, haul_latitude_dim.latitude_in_degrees, color=o2_at_gear_ml_per_l_der)) + geom_point() + facet_wrap(~year)
+# rename variables
+d = rename(d, dissolved_O2 = o2_at_gear_ml_per_l_der)
+d = rename(d, lat_dd = haul_latitude_dim.latitude_in_degrees)
+d = rename(d, lon_dd = haul_longitude_dim.longitude_in_degrees)
 
-#library(mgcv)
-#g = gam(log(o2_at_gear_ml_per_l_der) ~ #te(haul_longitude_dim.longitude_in_degrees, #haul_latitude_dim.latitude_in_degrees), data=d)
+ggplot(
+d,
+aes(
+lon_dd,
+lat_dd,
+color = dissolved_O2
+)
+) + geom_point() + facet_wrap( ~ year) + 
+  xlab("Longitude") + ylab("Latitude")
 ```
 
-# Prep data for input to STAN
+## Fit robust model using rrfields
 
-```{r prep_data}
-nKnots = 75
-nLocs = nrow(d)
-locs = cbind(d$haul_longitude_dim.longitude_in_degrees, d$haul_latitude_dim.latitude_in_degrees)
+For this example, we'll use ln(depth) as a predictor variable, in addition to the spatial component (which we'll model as an AR(1) process). Dissolved oxygen are positive, so we'll use a gamma distribution for the observation model. 
 
-# cluster analysis to determine knot locations
-knots = jitter(pam(locs,nKnots)$medoids)
-distKnots = as.matrix(dist(knots))
-distKnotsSq = distKnots^2 # squared distances
+```{r run_model}
+d$logdepth = log(d$seafloor_depth_m_der)
 
-plot(locs)
-points(knots, col='red')
-  
-# Calculate distance from knots to grid
-distAll = as.matrix(dist(rbind(locs, knots)))^2
-# this is the transpose of the lower left corner
-distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
-
-# convert data format to wide
-#d$stationID = seq(1,nrow(d))
-#dmelt <- melt(d[,c("year","density","stationID")], 
-#  id.vars = c("year", "density","stationID"))
-#Y <- dcast(dmelt, year ~ stationID, value.var = "density")
-
-Y = d$o2_at_gear_ml_per_l_der
-yearID = as.numeric(as.factor(d$year))
-stationID = seq(1,nrow(d))
-cov = log(d$seafloor_depth_m_der)
-  
-# create list for STAN
-spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)), "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y, "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq, "x"=cov)
-spatglm_pars = c("scaledf","yearEffects", "CV", "gp_sigmaSq", "gp_scale", "year_sigma","ar","B","spatialEffectsKnots")
-
-# estimate model. This model is modified from the simulation model by (1) including indices to allow NAs in the inputted data, and (2) including estimated year effects (intercepts)
-stanMod_gamma = stan(file = 'stan_models/mvtGamma_estSigma_index_cov_yr_ar1.stan',data = spatglm_data, 
-verbose = TRUE, chains = 3, thin = 1, warmup = 1000, iter = 2000, pars = spatglm_pars)
-
-save.image("examples/WC_oxygen/stanMod_gamma.Rdata")
-
-spatglm_pars = c("yearEffects", "CV", "gp_sigmaSq", "gp_scale", "year_sigma","ar","B","spatialEffectsKnots")
-
-stanMod_normal = stan(file = 'stan_models/mvnGamma_estSigma_index_cov_yr_ar1.stan',data = spatglm_data, 
-verbose = TRUE, chains = 3, thin = 1, warmup = 1000, iter = 2000, pars = spatglm_pars)
-
-save.image("examples/WC_oxygen/stanMod_gamma.Rdata")
+if(!file.exists("../../wc_o2_example.rds")) {
+stan_mod = rrfield(dissolved_O2 ~ logdepth, lon="lon_dd",
+  lat="lat_dd", nknots = 75, 
+  obs_error = "gamma", data=d, time="year", estimate_ar = TRUE, chains=3)
+saveRDS(stan_mod,file="wc_o2_example.rds")
+}
+if(file.exists("../../wc_o2_example.rds")) {
+  stan_mod = readRDS("../../wc_o2_example.rds")
+}
 ```
+
+## Parameter estimates  
+
+The estimated degrees of freedom suggests that the t-distribution is apporpriate (median = 7.3, 90% CIs = 3, 18.8). 
+```{r, fig.pos="placeHere", fig.cap = "Estimated degrees of freedom from robust spatial model."}
+df = extract(stan_mod$model, pars = "df")$df
+ggplot(as.data.frame(df), aes(df)) +
+geom_density(col = "blue", fill = "blue") + xlab("Estimated df")
+```
+
+We can also look at the posteriors for other parameters of interest. In particular, `B[2]` corresponds to the estimated slope of the relationship between ln(depth) and dissolved oxygen.  
+```{r, fig.pos="placeHere", fig.cap="Posterior estimates for other model parameters."}
+plot(stan_mod$model, pars = c("ar", "B", "gp_scale", "gp_sigma", "CV"))
+```
+
+## Stan diagnostics
+
+```{r, fig.pos="placeHere", fig.cap = "Diagnostics of acceptance statistics and log posterior."}
+stan_diag(stan_mod$model, info="sample")
+#stan_diag(stan_mod$model, info="stepsize")
+#stan_diag(stan_mod$model, info="treedepth")
+#stan_diag(stan_mod$model, info="divergence")
+```
+
+## Predictions  
+
+Because we didn't hold out any data for this example, we can only examine the predicted to observed values. 
 
 ```{r}
-df_gamma = data.frame("year"=1998:2011, "mean" = apply(yearEff_gamma,2,mean), "lo" = apply(yearEff_gamma,2,quantile,0.025),
-  "hi" = apply(yearEff_gamma,2,quantile,0.975), group="gamma")
-df_normal = data.frame("year"=1998:2011, "mean" = apply(yearEff_normal,2,mean), "lo" = apply(yearEff_normal,2,quantile,0.025),
-  "hi" = apply(yearEff_normal,2,quantile,0.975), group="normal")
+pred <- predict(stan_mod, interval = "confidence", conf_level = 0.9)
+d$pred = pred$estimate
+d$conf_low = pred$conf_low
+d$conf_high = pred$conf_high
+```
 
-ggplot(rbind(df_gamma,df_normal), aes(year, mean, group=group, color=group)) + geom_ribbon(aes(ymin = lo, ymax = hi), alpha=0.3)
+```{r, fig.pos="placeHere", fig.cap = "Predicted versus observed dissolved oxygen values, in link space (log)."}
+ggplot(d, aes(log(dissolved_O2), pred)) + geom_point(col = "grey30", alpha =
+    0.5) + ylab("Predicted") + xlab("Ln(Observed)") + geom_abline(
+    intercept = 0,
+    slope = 1,
+    col = "red",
+    linetype = 1
+    ) + facet_wrap( ~ year)
+```
+
+```{r, fig.pos="placeHere", fig.cap = "Predicted dissolved oxygen values versus residuals, in link space (log)."}
+ggplot(d, aes(pred, log(dissolved_O2) - pred)) + geom_point(col = "grey30", alpha =
+    0.5) + xlab("Predicted") + ylab("Residual") + geom_abline(
+    intercept = 0,
+    slope = 0,
+    col = "red",
+    linetype = 1
+    ) + facet_wrap( ~ year)
+```
+
+We can look at residuals in space to see any evidence of clustering,  
+```{r}
+d$residual = log(d$dissolved_O2) - d$pred
+ggplot(d, aes(lon_dd, lat_dd)) + 
+  xlab("Longitude") + 
+  ylab("Latitude") + 
+  scale_colour_gradient2() + 
+  geom_point(aes(colour = residual)) + 
+  facet_wrap( ~ year) +
+  ggtitle("Spatial residuals")
 ```
 
 
-  
+We can also look at the intervals in normal (repsonse) space. The confidence intervals generated above are intervals around the predicted mean; the prediction intervals include new data. 
+
+```{r}
+pred <- predict(stan_mod, interval = "prediction", type="response", conf_level = 0.9)
+d$pred = pred$estimate
+d$conf_low = pred$conf_low
+d$conf_high = pred$conf_high
+```
+
+```{r, fig.pos="placeHere", fig.cap = "Predicted versus observed dissolved oxygen values, in link space (log)."}
+ggplot(d, aes(dissolved_O2, pred)) + geom_point(col = "grey30", alpha =
+    0.5) + ylab("Predicted") + xlab("Ln(Observed)") + geom_abline(
+    intercept = 0,
+    slope = 1,
+    col = "red",
+    linetype = 1
+    ) + facet_wrap(~ year) + 
+  geom_errorbar(aes(ymin = conf_low, ymax = conf_high), alpha = 0.3)
+```
