@@ -79,7 +79,7 @@ arguments <-
 arguments_apply <- dplyr::select(arguments,-count)
 nrow(arguments_apply)
 
-out <- plyr::mlply(arguments_apply[1,], sim_fit)
+out <- plyr::mlply(arguments_apply[,], sim_fit)
 saveRDS(out, file = "simulationTesting/mvt-norm-sim-testing.rds")
 
 out <- readRDS("simulationTesting/mvt-norm-sim-testing.rds")
@@ -91,6 +91,7 @@ out_print <- out %>%
 names(out_print) <- paste0(names(out_print), "_est")
 out_print <- select(out_print, -starts_with("spatialEffectsKnots"))
 names(out_print) <- sub("\\[1\\]", "", names(out_print))
+saveRDS(out_print, file = "simulationTesting/mvt-norm-sim-testing-summary.rds")
 
 rhat <- out %>%
   map_df(function(x) {
@@ -111,6 +112,7 @@ ggplot(out_summary, aes(sd_obs, df_est, group = sd_obs, fill = as.factor(df))) +
   geom_jitter(colour = "#00000020", height = 0, width = 0.02) +
   geom_hline(aes(yintercept = df), colour = "grey50") +
   scale_fill_brewer(palette = "YlOrRd", direction = -1)
+ggsave("figs/sim-recapture.pdf", width = 10, height = 7)
 
 # plot_viol <- function(term, term_true) {
 #   x <- tidyr::gather(out_summary, parameter, estimate, -df, -n_knots, -n_draws,
