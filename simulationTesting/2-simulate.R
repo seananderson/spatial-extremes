@@ -28,12 +28,12 @@ if (interactive()) {
 i <<- 0
 
 sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
-  comment = "", gp_sigma = 0.5) {
+  comment = "", gp_sigma = 0.5, n_data_points = 50) {
 
   i <<- i + 1
   message(i)
 
-  s <- sim_rrfield(df = df, n_data_points = 100, seed = NULL,
+  s <- sim_rrfield(df = df, n_data_points = n_data_points, seed = NULL,
     n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale,
     gp_sigma = gp_sigma, sd_obs = sd_obs, obs_error = "gamma")
 
@@ -49,12 +49,25 @@ sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
       prior_beta = student_t(1e6, 0, 1))
   }
 
-  m <- fit_model(iter = 400L)
+  m <- fit_model(iter = 500L)
   b <- broom::tidyMCMC(m$model, rhat = TRUE, ess = TRUE)
-  if (any(b$ess < 200) | any(b$rhat > 1.05)) {
-    m <- fit_model(iter = 1200L)
+  if (any(b$ess < 100) | any(b$rhat > 1.05)) {
+    m <- fit_model(iter = 2000L)
   }
-  m
+
+  b <- broom::tidyMCMC(m$model,
+    estimate.method = "median") %>%
+    dplyr::select(-std.error) %>%
+    tidyr::spread(term, estimate)
+  names(b) <- paste0(names(b), "_est")
+  b <- select(b, -starts_with("spatialEffectsKnots"))
+  names(b) <- sub("\\[1\\]", "", names(b))
+
+  b2 <- broom::tidyMCMC(m$model,
+    estimate.method = "median", rhat = TRUE, ess = TRUE) %>%
+    summarise(rhat = max(rhat), ess = min(ess))
+
+  data.frame(b, b2)
 }
 
 set.seed(123)
@@ -65,62 +78,76 @@ set.seed(123)
 # nrow(arguments)
 
 arguments <- expand.grid(
-  df = c(2, 5, 20),
+  df = c(2.5, 5, 20),
   n_knots = 15,
-  n_draws = c(10, 20, 30),
+  n_draws = c(5, 15, 25),
   gp_scale = 1,
   gp_sigma = 1,
-  sd_obs = c(0.1, 0.5, 0.9, 1.3)
+  sd_obs = c(0.1, 0.7, 1.3)
 )
 nrow(arguments)
-arguments$count <- 50L
-arguments <-
-  arguments[rep(seq_len(nrow(arguments)), arguments$count),]
+arguments$count <- 100L
+arguments <- arguments[rep(seq_len(nrow(arguments)), arguments$count), ]
 arguments_apply <- dplyr::select(arguments,-count)
 nrow(arguments_apply)
-
-arguments <- expand.grid(
-  df = 3,
-  n_knots = 15,
-  n_draws = 20,
-  gp_scale = 1,
-  gp_sigma = 1,
-  sd_obs = 1.3)
 
 out <- plyr::mlply(arguments_apply, sim_fit)
 saveRDS(out, file = "simulationTesting/mvt-norm-sim-testing.rds")
 
 out <- readRDS("simulationTesting/mvt-norm-sim-testing.rds")
-out_print <- out %>%
-  map_df(function(x) {
-    broom::tidyMCMC(x$model, estimate.method = "median") %>%
-      dplyr::select(-std.error) %>%
-      tidyr::spread(term, estimate)})
-names(out_print) <- paste0(names(out_print), "_est")
-out_print <- select(out_print, -starts_with("spatialEffectsKnots"))
-names(out_print) <- sub("\\[1\\]", "", names(out_print))
-saveRDS(out_print, file = "simulationTesting/mvt-norm-sim-testing-summary.rds")
 
-rhat <- out %>%
-  map_df(function(x) {
-    broom::tidyMCMC(x$model, rhat = TRUE, ess = TRUE) %>%
-      summarise(rhat = max(rhat), ess = min(ess))
-    })
 assert_that(max(rhat$rhat) < 1.05)
-assert_that(max(rhat$ess) > 200)
+assert_that(max(rhat$ess) > 100)
 
 out_summary <- data.frame(arguments, out_print, rhat) %>%
   filter(rhat < 1.05, ess > 200) %>%
-  select(-count, -rhat, -ess)# %>%
-#  mutate(gp_sigmaSq = 0.5^2)
+  select(-count, -rhat, -ess)
+
+out_summary <- mutate(out_summary, df_lab = paste0("nu==", df),
+  df_lab = factor(df_lab, levels = c("nu==20", "nu==5", "nu==2")))
+
+out_summary <- mutate(out_summary, n_draws_lab = paste0("Time~steps==", n_draws))
 
 ggplot(out_summary, aes(sd_obs, df_est, group = sd_obs, fill = as.factor(df))) +
-  facet_grid(df~n_draws) + theme_sleek() +
+  facet_grid(df_lab~n_draws_lab, labeller = label_parsed) + theme_sleek() +
   geom_violin(colour = NA) +
-  geom_jitter(colour = "#00000020", height = 0, width = 0.02) +
-  geom_hline(aes(yintercept = df), colour = "grey50") +
-  scale_fill_brewer(palette = "YlOrRd", direction = -1)
-ggsave("figs/sim-recapture.pdf", width = 10, height = 7)
+  geom_jitter(colour = "#00000020", height = 0, width = 0.03, cex = 1) +
+  geom_hline(aes(yintercept = df), colour = "grey50", lty = 2) +
+  scale_fill_brewer(palette = "YlOrRd", direction = -1) +
+  ylab(expression(Estimated~nu)) +
+  guides(fill = FALSE) +
+  xlab("Observation error CV") +
+  scale_x_continuous(breaks = unique(out_summary$sd_obs))
+ggsave("figs/sim-recapture.pdf", width = 7, height = 5)
+
+# ggplot(out_summary, aes(sd_obs, log(df_est/df), group = sd_obs, fill = as.factor(df))) +
+#   facet_grid(df~n_draws) + theme_sleek() +
+#   geom_violin(colour = NA) +
+#   geom_jitter(colour = "#00000020", height = 0, width = 0.02) +
+#   # geom_hline(aes(yintercept = df), colour = "grey50") +
+#   scale_fill_brewer(palette = "YlOrRd", direction = -1)
+
+
+filter(out_summary, sd_obs == 0.1) %>%
+  ggplot(aes(n_draws, log(df_est), group = n_draws, fill = as.factor(df))) +
+  facet_grid(~df_lab, labeller = label_parsed) + theme_sleek() +
+  geom_violin(colour = NA, alpha = 1) +
+  geom_jitter(colour = "#00000040", height = 0, width = 0.7, cex = 1) +
+  scale_fill_brewer(palette = "YlOrRd", direction = -1) +
+  guides(fill = FALSE) +
+  ylab(expression(Estimated~nu)) +
+  geom_hline(aes(yintercept = log(df)), colour = "grey50", lty = 2) +
+  xlab("Number of time steps")
+ggsave("figs/sim-recapture-small.pdf", width = 5, height = 2.6)
+
+# filter(out_summary, CV_est < 100) %>%
+# ggplot(aes(sd_obs, CV_est, group = sd_obs, fill = as.factor(df))) +
+#   facet_grid(df~n_draws) + theme_sleek() +
+#   geom_violin(colour = NA) +
+#   geom_jitter(colour = "#00000020", height = 0, width = 0.02) +
+#   # geom_hline(aes(yintercept = df), colour = "grey50") +
+#   scale_fill_brewer(palette = "YlOrRd", direction = -1)
+# # ggsave("figs/sim-recapture.pdf", width = 10, height = 7)
 
 # plot_viol <- function(term, term_true) {
 #   x <- tidyr::gather(out_summary, parameter, estimate, -df, -n_knots, -n_draws,
