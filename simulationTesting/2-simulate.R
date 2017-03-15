@@ -83,7 +83,7 @@ arguments <- expand.grid(
   n_draws = c(5, 15, 25),
   gp_scale = 1,
   gp_sigma = 1,
-  sd_obs = c(0.1, 0.7, 1.3)
+  sd_obs = c(0.1, 0.6, 1.2)
 )
 nrow(arguments)
 arguments$count <- 100L
@@ -91,10 +91,10 @@ arguments <- arguments[rep(seq_len(nrow(arguments)), arguments$count), ]
 arguments_apply <- dplyr::select(arguments,-count)
 nrow(arguments_apply)
 
-out <- plyr::mlply(arguments_apply, sim_fit)
-saveRDS(out, file = "simulationTesting/mvt-norm-sim-testing.rds")
+out <- plyr::mdply(arguments_apply, sim_fit)
+saveRDS(out, file = "simulationTesting/mvt-norm-sim-testing2.rds")
 
-out <- readRDS("simulationTesting/mvt-norm-sim-testing.rds")
+out <- readRDS("simulationTesting/mvt-norm-sim-testing2.rds")
 
 assert_that(max(rhat$rhat) < 1.05)
 assert_that(max(rhat$ess) > 100)
@@ -104,7 +104,7 @@ out_summary <- data.frame(arguments, out_print, rhat) %>%
   select(-count, -rhat, -ess)
 
 out_summary <- mutate(out_summary, df_lab = paste0("nu==", df),
-  df_lab = factor(df_lab, levels = c("nu==20", "nu==5", "nu==2")))
+  df_lab = factor(df_lab, levels = c("nu==20", "nu==5", "nu==2.5")))
 
 out_summary <- mutate(out_summary, n_draws_lab = paste0("Time~steps==", n_draws))
 
