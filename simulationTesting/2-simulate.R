@@ -79,6 +79,14 @@ arguments <-
 arguments_apply <- dplyr::select(arguments,-count)
 nrow(arguments_apply)
 
+arguments <- expand.grid(
+  df = 3,
+  n_knots = 15,
+  n_draws = 20,
+  gp_scale = 1,
+  gp_sigma = 1,
+  sd_obs = 1.3)
+
 out <- plyr::mlply(arguments_apply[1,], sim_fit)
 saveRDS(out, file = "simulationTesting/mvt-norm-sim-testing.rds")
 
