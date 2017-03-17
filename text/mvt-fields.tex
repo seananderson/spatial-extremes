@@ -258,7 +258,7 @@ TODO replace phi
 
 Given $\Sigma^*$, we generated random effects at knot
 locations by drawing from a multivariate-t distribution for each time step $t$, 
-$W_t^*\sim \mathrm{MVT}\left( \nu, \Sigma^{*} \right)$ .
+$W_t^*\sim \mathrm{MVT}\left( \nu, 0, \Sigma^{*} \right)$ .
 These random effects at the knots are then projected to the data locations using
 $\Sigma_{\left( W,W^{*} \right)}$ \citep{latimer2009}.
 Given ${\Sigma}^{*}$:
@@ -307,7 +307,7 @@ $\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial prediction. In other
 words our simulation model of data $y_{s,t}$ simplifies to
 
 \begin{align}
-  \mu_{s,t} &= \exp(MVT(\nu, \Sigma_{W(s,t)}))\\
+  \mu_{s,t} &= \exp(MVT(\nu, 0, \Sigma_{W(s,t)}))\\
   y_{s,t} &\sim \mathrm{Gamma} \left( \frac{1}{\mathrm{CV}^2},
   \frac{1}{\mathrm{CV}^2 \cdot \mu_{s,t} } \right).
 \end{align}
@@ -331,7 +331,7 @@ correct MVT. We then compared the performance of these models. Specifically, we
 simulated data from the following model:
 
 \begin{align}
-  \mu_{s,t} &= MVT(\nu, \Sigma_{W(s,t)})\\
+  \mu_{s,t} &= MVT(\nu, 0, \Sigma_{W(s,t)})\\
   y_{s,t} &\sim \mathrm{Normal} \left(\mu_{s,t}, \sigma_{\mathrm{obs}} \right).
 \end{align}
 
