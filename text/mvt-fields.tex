@@ -166,20 +166,22 @@ applications in ecology and related fields.
 \subsection{Overview}
 
 We seek to allow for large deviations in an ecological spatial pattern over
-time by extending a random fields spatiotemporal predictive process model to
-use a MVT distribution instead of the usual MVN.
-
-
+time by extending a spatiotemporal predictive process model to use a MVT
+distribution instead of the usual MVN. Below we describe the form of our model
+as implemented in \textbf{rrfields}, describe two simulations exploring model
+performance, and finally describe the application of our model to a data set
+representing mountain pine beetle outbreaks in the Pacific Northwest of the
+United States. 
 
 \subsection{The MVT predictive process model}
 
-An excellent description of predictive process models for ecologists can be
-found in \citet{latimer2009}. Below we summarize the important elements of a
-predictive process model and highlight how our model differs from the usual MVN
-version. Our model is essentially a generalized linear model (GLM) with a
-spatiotemporal element described by a random field. Our model describes the
-mean or expected value of the response, $\mu \equiv \mathbb{E}(y)$, at location
-in space $s$ and time $t$ as
+\citet{latimer2009} provides an excellent description of predictive process
+models for ecologists. Below we summarize the important elements of these
+models and highlight how our models differs from the usual MVN version. Our
+model is essentially a generalized linear model (GLM) with a spatiotemporal
+element described by a random field. Our model describes the mean or expected
+value of the response, $\mu \equiv \mathbb{E}(y)$, at location in space $s$ and
+time $t$ as
 
 \begin{equation}
   g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},
@@ -199,7 +201,7 @@ from a multivariate normal (MVN) with some covariance matrix, $\Sigma$.
 Instead, we draw our values from a multivariate t distribution (MVT). The MVT
 has one extra parameter compared to the MVN, the degrees of freedom parameter
 $\nu$. When $\nu$ is small (say $\nu < 10$) the distribution has heavier
-tails then the MVN. As $\nu$ approaches infinity, the distribution approaches
+tails than the MVN. As $\nu$ approaches infinity, the distribution approaches
 the MVN. For most purposes, the MVT and MVN are indistinguishable for moderate
 values of $\nu$ (say $\nu > 20$) similarly to the univariate t-distribution
 compared with the univariate normal distribution (REF). 
@@ -242,7 +244,7 @@ package also allows for the exponential covariance function $H(\delta_{ij}) =
 \exp \left(-\phi \delta_{ij} \right)$ and could be extended to allow for other
 common covariance functions such as the Matern or anisotropic covariance
 functions in which covariance is not uniform in all directions. 
-Following \citep{latimer2009}, we can also calculate the covariance matrix
+Following \citet{latimer2009}, we can also calculate the covariance matrix
 between the locations of the data and the knots, 
 $\Sigma_{\left(W, W^* \right)}$. 
 
@@ -256,7 +258,7 @@ TODO replace phi
 
 Given $\Sigma^*$, we generated random effects at knot
 locations by drawing from a multivariate-t distribution for each time step $t$, 
-$W_t^*\sim \mathrm{MVT}\left( \Sigma^{*},\nu \right)$ .
+$W_t^*\sim \mathrm{MVT}\left( \nu, \Sigma^{*} \right)$ .
 These random effects at the knots are then projected to the data locations using
 $\Sigma_{\left( W,W^{*} \right)}$ \citep{latimer2009}.
 Given ${\Sigma}^{*}$:
@@ -287,20 +289,22 @@ which there were heavy tails in the spatial process under various conditions.
 We simulated 50 data points collected at the same survey locations each year
 for 5, 15, or 25 years. We simulated the spatial process as independent each
 year ($\gamma_{s,t} = W_{s,t}$) with $\sigma^2 = 1$ (the spatial variance),
-$\phi = 1$ (the ``wiggliness'' parameter), and with spatial data locations
-drawn uniformly from 0 to 10 (thereby affecting $\delta_{ij}$, the spatial
-distances --- the degree of ``wiggliness'' implied by a value of $\phi$ depends
-on the scale of the $\delta_{i,j}$). The simulated degrees of freedom parameter
-$\nu$ was set at one of 3 values: 2.5, 5, or 20 representing very heavy tails,
-moderately heavy tails, and effectively normal non-heavy tails. A final step in
-our data simulation was to corrupt the ``true'' data by including measurement
-or observation error. We assumed observations to be generated from a gamma
+$\phi = 1$ (the ``wiggliness'' or spatial correlation decay parameter), and
+with spatial data locations drawn uniformly from 0 to 10 on both spatial axes
+(thereby affecting $\delta_{ij}$, the spatial distances --- the degree of
+``wiggliness'' implied by a value of $\phi$ depends on the scale of the
+$\delta_{i,j}$). The simulated degrees of freedom parameter $\nu$ was set at
+one of 3 values: 2.5, 5, or 20 representing very heavy tails, moderately heavy
+tails, and effectively normal non-heavy tails. A final step in our data
+simulation was to corrupt the ``true'' data by including measurement or
+observation error. We assumed observations to be generated from a gamma
 distribution with a log link, $Y_{it}\sim \mathrm{Gamma}\left(a,\frac
   {a}{\mathbb{E}(Y_{it})} \right)$, where the gamma shape parameter $a$ can be
 reparameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
 tested CVs of 0.1, 0.6, and 1.2 representing minimal, moderate, and
 considerable measurement error. We set the underlying linear predictor
-$\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial prediction. In other words our simulation model of data $y_{s,t}$ simplifies to
+$\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial prediction. In other
+words our simulation model of data $y_{s,t}$ simplifies to
 
 \begin{equation}
   y_{s,t} \sim \mathrm{Gamma} \left( \frac{1}{\mathrm{CV}^2},
@@ -313,11 +317,11 @@ $\phi$, and CV of half-t(3, 0, 3) (i.e., the positive half of a student t
 distribution with a degrees of freedom 3, centrality parameter 0, and scale
 parameter 3). We initially sampled from each model with 500 iterations across
 four chains discarding the first half of the iterations as warm-up. If the
-samples had not converged (effective sample size $> 100$ and $\hat{R} < 1.05$)
-after this initial run, we re-sampled from the model with
-2000 iterations across four chains. 
+samples had not converged after this initial run, we re-sampled from the model
+with 2000 iterations across four chains. We measured convergence as a minimum
+effective sample size of $\ge 101$ and a maximum $\hat{R}$ of $\le 1.05$). 
 
-\subsection{Diagnosing the advantage of allowing for the MVT}
+\subsection{Diagnosing the advantage of allowing for extremes}
 
 To evaluate the consequences of assuming a MVN spatial process when in fact the
 true spatial process has heavy tails drawn from a MVT, we generated simulated
