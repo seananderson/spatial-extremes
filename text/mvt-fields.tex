@@ -267,8 +267,8 @@ Given ${\Sigma}^{*}$:
 W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*
 \end{equation}
 
-Our package fits these spatiotemporal models in a fully Bayesian framework. We
-sample from the posterior distribution using the No-U-Turn Sampler, which is an
+Our package fits these spatiotemporal models in a Bayesian framework. We sample
+from the posterior distribution using the No-U-Turn Sampler, which is an
 extension of Hamiltonian Markov Chain Monte Carlo, implemented in the
 statistical software Stan (REF) and the R package rstan (REF). Although slower
 than an equivalent maximum likelihood approach, this Bayesian approach has a
@@ -280,7 +280,11 @@ and time). Given the nature of extreme events, this is likely to be a desired
 result from such a model. Second, the Bayesian framework lets us place weakly
 informative priors on parameters to impose our existing knowledge of reasonable
 values and to aid computation --- particularly of difficult to estimate
-parameters such as the degrees of freedom parameter in the MVT.
+parameters such as the degrees of freedom parameter in the MVT. In the case of
+the degrees of freedom parameter, we bound the lower value to $2$ for
+computational stability and use a Gamma(TODO) prior (REF), which has a mean of
+XX and a median of XX. Thus, if the data are not informative about heavy
+tails, our estimate of $\nu$ should approximately match that prior. 
 
 \subsection{Testing the recovery of extremeness}
 
