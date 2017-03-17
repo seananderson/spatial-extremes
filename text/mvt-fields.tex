@@ -189,20 +189,35 @@ $\bm{X}_{s,t}$ describes a vector of predictors, and $\bm{\beta}$ describes a
 vector of estimated coefficients. The variance of the observation component of
 our model, as in any GLM, is described as a function of the mean via a
 probability distribution from the exponential family such as the Gaussian,
-Poisson, or gamma. 
+Poisson, or gamma. The symbol $\gamma$ describes the spatiotemporal process
+which we describe below. 
 
-The spatiotemporal element, $\gamma_{s,t}$, can be temporally constant (one
-field shared across time), independent at each time step, or autoregressive in
-which the spatial pattern at time $t+1$ is dependent on the spatial
-pattern at time $t$ to a degree defined by $\phi$:
+A random field is a term used to describe ``random effects'' drawn from a
+multivariate probability distribution. Most commonly, these values are drawn
+from a multivariate normal (MVN) with some covariance matrix, $\Sigma$.
+Instead, we draw our values from a multivariate t distribution (MVT). The MVT
+has one extra parameter compared to the MVN, the degrees of freedom parameter
+$\nu$. When $\nu$ is small (say $\nu < 10$) the distribution has heavier
+tails then the MVN. As $\nu$ approaches infinity, the distribution approaches
+the MVN. For most purposes, the MVT and MVN are indistinguishable for moderate
+values of $\nu$ (say $\nu > 20$) similarly to the univariate t-distribution
+compared with the univariate normal distribution (REF). 
 
-\begin{equation}
-  \gamma_{s,t} = \phi \gamma_{s,t-1} + W_{s,t},
-\end{equation}
+If $W_{s,t}$ defines a random field, then the spatiotemporal element,
+$\gamma_{s,t}$, can be made temporally constant (one field shared across time,
+$\gamma_{s,t} = W_{s}$), independent at each time step ($\gamma_{s,t} =
+W_{s,t}$) or autoregressive so that the spatial pattern at time $t$ is
+dependent on the spatial pattern at time $t-1$ to a degree defined by $\phi$,
+($\gamma_{s,t} = \phi \gamma_{s,t-1} + W_{s,t}$).
 
-where $W_{s,t}$
-
-
+In the last case, we constrain the spatiotemporal autoregressive process to be
+centred on zero at each time step to aid interpretation and ensure
+identifiability ($\gamma_{s,t} = \phi (\gamma_{s,t-1} -
+\mathbb{E}[\gamma_{t-1}]) + W_{s,t}$). This lets the mean process be defined by
+the linear predictor ($\bm{X_{s,t}}\bm{\beta}$) while $\gamma_{s,t}$ defines
+the spatial process and how it evolves through time --- potentially letting
+``hotspots'' remain hotspots through time while keeping the means of the
+spatial process $\gamma_{s,t}$ stationary and centred on zero.
 
 We used the random locations for each dataset 
 and the partitioning around medoids algorithm
@@ -212,22 +227,14 @@ to calculate the location of knots.
 We used a Gaussian covariance function to model the correlation between
 locations because this is one of the most commonly adopted covariance functions
 for spatiotemporal models. The Gaussian function (also known as the squared
-exponential) models the correlation between points $i$ and $j$:
-
-\begin{equation}
-H(\delta_{ij}) = \exp \left(-\phi \delta_{ij}^2 \right)
-\end{equation}
-
-and the elements of the covariance matrix at the \emph{m} knot locations:
-
-\begin{equation}
-\Sigma_{ij}^*=\sigma^2 \left( -\phi \delta_{ij}^2 \right)
-\end{equation}
-
-Our package also allows for the exponential covariance function and could be
-extended to allow for other common covariance functions such as the Matern or
-anisotropic covariance functions in which covariance is not uniform in all
-directions. 
+exponential) models the correlation between points $i$ and $j$ as
+$H(\delta_{ij}) = \exp \left(-\phi \delta_{ij}^2 \right)$ and the elements of
+the covariance matrix at the $m$ knot locations as $\Sigma_{ij}^*=\sigma^2
+\left( -\phi \delta_{ij}^2 \right)$. Our package also allows for the
+exponential covariance function $H(\delta_{ij}) = \exp \left(-\phi \delta_{ij}
+\right)$ and could be extended to allow for other common covariance functions
+such as the Matern or anisotropic covariance functions in which covariance is
+not uniform in all directions. 
 
 Each element of the covariance matrix $\Sigma^*$ is thus dependent on
 three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
