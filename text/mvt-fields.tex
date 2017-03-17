@@ -41,7 +41,7 @@ Eric J. Ward$^2$
 
 \maketitle
 
-\begin{spacing}{1.05}
+\begin{spacing}{1.25}
 
   % Point 1: set the context and purpose for the work; 
 % Point 2: indicate the approach and methods used; 
@@ -176,9 +176,10 @@ use a MVT distribution instead of the usual MVN.
 An excellent description of predictive process models for ecologists can be
 found in \citet{latimer2009}. Below we summarize the important elements of a
 predictive process model and highlight how our model differs from the usual MVN
-version. Our model is essentially a GLM with a spatiotemporal element described
-by a random field. Our model describes the mean or expected value of the
-response, $\mu \equiv \mathbb{E}(y)$, at location in space $s$ and time $t$ as
+version. Our model is essentially a generalized linear model (GLM) with a
+spatiotemporal element described by a random field. Our model describes the
+mean or expected value of the response, $\mu \equiv \mathbb{E}(y)$, at location
+in space $s$ and time $t$ as
 
 \begin{equation}
   g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},
@@ -208,41 +209,50 @@ $\gamma_{s,t}$, can be made temporally constant (one field shared across time,
 $\gamma_{s,t} = W_{s}$), independent at each time step ($\gamma_{s,t} =
 W_{s,t}$) or autoregressive so that the spatial pattern at time $t$ is
 dependent on the spatial pattern at time $t-1$ to a degree defined by $\phi$,
-($\gamma_{s,t} = \phi \gamma_{s,t-1} + W_{s,t}$).
+($\gamma_{s,t} = \phi \gamma_{s,t-1} + W_{s,t}$). In the last case, in practice,
+we constrain the spatiotemporal autoregressive process to be centred on zero at
+each time step to aid interpretation and ensure identifiability ($\gamma_{s,t}
+= \phi (\gamma_{s,t-1} - \mathbb{E}[\gamma_{t-1}]) + W_{s,t}$). This lets the
+mean process be defined by the linear predictor ($\bm{X_{s,t}}\bm{\beta}$)
+while $\gamma_{s,t}$ defines the spatial process and how it evolves through
+time --- potentially letting ``hotspots'' remain hotspots through time while
+keeping the means of the spatial process $\gamma_{s,t}$ stationary and centred
+on zero.
 
-In the last case, we constrain the spatiotemporal autoregressive process to be
-centred on zero at each time step to aid interpretation and ensure
-identifiability ($\gamma_{s,t} = \phi (\gamma_{s,t-1} -
-\mathbb{E}[\gamma_{t-1}]) + W_{s,t}$). This lets the mean process be defined by
-the linear predictor ($\bm{X_{s,t}}\bm{\beta}$) while $\gamma_{s,t}$ defines
-the spatial process and how it evolves through time --- potentially letting
-``hotspots'' remain hotspots through time while keeping the means of the
-spatial process $\gamma_{s,t}$ stationary and centred on zero.
+We determine the location of the $m$ knots using a partitioning around medoids
+algorithm \citep[the \texttt{pam} function in the R package
+\textbf{cluster};][]{reynolds2006}. This algorithm is a robust version of the
+common k-means algorithm and results in selecting knot locations that are
+proportional to spatial sampling intensity. 
 
-We used the random locations for each dataset 
-and the partitioning around medoids algorithm
-\citep[\texttt{pam()} in the R package \textbf{cluster};][]{reynolds2006}
-to calculate the location of knots. 
+We used a squared exponential covariance function to model the correlation
+between locations because this is one of the most commonly adopted covariance
+functions for spatiotemporal models. The squared exponential function, $H$,
+(also known as the Gaussian covariance function) models the correlation between
+points $i$ and $j$ as $H(\delta_{ij}) = \exp \left(-\phi \delta_{ij}^2
+\right)$, where $\delta_{ij}$ describes the distance between points $i$ and $j$
+and $\phi$ describes how steeply correlation declines with increasing distance
+or the ``wiggliness'' of the spatial process. Large values of $\phi$ correspond
+to XX spatial patterns and small values correspondence to XX spatial patterns.
 
-We used a Gaussian covariance function to model the correlation between
-locations because this is one of the most commonly adopted covariance functions
-for spatiotemporal models. The Gaussian function (also known as the squared
-exponential) models the correlation between points $i$ and $j$ as
-$H(\delta_{ij}) = \exp \left(-\phi \delta_{ij}^2 \right)$ and the elements of
-the covariance matrix at the $m$ knot locations as $\Sigma_{ij}^*=\sigma^2
-\left( -\phi \delta_{ij}^2 \right)$. Our package also allows for the
-exponential covariance function $H(\delta_{ij}) = \exp \left(-\phi \delta_{ij}
-\right)$ and could be extended to allow for other common covariance functions
-such as the Matern or anisotropic covariance functions in which covariance is
-not uniform in all directions. 
-
-Each element of the covariance matrix $\Sigma^*$ is thus dependent on
-three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
-$j$ squared, (2) the scale parameter $\phi$, which determines how steeply the
-correlation declines with increasing distance, and (3) the variance $\sigma^2$.
+The elements of the covariance matrix at the $m$ knot locations are therefore
+defined as $\Sigma_{ij}^*=\sigma^2 \left( -\phi \delta_{ij}^2 \right)$ with the
+parameter $\sigma$ scaling the amplitude of the spatial process deviations. Our
+package also allows for the exponential covariance function $H(\delta_{ij}) =
+\exp \left(-\phi \delta_{ij} \right)$ and could be extended to allow for other
+common covariance functions such as the Matern or anisotropic covariance
+functions in which covariance is not uniform in all directions. 
 Following \citep{latimer2009}, we can also calculate the covariance matrix
 between the locations of the data and the knots, 
 $\Sigma_{\left(W, W^* \right)}$. 
+
+TODO replace phi
+
+% Each element of the covariance matrix $\Sigma^*$ is thus dependent on
+% three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
+% $j$ squared, (2) the scale parameter $\phi$, which determines how steeply the
+% correlation declines with increasing distance, and (3) the variance $\sigma^2$.
+
 
 Given $\Sigma^*$, we generated random effects at knot
 locations by drawing from a multivariate-t distribution for each time step $t$, 
@@ -257,10 +267,40 @@ W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*
 
 \subsection{Testing the recovery of extremeness}
 
-The locations of the data were constant
-through time such that simulated survey locations (or locations of knots) did
-not vary through time.
+We undertook simulation testing to test how well we could recover the degree to
+which there were heavy tails in the spatial process under various conditions.
+We simulated 50 data points collected at the same survey locations each year
+for 5, 15, or 25 years. We simulated the spatial process as independent each
+year ($\gamma_{s,t} = W_{s,t}$) with $\sigma^2 = 1$ (the spatial variance),
+$\phi = 1$ (the ``wiggliness'' parameter), and with spatial data locations
+drawn uniformly from 0 to 10 (thereby affecting $\delta_{ij}$, the spatial
+distances --- the degree of ``wiggliness'' implied by a value of $\phi$ depends
+on the scale of the $\delta_{i,j}$). The simulated degrees of freedom parameter
+$\nu$ was set at one of 3 values: 2.5, 5, or 20 representing very heavy tails,
+moderately heavy tails, and effectively normal non-heavy tails. A final step in
+our data simulation was to corrupt the ``true'' data by including measurement
+or observation error. We assumed observations to be generated from a gamma
+distribution with a log link, $Y_{it}\sim \mathrm{gamma}\left(a,\frac
+  {a}{\mathbb{E}(Y_{it})} \right)$, where the gamma shape parameter $a$ can be
+reparameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
+tested CVs of 0.1, 0.6, and 1.2 representing minimal, moderate, and
+considerable measurement error. We set the underlying linear predictor
+$\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial prediction. In other words our simulation model of data $y_{s,t}$ simplifies to
 
+\begin{equation}
+  y_{s,t} \sim \mathrm{gamma} \left( \frac{1}{\mathrm{CV}^2},
+  \frac{1}{\mathrm{CV}^2 \cdot \exp(MVT(\nu, \Sigma_{W(s,t)})} \right).
+\end{equation}
+
+We attempted to recapture $\nu$ fitting a model that matched the process
+generating the simulated data. We placed weakly informative priors on $\sigma$,
+$\phi$, and CV of half-t(3, 0, 3) (i.e., the positive half of a student t
+distribution with a degrees of freedom 3, centrality parameter 0, and scale
+parameter 3). We initially sampled from each model with 500 iterations across
+four chains discarding the first half of the iterations as warm-up. If the
+samples had not converged (effective sample size $> 100$ and $\hat{R} < 1.05$)
+after this initial run, we re-sampled from the model with
+2000 iterations across four chains. 
 
 \subsection{Diagnosing the advantage of allowing for the MVT}
 
@@ -272,13 +312,6 @@ evaluated our ability to recover the known simulation parameters. Each
 simulated data set was generated with data collected at 
 100 random locations, and consisted of
 $n_t$ replicates in time (e.g.~simulated years). 
-A final step in our data simulation was to corrupt the `true' data by
-including measurement or observation error. We assumed observations to be
-generated from a Gamma distribution, 
-$Y_{it}\sim \mathrm{Gamma}\left(a,\frac {a}{E[Y_{it}]} \right)$, 
-where the Gamma shape parameter
-$a$ can be reparameterized into the coefficient of variation (CV), 
-$a=\frac{1}{CV^2}$.
 
 We used the simulation model described above as the estimation model for each
 dataset.
