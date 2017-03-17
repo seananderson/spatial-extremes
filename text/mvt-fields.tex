@@ -265,6 +265,21 @@ Given ${\Sigma}^{*}$:
 W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*
 \end{equation}
 
+Our package fits these spatiotemporal models in a fully Bayesian framework. We
+sample from the posterior distribution using the No-U-Turn Sampler, which is an
+extension of Hamiltonian Markov Chain Monte Carlo, implemented in the
+statistical software Stan (REF) and the R package rstan (REF). Although slower
+than an equivalent maximum likelihood approach, this Bayesian approach has a
+number of advantages. First, it lets us fully and accurately quantify
+uncertainty around all parameter estimates and predictions. This makes it
+simple to calculate the probability of specific events happening (e.g., the
+probability of abundance falling below some threshold at a given point in space
+and time). Given the nature of extreme events, this is likely to be a desired
+result from such a model. Second, the Bayesian framework lets us place weakly
+informative priors on parameters to impose our existing knowledge of reasonable
+values and to aid computation --- particularly of difficult to estimate
+parameters such as the degrees of freedom parameter in the MVT.
+
 \subsection{Testing the recovery of extremeness}
 
 We undertook simulation testing to test how well we could recover the degree to
@@ -280,7 +295,7 @@ $\nu$ was set at one of 3 values: 2.5, 5, or 20 representing very heavy tails,
 moderately heavy tails, and effectively normal non-heavy tails. A final step in
 our data simulation was to corrupt the ``true'' data by including measurement
 or observation error. We assumed observations to be generated from a gamma
-distribution with a log link, $Y_{it}\sim \mathrm{gamma}\left(a,\frac
+distribution with a log link, $Y_{it}\sim \mathrm{Gamma}\left(a,\frac
   {a}{\mathbb{E}(Y_{it})} \right)$, where the gamma shape parameter $a$ can be
 reparameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
 tested CVs of 0.1, 0.6, and 1.2 representing minimal, moderate, and
@@ -288,7 +303,7 @@ considerable measurement error. We set the underlying linear predictor
 $\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial prediction. In other words our simulation model of data $y_{s,t}$ simplifies to
 
 \begin{equation}
-  y_{s,t} \sim \mathrm{gamma} \left( \frac{1}{\mathrm{CV}^2},
+  y_{s,t} \sim \mathrm{Gamma} \left( \frac{1}{\mathrm{CV}^2},
   \frac{1}{\mathrm{CV}^2 \cdot \exp(MVT(\nu, \Sigma_{W(s,t)})} \right).
 \end{equation}
 
@@ -303,6 +318,24 @@ after this initial run, we re-sampled from the model with
 2000 iterations across four chains. 
 
 \subsection{Diagnosing the advantage of allowing for the MVT}
+
+To evaluate the consequences of assuming a MVN spatial process when in fact the
+true spatial process has heavy tails drawn from a MVT, we generated simulated
+data sets from a MVT and fit models assuming a MVN spatial process or the
+correct MVT. We then compared the performance of these models. Specifically, we
+simulated data from the following model:
+
+\begin{equation}
+  y_{s,t} \sim \mathrm{Normal} \left(MVT(\nu, \Sigma_{W(s,t)}), \sigma_{\mathrm{obs}} \right).
+\end{equation}
+
+\noindent with $\sigma^2 = 1$, $\phi = 1$, and spatial data drawn uniformly
+from locations ranging between 0 and 10. We set the degrees of freedom
+parameter $\nu$ to 2.5 and used a Gaussian observation model with standard
+deviation, $\sigma_{\mathrm{obs}}$, of 0.2. We chose a Gaussian observation
+model and identity link for simplicity and to demonstrate an alternative
+functional form to the previous simulation. We fit our estimation model as
+described above.
 
 \subsection{Case study --- mountain pine beetle outbreaks}
 
