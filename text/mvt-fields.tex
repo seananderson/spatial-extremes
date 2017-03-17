@@ -9,6 +9,7 @@
 \usepackage{url}
 \usepackage{lineno}
 \usepackage{xcolor}
+\usepackage{bm}
 \renewcommand\linenumberfont{\normalfont\tiny\sffamily\color{gray}}
 \modulolinenumbers[2]
 
@@ -41,6 +42,12 @@ Eric J. Ward$^2$
 \maketitle
 
 \begin{spacing}{1.05}
+
+  % Point 1: set the context and purpose for the work; 
+% Point 2: indicate the approach and methods used; 
+% Point 3: outline the main results; 
+% Point 4: identify the conclusions, the wider implications and the relevance to management or policy. 
+% •	Key-words: Provide a maximum of 10 keywords or phrases.
 
 \begin{abstract}
 
@@ -156,20 +163,51 @@ applications in ecology and related fields.
 
 \section{Methods}
 
-\subsection{Simulated data}
+\subsection{Overview}
 
-To evaluate the utility and limitations of spatiotemporal models with
-multivariate-t spatial predictive models, we first simulated spatial data and
-evaluated our ability to recover the known simulation parameters. Each
-simulated data set was generated with data collected at 
-100 random locations, and consisted of
-$n_t$ replicates in time (e.g.~simulated years). 
+We seek to allow for large deviations in an ecological spatial pattern over
+time by extending a random fields spatiotemporal predictive process model to
+use a MVT distribution instead of the usual MVN.
+
+
+
+\subsection{The MVT predictive process model}
+
+An excellent description of predictive process models for ecologists can be
+found in \citet{latimer2009}. Below we summarize the important elements of a
+predictive process model and highlight how our model differs from the usual MVN
+version. Our model is essentially a GLM with a spatiotemporal element described
+by a random field. Our model describes the mean or expected value of the
+response, $\mu \equiv \mathbb{E}(y)$, at location in space $s$ and time $t$ as
+
+\begin{equation}
+  g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},
+\end{equation}
+
+\noindent where $g$ describes a link function (e.g., identity or log),
+$\bm{X}_{s,t}$ describes a vector of predictors, and $\bm{\beta}$ describes a
+vector of estimated coefficients. The variance of the observation component of
+our model, as in any GLM, is described as a function of the mean via a
+probability distribution from the exponential family such as the Gaussian,
+Poisson, or gamma. 
+
+The spatiotemporal element, $\gamma_{s,t}$, can be temporally constant (one
+field shared across time), independent at each time step, or autoregressive in
+which the spatial pattern at time $t+1$ is dependent on the spatial
+pattern at time $t$ to a degree defined by $\phi$:
+
+\begin{equation}
+  \gamma_{s,t} = \phi \gamma_{s,t-1} + W_{s,t},
+\end{equation}
+
+where $W_{s,t}$
+
+
+
 We used the random locations for each dataset 
 and the partitioning around medoids algorithm
 \citep[\texttt{pam()} in the R package \textbf{cluster};][]{reynolds2006}
-to calculate the location of knots. The locations of the data were constant
-through time such that simulated survey locations (or locations of knots) did
-not vary through time.
+to calculate the location of knots. 
 
 We used a Gaussian covariance function to model the correlation between
 locations because this is one of the most commonly adopted covariance functions
@@ -186,13 +224,10 @@ and the elements of the covariance matrix at the \emph{m} knot locations:
 \Sigma_{ij}^*=\sigma^2 \left( -\phi \delta_{ij}^2 \right)
 \end{equation}
 
-\begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.8\textwidth]{../figs/pp-illustration.pdf}
-\caption{caption}
-\label{fig:didactic}
-\end{center}
-\end{figure}
+Our package also allows for the exponential covariance function and could be
+extended to allow for other common covariance functions such as the Matern or
+anisotropic covariance functions in which covariance is not uniform in all
+directions. 
 
 Each element of the covariance matrix $\Sigma^*$ is thus dependent on
 three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
@@ -201,6 +236,7 @@ correlation declines with increasing distance, and (3) the variance $\sigma^2$.
 Following \citep{latimer2009}, we can also calculate the covariance matrix
 between the locations of the data and the knots, 
 $\Sigma_{\left(W, W^* \right)}$. 
+
 Given $\Sigma^*$, we generated random effects at knot
 locations by drawing from a multivariate-t distribution for each time step $t$, 
 $W_t^*\sim \mathrm{MVT}\left( \Sigma^{*},\nu \right)$ .
@@ -211,7 +247,24 @@ Given ${\Sigma}^{*}$:
 \begin{equation}
 W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*
 \end{equation}
-    
+
+\subsection{Testing the recovery of extremeness}
+
+The locations of the data were constant
+through time such that simulated survey locations (or locations of knots) did
+not vary through time.
+
+
+\subsection{Diagnosing the advantage of allowing for the MVT}
+
+\subsection{Case study --- mountain pine beetle outbreaks}
+
+To evaluate the utility and limitations of spatiotemporal models with
+multivariate-t spatial predictive models, we first simulated spatial data and
+evaluated our ability to recover the known simulation parameters. Each
+simulated data set was generated with data collected at 
+100 random locations, and consisted of
+$n_t$ replicates in time (e.g.~simulated years). 
 A final step in our data simulation was to corrupt the `true' data by
 including measurement or observation error. We assumed observations to be
 generated from a Gamma distribution, 
@@ -228,26 +281,10 @@ We evaluated a range of parameter values \ldots
 Sean - more text here on number of simulations, possibly ranges of
 parameters, estimation in STAN, etc.
 
-\begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.9\textwidth]{../figs/nu-rf-illustration.pdf}
-\caption{caption}
-\label{fig:didactic}
-\end{center}
-\end{figure}
-
-\begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.65\textwidth]{../figs/sim-recapture-small.pdf}
-\caption{caption}
-\label{fig:didactic}
-\end{center}
-\end{figure}
-
 \subsection{Mountain pine beetles in the US Pacific Northwest}
 
 To illustrate real-world applications of multivariate-t distributed
-spatiotemporal models and the rrfields package, 
+spatiotemporal models and the rrfields package
 
 We fit two spatial models to the data, (1) a model with
 multivariate-t random fields and (2) a model with multivariate-normal random
@@ -271,6 +308,35 @@ Expand on this when we figure out how we're evaluating predictive accuracy
 
 \section{Discussion}
 
+\section{Acknowledgements}
+
+\section{Data Accessibility}
+% : To enable readers to locate archived data, authors should list the database and the respective accession numbers or DOIs for all data from the manuscript 
+
+
+\begin{figure}[htb]
+\begin{center}
+  \includegraphics[width=0.8\textwidth]{../figs/pp-illustration.pdf}
+\caption{caption}
+\label{fig:didactic}
+\end{center}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{center}
+  \includegraphics[width=0.9\textwidth]{../figs/nu-rf-illustration.pdf}
+\caption{caption}
+\label{fig:didactic}
+\end{center}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{center}
+  \includegraphics[width=0.65\textwidth]{../figs/sim-recapture-small.pdf}
+\caption{caption}
+\label{fig:didactic}
+\end{center}
+\end{figure}
 \bibliography{spatial-extremes}
 
 \end{spacing}
