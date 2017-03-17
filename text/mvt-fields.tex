@@ -306,10 +306,11 @@ considerable measurement error. We set the underlying linear predictor
 $\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial prediction. In other
 words our simulation model of data $y_{s,t}$ simplifies to
 
-\begin{equation}
-  y_{s,t} \sim \mathrm{Gamma} \left( \frac{1}{\mathrm{CV}^2},
-  \frac{1}{\mathrm{CV}^2 \cdot \exp(MVT(\nu, \Sigma_{W(s,t)})} \right).
-\end{equation}
+\begin{align}
+  \mu_{s,t} &= \exp(MVT(\nu, \Sigma_{W(s,t)}))\\
+  y_{s,t} &\sim \mathrm{Gamma} \left( \frac{1}{\mathrm{CV}^2},
+  \frac{1}{\mathrm{CV}^2 \cdot \mu_{s,t} } \right).
+\end{align}
 
 We attempted to recapture $\nu$ fitting a model that matched the process
 generating the simulated data. We placed weakly informative priors on $\sigma$,
@@ -319,7 +320,7 @@ parameter 3). We initially sampled from each model with 500 iterations across
 four chains discarding the first half of the iterations as warm-up. If the
 samples had not converged after this initial run, we re-sampled from the model
 with 2000 iterations across four chains. We measured convergence as a minimum
-effective sample size of $\ge 101$ and a maximum $\hat{R}$ of $\le 1.05$). 
+effective sample size of $\ge 100$ and a maximum $\hat{R}$ of $\le 1.05$). 
 
 \subsection{Diagnosing the advantage of allowing for extremes}
 
@@ -329,9 +330,10 @@ data sets from a MVT and fit models assuming a MVN spatial process or the
 correct MVT. We then compared the performance of these models. Specifically, we
 simulated data from the following model:
 
-\begin{equation}
-  y_{s,t} \sim \mathrm{Normal} \left(MVT(\nu, \Sigma_{W(s,t)}), \sigma_{\mathrm{obs}} \right).
-\end{equation}
+\begin{align}
+  \mu_{s,t} &= MVT(\nu, \Sigma_{W(s,t)})\\
+  y_{s,t} &\sim \mathrm{Normal} \left(\mu_{s,t}, \sigma_{\mathrm{obs}} \right).
+\end{align}
 
 \noindent with $\sigma^2 = 1$, $\phi = 1$, and spatial data drawn uniformly
 from locations ranging between 0 and 10. We set the degrees of freedom
@@ -339,7 +341,7 @@ parameter $\nu$ to 2.5 and used a Gaussian observation model with standard
 deviation, $\sigma_{\mathrm{obs}}$, of 0.2. We chose a Gaussian observation
 model and identity link for simplicity and to demonstrate an alternative
 functional form to the previous simulation. We fit our estimation model as
-described above.
+described above and with a half-t(3,0,3) prior on $\sigma_{\mathrm{obs}}$.
 
 \subsection{Case study --- mountain pine beetle outbreaks}
 
@@ -390,31 +392,61 @@ Expand on this when we figure out how we're evaluating predictive accuracy
 \section{Data Accessibility}
 % : To enable readers to locate archived data, authors should list the database and the respective accession numbers or DOIs for all data from the manuscript 
 
+\section{Figures}
 
 \begin{figure}[htb]
 \begin{center}
-  \includegraphics[width=0.8\textwidth]{../figs/pp-illustration.pdf}
-\caption{caption}
+  \includegraphics[width=0.7\textwidth]{../figs/pp-illustration.pdf}
+\caption{
+Illustration of the steps to fitting a predictive process model. 
+First we observe spatial data, we select knot locations,
+and we calculate the covariance between the knots and the observed data. 
+Then we fit the model with the knots and data remaining constant throughout. 
+For each MCMC iteration, values are proposed for the
+knots, those values are projected from the knots to the locations of the observed data, 
+and the likelihood is evaluated at the locations of the observed data.}
 \label{fig:didactic}
 \end{center}
 \end{figure}
+
+\clearpage
 
 \begin{figure}[htb]
 \begin{center}
   \includegraphics[width=0.9\textwidth]{../figs/nu-rf-illustration.pdf}
-\caption{caption}
+\caption{An illustration of five draws from a MVN random field (top row)
+vs.\ five draws from a MVT random field with heavy tails            
+(degrees of freedom, $\nu$, of 2; bottom row). Random seeds are held constant
+between the rows
+to illustrate the effect. Draws represent slices of time with independent spatial 
+processes at each time slice. Note the considerably more extreme values in 
+the third draw for the MVT spatial process.}
 \label{fig:didactic}
 \end{center}
 \end{figure}
+
+\clearpage
 
 \begin{figure}[htb]
 \begin{center}
   \includegraphics[width=0.65\textwidth]{../figs/sim-recapture-small.pdf}
-\caption{caption}
+\caption{Results from simulation testing the ability to recapture the degree 
+of spatial heavy tailedness with varying number of time steps and varying 
+true values of the degrees of freedom parameter, $\nu$. The number of time steps 
+had the strongest effect on the ability to recapture $\nu$. Other elements to
+the simulation testing are shown in Figure SXX. Dots show the 
+median estimates from individual simulation runs and the polygons 
+show the density. The color scale approximately indicates how heavy tailed 
+the true distribution is: yellow (effectively normal), red (very heavy tailed).
+}
 \label{fig:didactic}
 \end{center}
 \end{figure}
+
+\clearpage
+
 \bibliography{spatial-extremes}
 
 \end{spacing}
 \end{document}
+
