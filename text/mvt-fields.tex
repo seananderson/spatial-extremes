@@ -142,7 +142,7 @@ extreme value theory \citep{davison2012, davison2012a}. Many of the
 applications of these models, such as understanding extremes in rainfall or
 flooding, are interested in quantifying the probabilities of exceeding some
 threshold \citep{davis2008}. Other extensions of spatiotemporal models to model
-extremes include the use of multivariate-t spatial random fields
+extremes include the use of multivariate-t spatial (MVT) random fields
 \citep{roislien2007}. Focusing on the latter, to our knowledge these methods
 have not been considered for data in the ecology, fisheries, or environmental
 sciences.
@@ -167,7 +167,7 @@ applications in ecology and related fields.
 
 We seek to allow for large deviations in an ecological spatial pattern over
 time by extending a spatiotemporal predictive process model to use a MVT
-distribution instead of the usual MVN. Below we describe the form of our model
+distribution instead of the usual Gaussian MVN. Below we describe the form of our model
 as implemented in \textbf{rrfields}, describe two simulation tests exploring model
 performance, and finally describe the application of our model to a data set
 representing mountain pine beetle outbreaks in the Pacific Northwest of the
@@ -175,11 +175,11 @@ United States.
 
 \subsection{The MVT predictive process model}
 
-\citet{latimer2009} provides an excellent overview of predictive process
-models for ecologists; here we summarize the important elements of these
+\citet{latimer2009} provide an overview of predictive process
+models for ecologists; here, we summarize the important elements of these
 models and highlight how our models differs from the usual MVN version. Our
 model is essentially a generalized linear model (GLM) with a spatiotemporal
-element described by a random field. Our model describes the mean or expected
+element described by a MVT random field. Our model describes the mean or expected
 value of the response, $\mu \equiv \mathbb{E}(y)$, at location in space $s$ and
 time $t$ as
 
@@ -189,31 +189,33 @@ time $t$ as
 
 \noindent where $g$ describes a link function (e.g., identity or log),
 $\bm{X}_{s,t}$ describes a vector of predictors, and $\bm{\beta}$ describes a
-vector of estimated coefficients. The variance of the observation component of
+vector of estimated coefficients. 
+The symbol $\gamma$ describes the spatiotemporal process,
+which we describe below. 
+The variance of the observation component of
 our model, as in any GLM, is described as a function of the mean via a
 probability distribution from the exponential family such as the Gaussian,
-Poisson, or gamma. The symbol $\gamma$ describes the spatiotemporal process
-which we describe below. 
+Poisson, or gamma. 
 
 %A random field is a term used to describe ``random effects'' drawn from a
 %multivariate probability distribution representing deviations in a two-dimensional space (REF). 
 Most commonly, random fields are represented by a 
-a multivariate normal (MVN) with some covariance matrix.
+a MVN distribution with some covariance matrix.
 Instead, we draw our values from a multivariate t distribution (MVT). The MVT
 has one extra parameter compared to the MVN: the degrees of freedom parameter
 $\nu$. When $\nu$ is small (say $\nu < 10$) the distribution has heavier
-tails than the MVN --- it has a higher probability of events far from the mean than the MVN.
+tails than the MVN --- it has a higher probability of events far from the mean than the MVN (Fig.~\ref{fig:nu}).
 As $\nu$ approaches infinity, the distribution approaches
 the MVN. For most purposes, the MVT and MVN are indistinguishable for moderate
 values of $\nu$ (say $\nu > 20$) similarly to the univariate t-distribution
-compared with the univariate normal distribution (REF). 
+compared with the univariate normal distribution \citep[e.g.,][]{anderson2017}. 
 
 If $W_{s,t}$ defines a random field, then the spatiotemporal element,
 $\gamma_{s,t}$, can be made temporally constant (one field shared across time,
 $\gamma_{s,t} = W_{s}$), independent at each time step ($\gamma_{s,t} =
 W_{s,t}$) or autoregressive so that the spatial pattern at time $t$ is
 dependent on the spatial pattern at time $t-1$ to a degree defined by $\phi$,
-($\gamma_{s,t} = \phi \gamma_{s,t-1} + W_{s,t}$). In the last case, in practice,
+($\gamma_{s,t} = \phi \gamma_{s,t-1} + W_{s,t}$). In the last case,
 we constrain the spatiotemporal autoregressive process to be centred on zero at
 each time step to aid interpretation and ensure identifiability ($\gamma_{s,t}
 = \phi (\gamma_{s,t-1} - \mathbb{E}[\gamma_{t-1}]) + W_{s,t}$). This lets the
@@ -254,28 +256,23 @@ functions in which covariance is not uniform in all directions.
 Following \citet{latimer2009}, we can also calculate the covariance matrix
 between the locations of the data and the knots, 
 $\Sigma_{\left(W, W^* \right)}$. 
-
 %TODO replace phi
-
 % Each element of the covariance matrix $\Sigma^*$ is thus dependent on
 % three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
 % $j$ squared, (2) the scale parameter $\phi$, which determines how steeply the
 % correlation declines with increasing distance, and (3) the variance $\sigma^2$.
-
 Given $\Sigma^*$, we can generate random effects at knot
 locations by drawing from a MVT distribution for each time step $t$, 
-$W_t^*\sim \mathrm{MVT}\left( \nu, 0, \Sigma^{*} \right)$ .
+$W_t^*\sim \mathrm{MVT}\left( \nu, 0, \Sigma^{*} \right)$.
 These random effects at the knots are then projected to the data locations using
 $\Sigma_{\left( W,W^{*} \right)}$ \citep{latimer2009}:
-
-\begin{equation}
-W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*.
-\end{equation}
+$W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*$.
 
 Our package fits these models in a Bayesian framework. We sample
 from the posterior distribution using the No-U-Turn Sampler, which is an
 extension of Hamiltonian Markov Chain Monte Carlo, implemented in the
-statistical software Stan (REF) and the R package rstan (REF). Although slower
+statistical software Stan \citep{standevelopmentteam2016a, carpenter2017} 
+and the R package \textbf{rstan} \citep{standevelopmentteam2016}. Although slower
 than an equivalent maximum likelihood approach, this Bayesian approach has a
 number of advantages. First, it lets us fully and accurately quantify
 uncertainty around all parameter estimates and predictions. This makes it
@@ -287,10 +284,10 @@ informative priors on parameters to impose our existing knowledge of reasonable
 values and to aid computation --- particularly of difficult to estimate
 parameters such as the degrees of freedom parameter in the MVT. In the case of
 the degrees of freedom parameter, $\nu$, we bound the lower value to $2$ for
-computational stability and use a Gamma(2, 0.1) prior (i.e., shape = 2, scale = 0.1; REF), 
-which has a mean of $\sim 20$ and a median of $\sim 17$. 
-Therefore, if the data are not informative about heavy
-tails, our estimate of $\nu$ should approximately match the prior. 
+computational stability and use a Gamma(2, 0.1) prior (i.e., shape = 2, scale = 0.1), 
+which has a mean of $\sim 20$ and a median of $\sim 17$ \citep{juarez2010}. 
+If the data are not informative about heavy
+tails, our estimate of $\nu$ should approximately match the prior,
 
 %Juárez and Steel (2010) (Model-based clustering of non-Gaussian panel data based on skew-t distributions. Journal of Business & Economic Statistics 28, 52?66.)
 
@@ -318,7 +315,7 @@ $\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial process. Therefore,
 our simulation model of data $y_{s,t}$ simplifies to
 
 \begin{align}
-  \mu_{s,t} &\sim \exp(\mathrm{MVT}(\nu, 0, \Sigma_{W(s,t)})),\\
+  \log(\mu_{s,t}) &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right),\\
   y_{s,t} &\sim \mathrm{Gamma} \left( \frac{1}{\mathrm{CV}^2},
   \frac{1}{\mathrm{CV}^2 \cdot \mu_{s,t} } \right).
 \end{align}
@@ -342,8 +339,8 @@ correct MVT. We then compared the performance of these models. Specifically, we
 simulated data from the following model:
 
 \begin{align}
-  \mu_{s,t} &\sim \mathrm{MVT}(\nu, 0, \Sigma_{W(s,t)}),\\
-  y_{s,t} &\sim \mathrm{Normal} \left(\mu_{s,t}, \sigma_{\mathrm{obs}} \right).
+  \mu_{s,t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right),\\
+  y_{s,t} &\sim \mathrm{Normal} \left(\mu_{s,t}, \sigma_{\mathrm{obs}} \right),
 \end{align}
 
 \noindent with $\sigma^2 = 1$, $\phi = 1$, and spatial data drawn uniformly
@@ -370,13 +367,10 @@ spatiotemporal models and the rrfields package
 We fit two spatial models to the data, (1) MVT random fields and (2) a model with MVN random
 fields. For both models, we expanded on the estimation model applied to
 simulated data to include variable random effects by time step (representing
-seasonal anomalies in the mean across the entire field). We also assumed normal
-residual error, so that the data for location $i$ in time $t$ is
-assumed to be 
-$Y_{it}\sim \mathrm{Normal}\left(W_{it}+y_t, \sigma \right)$, 
-where $W_{it}$ is the estimated random effect
-at location $i$ in time $t$, $y_t$ is the intercept for each time
-step, and $\sigma$ represents residual error. 
+seasonal anomalies in the mean across the entire field). 
+
+$\beta_t$ is the intercept for each time step, 
+and $\sigma_{\mathrm{obs}}$ represents residual error. 
 We modeled the temporal intercepts as an autoregressive random walk, 
 so that 
 $y_t\sim \mathrm{Normal}\left( y_{t-1},\sigma_t \right)$ , and
@@ -422,7 +416,7 @@ between the rows
 to illustrate the effect. Draws represent slices of time with independent spatial 
 processes at each time slice. Note the considerably more extreme values in 
 the third draw for the MVT spatial process.}
-\label{fig:didactic}
+\label{fig:nu}
 \end{center}
 \end{figure}
 
