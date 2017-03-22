@@ -314,11 +314,11 @@ distribution with a log link, $Y_{it}\sim \mathrm{Gamma}\left(a,\frac
 reparameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
 tested CVs of 0.1, 0.6, and 1.2 representing minimal, moderate, and
 considerable measurement error. We set the underlying linear predictor
-$\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial process. In other
-words our simulation model of data $y_{s,t}$ simplifies to
+$\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial process. Therefore,
+our simulation model of data $y_{s,t}$ simplifies to
 
 \begin{align}
-  \mu_{s,t} &\sim \exp(MVT(\nu, 0, \Sigma_{W(s,t)}))\\
+  \mu_{s,t} &\sim \exp(\mathrm{MVT}(\nu, 0, \Sigma_{W(s,t)})),\\
   y_{s,t} &\sim \mathrm{Gamma} \left( \frac{1}{\mathrm{CV}^2},
   \frac{1}{\mathrm{CV}^2 \cdot \mu_{s,t} } \right).
 \end{align}
@@ -342,7 +342,7 @@ correct MVT. We then compared the performance of these models. Specifically, we
 simulated data from the following model:
 
 \begin{align}
-  \mu_{s,t} &\sim MVT(\nu, 0, \Sigma_{W(s,t)})\\
+  \mu_{s,t} &\sim \mathrm{MVT}(\nu, 0, \Sigma_{W(s,t)}),\\
   y_{s,t} &\sim \mathrm{Normal} \left(\mu_{s,t}, \sigma_{\mathrm{obs}} \right).
 \end{align}
 
@@ -358,6 +358,14 @@ described above and with a half-t(3,0,3) prior on $\sigma_{\mathrm{obs}}$.
 
 To illustrate real-world applications of multivariate-t distributed
 spatiotemporal models and the rrfields package
+
+\begin{align}
+  \log(\mu_{s,t}) &= \beta_0 + \beta_t + \gamma_{s,t},\\
+    \gamma_{s,t} &= \phi \left(\gamma_{s,t-1} - \mathbb{E}[\gamma_{t-1}]\right) + W_{s,t},\\
+      W_{s,t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right),\\
+  \beta_t &\sim \mathrm{Normal}\left( \beta_{t-1}, \sigma_t \right),\\
+  y_{s,t} &\sim \mathrm{LogNormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right),
+ \end{align}
 
 We fit two spatial models to the data, (1) MVT random fields and (2) a model with MVN random
 fields. For both models, we expanded on the estimation model applied to
