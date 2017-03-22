@@ -119,18 +119,18 @@ if (!file.exists(model_file)) {
     data = dplyr::filter(d, !hold_out),
     time = "year", lon = "x", lat = "y",
     station = "station",
-    nknots = 10,
+    nknots = 12,
     obs_error = "normal",
     prior_gp_sigma = half_t(7, 0, 2),
     prior_gp_scale = half_t(7, 0, 2),
     prior_intercept = student_t(1e9, 0, 20),
     prior_beta = student_t(1e9, 0, 5),
     prior_sigma = half_t(7, 0, 5),
-    estimate_ar = FALSE,
+    estimate_ar = TRUE,
     estimate_df = TRUE,
-    chains = 2, iter = 400,
-    fixed_ar_value = 1,
-    control = list(adapt_delta = 0.85))
+    year_re = TRUE,
+    chains = 2, iter = 2000,
+    control = list(adapt_delta = 0.95))
   save(mvt, file = model_file)
 } else {
   load(model_file)
@@ -371,3 +371,12 @@ dplyr::filter(b, term %in% pars) %>%
 # bayesplot::mcmc_areas(as.matrix(mvn$model), pars = pars)
 bayesplot::mcmc_areas(as.matrix(mvt$model), pars = "df[1]")
 ```
+
+```{r}
+bs <- filter(bt0, grepl("B", term))
+bs$index <- 1:nrow(bs)
+ggplot(bs, aes(index, estimate, ymin = conf.low, ymax = conf.high)) +
+  geom_ribbon()
+
+```
+
