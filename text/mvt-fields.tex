@@ -187,19 +187,19 @@ time $t$ as
   g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},
 \end{equation}
 
-\noindent where $g$ describes a link function (e.g., identity or log),
-$\bm{X}_{s,t}$ describes a vector of predictors, and $\bm{\beta}$ describes a
+\noindent where $g$ represents a link function (e.g., log, logit, identity),
+$\bm{X}_{s,t}$ represents a vector of predictors, and $\bm{\beta}$ represents a
 vector of estimated coefficients. 
-The symbol $\gamma$ describes the spatiotemporal process,
+The symbol $\gamma$ represents the spatiotemporal process,
 which we describe below. 
 The variance of the observation component of
-our model, as in any GLM, is described as a function of the mean via a
+our model, as in any GLM, is a function of the mean via a
 probability distribution from the exponential family such as the Gaussian,
 Poisson, or gamma. 
 
 %A random field is a term used to describe ``random effects'' drawn from a
 %multivariate probability distribution representing deviations in a two-dimensional space (REF). 
-Most commonly, random fields are represented by a 
+Most commonly, random fields are represented by 
 a MVN distribution with some covariance matrix.
 Instead, we draw our values from a multivariate t distribution (MVT). The MVT
 has one extra parameter compared to the MVN: the degrees of freedom parameter
@@ -224,7 +224,7 @@ while $\gamma_{s,t}$ defines the spatial process and how it evolves through
 time --- potentially letting ``hotspots'' remain hotspots through time while
 keeping the means of the spatial process $\gamma_{s,t}$ stationary and centred
 on zero. We determine the location of the $m$ knots in a random field 
-using a partitioning around medoids
+using the partitioning around 
 algorithm \citep[the \texttt{pam} function in the R package
 \textbf{cluster};][]{reynolds2006}. This algorithm is a robust version of the
 common k-means algorithm and results in selecting knot locations that are
@@ -236,7 +236,7 @@ functions for spatiotemporal models. The squared exponential function, $H$,
 (also known as the Gaussian covariance function) models the correlation between
 points $i$ and $j$ as $H(\delta_{ij}) = \exp \left(-\frac{\delta_{ij}^2}{2 \eta} \right)$,
 where $\delta_{ij}$ describes the distance between points $i$ and $j$
-and $\phi$ describes how steeply correlation declines with increasing distance
+and $\eta$ describes how steeply correlation declines with increasing distance
 or the ``wiggliness'' of the spatial process. 
 For a given set of $\delta_{ij}$, large values of $\eta$ correspond
 to smooth spatial patterns and small values correspondence to wiggly spatial patterns ---
@@ -287,13 +287,13 @@ the degrees of freedom parameter, $\nu$, we bound the lower value to $2$ for
 computational stability and use a Gamma(2, 0.1) prior (i.e., shape = 2, scale = 0.1), 
 which has a mean of $\sim 20$ and a median of $\sim 17$ \citep{juarez2010}. 
 If the data are not informative about heavy
-tails, our estimate of $\nu$ should approximately match the prior,
+tails, our estimate of $\nu$ should approximately match the prior.
 
 %Juárez and Steel (2010) (Model-based clustering of non-Gaussian panel data based on skew-t distributions. Journal of Business & Economic Statistics 28, 52?66.)
 
 \subsection{Testing the recovery of extremeness}
 
-We undertook simulation testing to test how well we could recover the degree to
+We undertook simulation testing to evaluate how well we could recover the degree to
 which there were heavy tails in the spatial process under various conditions.
 We simulated 50 data points collected at the same survey locations each year
 for 5, 15, or 25 years. We simulated the spatial process as independent each
@@ -301,6 +301,7 @@ year ($\gamma_{s,t} = W_{s,t}$) with $\sigma^2 = 1$ (the spatial variance),
 $\eta = 1$ (the ``wiggliness'' or spatial correlation decay parameter), and
 with spatial data locations drawn uniformly from 0 to 10 on both spatial axes
 (thereby affecting $\delta_{ij}$, the spatial distances). 
+We selected 15 knots to represent the spatial pattern as described above. 
 The simulated degrees of freedom parameter $\nu$ was set at
 one of three values: 2.5, 5, or 20, representing very heavy tails, moderately heavy
 tails, and effectively normal non-heavy tails. A final step in our data
@@ -309,7 +310,7 @@ observation error. We assumed observations to be generated from a gamma
 distribution with a log link, $Y_{it}\sim \mathrm{Gamma}\left(a,\frac
   {a}{\mathbb{E}(Y_{it})} \right)$, where the gamma shape parameter $a$ can be
 reparameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
-tested CVs of 0.1, 0.6, and 1.2 representing minimal, moderate, and
+tested CVs of 0.1, 0.6, and 1.2 representing minimal, moderate, ands
 considerable measurement error. We set the underlying linear predictor
 $\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial process. Therefore,
 our simulation model of data $y_{s,t}$ simplifies to
@@ -343,10 +344,12 @@ simulated data from the following model:
   y_{s,t} &\sim \mathrm{Normal} \left(\mu_{s,t}, \sigma_{\mathrm{obs}} \right),
 \end{align}
 
-\noindent with $\sigma^2 = 1$, $\eta = 1$, and spatial data drawn uniformly
-from locations ranging between 0 and 10 along both axes. We set the degrees of freedom
-parameter $\nu$ to 2.5 and used a Gaussian observation model with standard
-deviation, $\sigma_{\mathrm{obs}}$, of 0.2. We chose a Gaussian observation
+\noindent with $\sigma^2 = 1$, $\eta = 1$, and 50 spatial data points drawn uniformly
+from locations ranging between 0 and 10 along both axes. Again, the locations
+of the data, and the 15 knots, were held constant through time to enable faster
+computations. We set the degrees of freedom parameter $\nu$ to 2.5 and used a
+Gaussian observation model with standard deviation, $\sigma_{\mathrm{obs}}$, of
+0.2. We chose a Gaussian observation
 model and identity link for simplicity and to demonstrate an alternative
 functional form to the previous simulation. We fit our estimation model as
 described above and with a half-t(3,0,3) prior on $\sigma_{\mathrm{obs}}$.
@@ -365,7 +368,7 @@ Because the maximum proportion affected was far from 1.0, we
 can fit a model with a log link and lognormal observation model
 (as opposed to a logit link and a beta observation model).
 The log of the mean proportion affected at location $s$ and time $t$, $\mu_{s,t}$,
-is predicted by an initial intercept, $\beta_0$, a year specific mean estimate, $\beta_t$,
+is predicted by an initial intercept, $\beta_0$, a year-specific mean estimate, $\beta_t$,
 and the spatiotemporal process $\gamma_{s,t}$:
 
 \begin{align}
@@ -380,12 +383,14 @@ and centered at each time step:
      W_{s,t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right).
  \end{align}
   
- \noindent Furthermore, we model the annual mean estimates, $\beta_t$, as following a random walk 
- constrained by $\sigma_t$, and the data $y_{s,t}$ to be generated by a lognormal observation model
- with scale parameter $\sigma_{\mathrm{obs}}$:
+\noindent Furthermore, we model the annual 
+mean estimates, $\beta_t$, as following a random walk 
+constrained by a normal distribution with standard deviation $\sigma_{\beta}$, 
+and the data, $y_{s,t}$, to be generated by a lognormal observation model
+with scale parameter $\sigma_{\mathrm{obs}}$:
  
  \begin{align}
- \beta_t &\sim \mathrm{Normal}\left( \beta_{t-1}, \sigma_t \right),\\
+ \beta_t &\sim \mathrm{Normal}\left( \beta_{t-1}, \sigma_{\beta} \right),\\
   y_{s,t} &\sim \mathrm{LogNormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right).
  \end{align}
 
@@ -393,24 +398,31 @@ We converted latitude and longitude degrees into UTMs and divided by $10^5$
 to make the range of $\delta_{ij}$ approximately between 1 and 10 and therefore 
 place $\eta$ on a reasonable scale.
 We chose 25 knots to represent the spatial process as described above.
-We fit the models with Student-t(3, 0, 2) priors on all scale parameters as described above,
+We fit the models with half-t(3, 0, 3) priors on all 
+scale parameters as described above,
 a Normal(0, 10) prior on $\beta_0$,
 a MVN(0, TODO) prior on $\gamma_{s,t=1}$,
 and a Normal(0, 1)[-1, 1] prior on $\phi$.
 
-We fit two models to the data: (1) MVT random fields and (2) a model with MVN random
-fields. For both models, we expanded on the estimation model applied to
-simulated data to include variable random effects by time step (representing
-seasonal anomalies in the mean across the entire field). 
+We compared the above MVT
+model to a Gaussian random field model in which 
+$W_{s,t} \sim \mathrm{MVN}\left(\nu, 0, \Sigma_{W(s,t)}\right)$.
+To evaluate out-of-sample predictive accuracy we withheld
+25 randomly selected data points 
+per year from the model fitting, 
+for a total of 400 withheld data points,
+or approximately 10\% of the data.
+We then evaluated the root mean squared error,
+the coverage of credible intervals, and the width of credible intervals
+for predictions on these withheld data points
+from the MVN and MVT models.
+We also compared the leave-one-out information criteria 
+(LOOIC), a Bayesian information criteria that approximates 
+leave-one-out performance \citep{vehtari2016},
+between the MVN and MVT models. 
 
-$\beta_t$ is the intercept for each time step, 
-and $\sigma_{\mathrm{obs}}$ represents residual error. 
-We modeled the temporal intercepts as an autoregressive random walk, 
-so that 
-$y_t\sim \mathrm{Normal}\left( y_{t-1},\sigma_t \right)$ , and
-$\sigma_t$ represents the standard deviation of the temporal intercepts.
-
-how we're evaluating predictive accuracy
+A complete reproducible version of this analysis written in R Markdown is
+available as Supporting Information and at TODO.
 
 \section{Results}
 
