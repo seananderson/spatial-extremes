@@ -234,23 +234,23 @@ We used a squared exponential covariance function to model the covariance
 between knot locations because this is one of the most commonly adopted covariance
 functions for spatiotemporal models. The squared exponential function, $H$,
 (also known as the Gaussian covariance function) models the correlation between
-points $i$ and $j$ as $H(\delta_{ij}) = \exp \left(-\frac{\delta_{ij}^2}{2 \phi} \right)$,
+points $i$ and $j$ as $H(\delta_{ij}) = \exp \left(-\frac{\delta_{ij}^2}{2 \eta} \right)$,
 where $\delta_{ij}$ describes the distance between points $i$ and $j$
 and $\phi$ describes how steeply correlation declines with increasing distance
 or the ``wiggliness'' of the spatial process. 
-For a given set of $\delta_{ij}$, large values of $\phi$ correspond
+For a given set of $\delta_{ij}$, large values of $\eta$ correspond
 to smooth spatial patterns and small values correspondence to wiggly spatial patterns ---
-the degree of ``wiggliness'' implied by a value of $\phi$ depends on the scale of the
+the degree of ``wiggliness'' implied by a value of $\eta$ depends on the scale of the
 $\delta_{ij}$.
 
 %    SigmaKnots = gp_sigma_sq *
 %      exp(-inv(2.0 * pow(gp_scale, 2.0)) * distKnots); 
       
 The elements of the covariance matrix at the $m$ knot locations are therefore
-defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2\phi}  \right)$ with the
+defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta}  \right)$ with the
 parameter $\sigma$ scaling the amplitude of the spatial process deviations. Our
 package also allows for the exponential covariance function $H(\delta_{ij}) =
-\exp \left(-\frac{\delta_{ij} }{\phi} \right)$ and could be extended to allow for other
+\exp \left(-\frac{\delta_{ij} }{\eta} \right)$ and could be extended to allow for other
 common covariance functions such as the Matern or anisotropic covariance
 functions in which covariance is not uniform in all directions. 
 Following \citet{latimer2009}, we can also calculate the covariance matrix
@@ -298,7 +298,7 @@ which there were heavy tails in the spatial process under various conditions.
 We simulated 50 data points collected at the same survey locations each year
 for 5, 15, or 25 years. We simulated the spatial process as independent each
 year ($\gamma_{s,t} = W_{s,t}$) with $\sigma^2 = 1$ (the spatial variance),
-$\phi = 1$ (the ``wiggliness'' or spatial correlation decay parameter), and
+$\eta = 1$ (the ``wiggliness'' or spatial correlation decay parameter), and
 with spatial data locations drawn uniformly from 0 to 10 on both spatial axes
 (thereby affecting $\delta_{ij}$, the spatial distances). 
 The simulated degrees of freedom parameter $\nu$ was set at
@@ -322,7 +322,7 @@ our simulation model of data $y_{s,t}$ simplifies to
 
 We attempted to recapture $\nu$ fitting a model that matched the process
 generating the simulated data. We placed weakly informative priors on $\sigma$,
-$\phi$, and CV of half-t(3, 0, 3) (i.e., the positive half of a student t
+$\eta$, and CV of half-t(3, 0, 3) (i.e., the positive half of a student t
 distribution with a degrees of freedom 3, centrality parameter 0, and scale
 parameter 3). We initially sampled from each model with 500 iterations across
 four chains discarding the first half of the iterations as warm-up. If the
@@ -343,7 +343,7 @@ simulated data from the following model:
   y_{s,t} &\sim \mathrm{Normal} \left(\mu_{s,t}, \sigma_{\mathrm{obs}} \right),
 \end{align}
 
-\noindent with $\sigma^2 = 1$, $\phi = 1$, and spatial data drawn uniformly
+\noindent with $\sigma^2 = 1$, $\eta = 1$, and spatial data drawn uniformly
 from locations ranging between 0 and 10 along both axes. We set the degrees of freedom
 parameter $\nu$ to 2.5 and used a Gaussian observation model with standard
 deviation, $\sigma_{\mathrm{obs}}$, of 0.2. We chose a Gaussian observation
@@ -356,24 +356,24 @@ described above and with a half-t(3,0,3) prior on $\sigma_{\mathrm{obs}}$.
 To illustrate real-world applications of MVT-distributed
 spatiotemporal models and the \textbf{rrfields} package,
 we fit MVT and Gaussian random field models 
-to the data set representing 
+to a data set representing 
 mountain pine beetle outbreaks in the 
 US Pacific Northwest (REF). We modeled the
-proportion of grid cells affected by mountain pine beetle outbreaks
+proportion of grid cells affected by outbreaks
 in the US states of XX and XX from 1994 to 2014.
-This proportion could be modeled with a logit link and a
-beta observation model, 
-but since the maximum proportion affected was far from 1.0, we 
-can instead fit a simpler model with a log link and lognormal observation model.
-The log of the mean proportion affected location $s$ and time $t$, $\mu_{s,t}$,
-is predicted by an initial intercept $\beta_0$, a year specific mean estimate $\beta_t$,
+Because the maximum proportion affected was far from 1.0, we 
+can fit a model with a log link and lognormal observation model
+(as opposed to a logit link and a beta observation model).
+The log of the mean proportion affected at location $s$ and time $t$, $\mu_{s,t}$,
+is predicted by an initial intercept, $\beta_0$, a year specific mean estimate, $\beta_t$,
 and the spatiotemporal process $\gamma_{s,t}$:
 
 \begin{align}
   \log(\mu_{s,t}) &= \beta_0 + \beta_t + \gamma_{s,t},
   \end{align}
 
-\noindent with the spatial process modeled as an autoregressive process:
+\noindent with the spatial process modeled as autoregressive
+and centered at each time step:
 
 \begin{align}
     \gamma_{s,t} &= \phi \left(\gamma_{s,t-1} - \mathbb{E}[\gamma_{t-1}]\right) + W_{s,t},\\
@@ -389,14 +389,14 @@ and the spatiotemporal process $\gamma_{s,t}$:
   y_{s,t} &\sim \mathrm{LogNormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right).
  \end{align}
 
-We converted latitude and long and 2 degrees into UTMs and divided by $10^5$
+We converted latitude and longitude degrees into UTMs and divided by $10^5$
 to make the range of $\delta_{ij}$ approximately between 1 and 10 and therefore 
-place X on a reasonable scale.
+place $\eta$ on a reasonable scale.
 We chose 25 knots to represent the spatial process as described above.
-We fit the models with Student-t(3, 0, 2) priors on \ldots
-Student-t(3, 0, 5) on $\sigma_{\mathrm{obs}}$
-Normal(0, 10) on $\beta_0$
-Normal(0, 1)[-1, 1] on $\phi$
+We fit the models with Student-t(3, 0, 2) priors on all scale parameters as described above,
+a Normal(0, 10) prior on $\beta_0$,
+a MVN(0, TODO) prior on $\gamma_{s,t=1}$,
+and a Normal(0, 1)[-1, 1] prior on $\phi$.
 
 We fit two models to the data: (1) MVT random fields and (2) a model with MVN random
 fields. For both models, we expanded on the estimation model applied to
