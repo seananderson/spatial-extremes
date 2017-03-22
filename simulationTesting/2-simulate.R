@@ -96,17 +96,22 @@ saveRDS(out, file = "simulationTesting/mvt-norm-sim-testing2.rds")
 
 out <- readRDS("simulationTesting/mvt-norm-sim-testing2.rds")
 
-assert_that(max(rhat$rhat) < 1.05)
-assert_that(max(rhat$ess) > 100)
+assert_that(max(out$rhat) < 1.05)
+nrow(filter(out, rhat >= 1.05))
+nrow(filter(out, rhat >= 1.10))
+assert_that(min(out$ess) > 100)
+nrow(filter(out, ess <= 100))
 
-out_summary <- data.frame(arguments, out_print, rhat) %>%
-  filter(rhat < 1.05, ess > 200) %>%
-  select(-count, -rhat, -ess)
+out_summary <- data.frame(out) %>%
+  filter(rhat < 1.05, ess > 100) %>%
+  select(-rhat, -ess)
 
 out_summary <- mutate(out_summary, df_lab = paste0("nu==", df),
   df_lab = factor(df_lab, levels = c("nu==20", "nu==5", "nu==2.5")))
 
-out_summary <- mutate(out_summary, n_draws_lab = paste0("Time~steps==", n_draws))
+out_summary <- mutate(out_summary, n_draws_lab = paste0("Time~steps==", n_draws),
+  n_draws_lab = factor(n_draws_lab, levels = c("Time~steps==5", 
+      "Time~steps==15", "Time~steps==25")))
 
 ggplot(out_summary, aes(sd_obs, df_est, group = sd_obs, fill = as.factor(df))) +
   facet_grid(df_lab~n_draws_lab, labeller = label_parsed) + theme_sleek() +
@@ -127,19 +132,70 @@ ggsave("figs/sim-recapture.pdf", width = 7, height = 5)
 #   # geom_hline(aes(yintercept = df), colour = "grey50") +
 #   scale_fill_brewer(palette = "YlOrRd", direction = -1)
 
-
+transformation <- I
 filter(out_summary, sd_obs == 0.1) %>%
-  ggplot(aes(n_draws, log(df_est), group = n_draws, fill = as.factor(df))) +
+  ggplot(aes(n_draws, transformation(df_est), group = n_draws, fill = as.factor(df))) +
   facet_grid(~df_lab, labeller = label_parsed) + theme_sleek() +
   geom_violin(colour = NA, alpha = 1) +
   geom_jitter(colour = "#00000040", height = 0, width = 0.7, cex = 1) +
   scale_fill_brewer(palette = "YlOrRd", direction = -1) +
   guides(fill = FALSE) +
   ylab(expression(Estimated~nu)) +
-  geom_hline(aes(yintercept = log(df)), colour = "grey50", lty = 2) +
+  geom_hline(aes(yintercept = transformation(df)), colour = "grey50", lty = 2) +
   xlab("Number of time steps")
 ggsave("figs/sim-recapture-small.pdf", width = 5, height = 2.6)
 
+# Try a three-part figure showing 3 dimensions one per panel 
+
+col <- RColorBrewer::brewer.pal(3, "Blues")[3]
+plot_panel <- function(dat, x, xlab = "", jitter = 0.1, fill = "as.factor(df)") {
+  ggplot(dat, aes_string(x, "df_est", group = x)) + 
+  geom_violin(colour = NA, alpha = 1, fill = col) +
+  geom_jitter(colour = "#00000020", height = 0, width = jitter, cex = 0.7) +
+  scale_fill_brewer(palette = "YlOrRd", direction = -1) +
+  guides(fill = FALSE) +
+  ylab(expression(Estimated~nu)) +
+  geom_hline(aes(yintercept =(df)), colour = "grey50", lty = 2) +
+  xlab(xlab)
+}
+
+g1 <- plot_panel(filter(out_summary, df == "2.5", n_draws == 25),
+  "as.factor(sd_obs)", "Observation error CV", jitter = 0.1,
+  fill = "as.character('red')")
+
+g2 <- plot_panel(filter(out_summary, sd_obs == "0.1", n_draws == 25),
+  "as.factor(df)", "Degrees of freedom parameter", jitter = 0.1,
+  fill = "as.character('red')")
+
+g3 <- plot_panel(filter(out_summary, sd_obs == "0.1", df == 2.5),
+  "as.factor(n_draws)", "Number of times steps", jitter = 0.1,
+  fill = "as.character('red')")
+
+gridExtra::grid.arrange(g2, g3, g1, ncol = 3)
+
+1
+
+d <- filter(out_summary, sd_obs == "0.1", df == 2.5)
+
+library("beanplot")
+
+axis_col <- "grey55"
+
+plot_panel_base <- function(x) {
+plot(1, 1, xlim = c(.6, 3.4), ylim = c(0, 30), type = "n",
+    axes = FALSE, ann = FALSE, yaxs = "i")
+beanplot(as.formula(paste0("df_est ~ ", x)), data = d, what = c(0,1,0,0), 
+  log = "", col = "grey80", border = NA,
+  add = TRUE, axes = FALSE, cutmin = 2)
+points(jitter(as.numeric(as.factor(d[,"n_draws"])), amount = 0.05), d$df_est, 
+  col = "#00000020", cex = 0.4, pch = 20)
+abline(h = 2.5)
+
+box(col = axis_col)
+}
+plot_panel_base("n_draws")
+
+1
 # filter(out_summary, CV_est < 100) %>%
 # ggplot(aes(sd_obs, CV_est, group = sd_obs, fill = as.factor(df))) +
 #   facet_grid(df~n_draws) + theme_sleek() +
