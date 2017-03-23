@@ -102,7 +102,6 @@ bins[] <- 1:ncell(bins)
 # Now we can create rasters for each year
 rr <- raster::stack()
 years <- sort(unique(ids_dat2@data$SURVEY_YEAR))
-# years <- 2012
 for(i in years) {
   message(i)
   s <- as(ids_dat2[ids_dat2$SURVEY_YEAR == i,], "SpatialPolygons")
