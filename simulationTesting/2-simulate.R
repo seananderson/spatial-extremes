@@ -110,8 +110,8 @@ out_summary <- mutate(out_summary, df_lab = paste0("nu==", df),
   df_lab = factor(df_lab, levels = c("nu==20", "nu==5", "nu==2.5")))
 
 out_summary <- mutate(out_summary, n_draws_lab = paste0("Time~steps==", n_draws),
-  n_draws_lab = factor(n_draws_lab, levels = c("Time~steps==5", 
-      "Time~steps==15", "Time~steps==25")))
+  n_draws_lab = factor(n_draws_lab, levels = c("Time~steps==25",
+      "Time~steps==15", "Time~steps==5")))
 
 ggplot(out_summary, aes(sd_obs, df_est, group = sd_obs, fill = as.factor(df))) +
   facet_grid(df_lab~n_draws_lab, labeller = label_parsed) + theme_sleek() +
@@ -145,15 +145,16 @@ filter(out_summary, sd_obs == 0.1) %>%
   xlab("Number of time steps")
 ggsave("figs/sim-recapture-small.pdf", width = 5, height = 2.6)
 
-# Try a three-part figure showing 3 dimensions one per panel 
+# Try a three-part figure showing 3 dimensions one per panel
 
 col <- RColorBrewer::brewer.pal(3, "Blues")[3]
 plot_panel <- function(dat, x, xlab = "", jitter = 0.1, fill = "as.factor(df)") {
-  ggplot(dat, aes_string(x, "df_est", group = x)) + 
+  ggplot(dat, aes_string(x, "df_est", group = x)) +
   geom_violin(colour = NA, alpha = 1, fill = col) +
   geom_jitter(colour = "#00000020", height = 0, width = jitter, cex = 0.7) +
   scale_fill_brewer(palette = "YlOrRd", direction = -1) +
   guides(fill = FALSE) +
+  scale_y_continuous(breaks = c(2, 10, 20, 30), limits = c(1, 32)) +
   ylab(expression(Estimated~nu)) +
   geom_hline(aes(yintercept =(df)), colour = "grey50", lty = 2) +
   xlab(xlab)
@@ -171,9 +172,9 @@ g3 <- plot_panel(filter(out_summary, sd_obs == "0.1", df == 2.5),
   "as.factor(n_draws)", "Number of times steps", jitter = 0.1,
   fill = "as.character('red')")
 
+pdf("figs/recapture-3.pdf", width = 7, height = 2.6)
 gridExtra::grid.arrange(g2, g3, g1, ncol = 3)
-
-1
+dev.off()
 
 d <- filter(out_summary, sd_obs == "0.1", df == 2.5)
 
@@ -184,15 +185,16 @@ axis_col <- "grey55"
 plot_panel_base <- function(x) {
 plot(1, 1, xlim = c(.6, 3.4), ylim = c(0, 30), type = "n",
     axes = FALSE, ann = FALSE, yaxs = "i")
-beanplot(as.formula(paste0("df_est ~ ", x)), data = d, what = c(0,1,0,0), 
+beanplot(as.formula(paste0("df_est ~ ", x)), data = d, what = c(0,1,0,0),
   log = "", col = "grey80", border = NA,
   add = TRUE, axes = FALSE, cutmin = 2)
-points(jitter(as.numeric(as.factor(d[,"n_draws"])), amount = 0.05), d$df_est, 
+points(jitter(as.numeric(as.factor(d[,"n_draws"])), amount = 0.05), d$df_est,
   col = "#00000020", cex = 0.4, pch = 20)
 abline(h = 2.5)
 
 box(col = axis_col)
 }
+plot_panel_base("n_draws")
 plot_panel_base("n_draws")
 
 1
