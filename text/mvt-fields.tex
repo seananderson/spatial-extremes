@@ -201,7 +201,7 @@ Poisson, or gamma.
 %multivariate probability distribution representing deviations in a two-dimensional space (REF). 
 Most commonly, random fields are represented by 
 a MVN distribution with some covariance matrix.
-Instead, we draw our values from a multivariate t distribution (MVT). The MVT
+Instead, we draw our values from a (MVT). The MVT
 has one extra parameter compared to the MVN: the degrees of freedom parameter
 $\nu$. When $\nu$ is small (say $\nu < 10$) the distribution has heavier
 tails than the MVN --- it has a higher probability of events far from the mean than the MVN (Fig.~\ref{fig:nu}).
@@ -213,9 +213,10 @@ compared with the univariate normal distribution \citep[e.g.,][]{anderson2017}.
 If $W_{s,t}$ defines a random field, then the spatiotemporal element,
 $\gamma_{s,t}$, can be made temporally constant (one field shared across time,
 $\gamma_{s,t} = W_{s}$), independent at each time step ($\gamma_{s,t} =
-W_{s,t}$) or autoregressive so that the spatial pattern at time $t$ is
+W_{s,t}$), or autoregressive so that the spatial pattern at time $t$ is
 dependent on the spatial pattern at time $t-1$ to a degree defined by $\phi$,
-($\gamma_{s,t} = \phi \gamma_{s,t-1} + W_{s,t}$). In the last case,
+($\gamma_{s,t} = \phi \gamma_{s,t-1} + W_{s,t}$). 
+In the last case,
 we constrain the spatiotemporal autoregressive process to be centred on zero at
 each time step to aid interpretation and ensure identifiability ($\gamma_{s,t}
 = \phi (\gamma_{s,t-1} - \mathbb{E}[\gamma_{t-1}]) + W_{s,t}$). This lets the
@@ -231,9 +232,11 @@ common k-means algorithm and results in selecting knot locations that are
 proportional to spatial sampling intensity. 
 
 We used a squared exponential covariance function to model the covariance 
-between knot locations because this is one of the most commonly adopted covariance
-functions for spatiotemporal models. The squared exponential function, $H$,
-(also known as the Gaussian covariance function) models the correlation between
+between knot locations. The squared exponential function, $H$,
+(also known as the Gaussian covariance function)
+is one of the most commonly adopted covariance
+functions for spatiotemporal models
+and models the correlation between
 points $i$ and $j$ as $H(\delta_{ij}) = \exp \left(-\frac{\delta_{ij}^2}{2 \eta} \right)$,
 where $\delta_{ij}$ describes the distance between points $i$ and $j$
 and $\eta$ describes how steeply correlation declines with increasing distance
@@ -243,9 +246,6 @@ to smooth spatial patterns and small values correspondence to wiggly spatial pat
 the degree of ``wiggliness'' implied by a value of $\eta$ depends on the scale of the
 $\delta_{ij}$.
 
-%    SigmaKnots = gp_sigma_sq *
-%      exp(-inv(2.0 * pow(gp_scale, 2.0)) * distKnots); 
-      
 The elements of the covariance matrix at the $m$ knot locations are therefore
 defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta}  \right)$ with the
 parameter $\sigma$ scaling the amplitude of the spatial process deviations. Our
@@ -304,13 +304,13 @@ with spatial data locations drawn uniformly from 0 to 10 on both spatial axes
 We selected 15 knots to represent the spatial pattern as described above. 
 The simulated degrees of freedom parameter $\nu$ was set at
 one of three values: 2.5, 5, or 20, representing very heavy tails, moderately heavy
-tails, and effectively normal non-heavy tails. A final step in our data
+tails, and effectively normal tails. A final step in our data
 simulation was to corrupt the ``true'' data by including measurement or
 observation error. We assumed observations to be generated from a gamma
 distribution with a log link, $Y_{it}\sim \mathrm{Gamma}\left(a,\frac
   {a}{\mathbb{E}(Y_{it})} \right)$, where the gamma shape parameter $a$ can be
 reparameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
-tested CVs of 0.1, 0.6, and 1.2 representing minimal, moderate, ands
+tested CVs of 0.1, 0.6, and 1.2 representing minimal, moderate, and
 considerable measurement error. We set the underlying linear predictor
 $\bm{X_{s,t}} \bm{\beta}$ to zero to focus on the spatial process. Therefore,
 our simulation model of data $y_{s,t}$ simplifies to
@@ -335,8 +335,10 @@ effective sample size of $\ge 100$ and a maximum $\hat{R}$ of $\le 1.05$).
 
 To evaluate the consequences of assuming a MVN spatial process when the
 true spatial process has heavy tails drawn from a MVT, we generated simulated
-data sets from a MVT and fit models assuming a MVN spatial process or the
-correct MVT. We then compared the performance of these models. Specifically, we
+data sets from a MVT random field and fit models assuming a 
+MVN random field or the
+correct MVT random field. 
+We then compared the performance of these models. Specifically, we
 simulated data from the following model:
 
 \begin{align}
@@ -347,7 +349,8 @@ simulated data from the following model:
 \noindent with $\sigma^2 = 1$, $\eta = 1$, and 50 spatial data points drawn uniformly
 from locations ranging between 0 and 10 along both axes. Again, the locations
 of the data, and the 15 knots, were held constant through time to enable faster
-computations. We set the degrees of freedom parameter $\nu$ to 2.5 and used a
+computations (this is not a general restriction of the model). 
+We set the degrees of freedom parameter $\nu$ to 2.5 and used a
 Gaussian observation model with standard deviation, $\sigma_{\mathrm{obs}}$, of
 0.2. We chose a Gaussian observation
 model and identity link for simplicity and to demonstrate an alternative
@@ -365,8 +368,8 @@ US Pacific Northwest (REF). We modeled the
 proportion of grid cells affected by outbreaks
 in the US states of XX and XX from 1994 to 2014.
 Because the maximum proportion affected was far from 1.0, we 
-can fit a model with a log link and lognormal observation model
-(as opposed to a logit link and a beta observation model).
+can fit a model with a log link and lognormal observation distribution 
+(as opposed to a logit link and a beta observation distribution).
 The log of the mean proportion affected at location $s$ and time $t$, $\mu_{s,t}$,
 is predicted by an initial intercept, $\beta_0$, a year-specific mean estimate, $\beta_t$,
 and the spatiotemporal process $\gamma_{s,t}$:
@@ -386,7 +389,7 @@ and centered at each time step:
 \noindent Furthermore, we model the annual 
 mean estimates, $\beta_t$, as following a random walk 
 constrained by a normal distribution with standard deviation $\sigma_{\beta}$, 
-and the data, $y_{s,t}$, to be generated by a lognormal observation model
+and the data, $y_{s,t}$, as generated by a lognormal observation model
 with scale parameter $\sigma_{\mathrm{obs}}$:
  
  \begin{align}
@@ -394,15 +397,21 @@ with scale parameter $\sigma_{\mathrm{obs}}$:
   y_{s,t} &\sim \mathrm{LogNormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right).
  \end{align}
 
-We converted latitude and longitude degrees into UTMs and divided by $10^5$
-to make the range of $\delta_{ij}$ approximately between 1 and 10 and therefore 
+We converted latitude and longitude degrees into UTMs to have a constant
+distance relationship throughout the spatial region and divided the UTM values
+by $10^5$ to make the range of $\delta_{ij}$ approximately 10 and therefore 
 place $\eta$ on a reasonable scale.
+We rasterized the map into a 500 by 500 grid
+and then aggregated this high-resolution grid 
+into percent cover in a coarser grid reduced by a factor of 25.
+This maintained a reasonable resolution
+while limiting the data size for rapid model fitting. 
 We chose 25 knots to represent the spatial process as described above.
 We fit the models with half-t(3, 0, 3) priors on all 
 scale parameters as described above,
 a Normal(0, 10) prior on $\beta_0$,
 a MVN(0, TODO) prior on $\gamma_{s,t=1}$,
-and a Normal(0, 1)[-1, 1] prior on $\phi$.
+and a Normal(0, 0.5)[-1, 1] prior on $\phi$.
 
 We compared the above MVT
 model to a Gaussian random field model in which 
@@ -417,12 +426,12 @@ the coverage of credible intervals, and the width of credible intervals
 for predictions on these withheld data points
 from the MVN and MVT models.
 We also compared the leave-one-out information criteria 
-(LOOIC), a Bayesian information criteria that approximates 
-leave-one-out performance \citep{vehtari2016},
+\citep[LOOIC;][]{vehtari2016}, a Bayesian information criteria that approximates 
+leave-one-out predictive performance,
 between the MVN and MVT models. 
 
-A complete reproducible version of this analysis written in R Markdown is
-available as Supporting Information and at TODO.
+% A complete reproducible version of this analysis written in R Markdown is
+% available as Supporting Information and at TODO.
 
 \section{Results}
 
@@ -475,7 +484,8 @@ the third draw for the MVT spatial process.}
 
 \begin{figure}[htb]
 \begin{center}
-  \includegraphics[width=0.65\textwidth]{../figs/sim-recapture-small.pdf}
+  % \includegraphics[width=0.65\textwidth]{../figs/sim-recapture-small.pdf}
+  \includegraphics[width=0.95\textwidth]{../figs/recapture-3.pdf}
 \caption{Results from simulation testing the ability to recapture the degree 
 of spatial heavy tailedness with varying number of time steps and varying 
 true values of the degrees of freedom parameter, $\nu$. The number of time steps 
@@ -489,10 +499,31 @@ the true distribution is: yellow (effectively normal), red (very heavy tailed).
 \end{center}
 \end{figure}
 
+\begin{figure}[htb]
+\begin{center}
+  \includegraphics[width=0.65\textwidth]{../figs/beetles-mvt-predictions.pdf}
+\caption{Beetles
+}
+\label{fig:beetle-pred}
+\end{center}
+\end{figure}
+
 \clearpage
 
 \bibliography{spatial-extremes}
 
 \end{spacing}
+
+\section{Supporting Information}
+
+\begin{figure}[htb]
+\begin{center}
+  \includegraphics[width=0.90\textwidth]{../figs/sim-recapture.pdf}
+\caption{sim
+}
+\label{fig:beetle-pred}
+\end{center}
+\end{figure}
+
 \end{document}
 
