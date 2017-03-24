@@ -167,6 +167,7 @@ g1 <- plot_panel(filter(out_summary, df == "2.5", n_draws == 25),
 g2 <- plot_panel(filter(out_summary, sd_obs == "0.1", n_draws == 25),
   "as.factor(df)", "Degrees of freedom parameter", jitter = 0.1,
   fill = "as.character('red')")
+# g2 <- g2 + geom_text)
 
 g3 <- plot_panel(filter(out_summary, sd_obs == "0.1", df == 2.5),
   "as.factor(n_draws)", "Number of times steps", jitter = 0.1,
@@ -176,26 +177,47 @@ pdf("figs/recapture-3.pdf", width = 7, height = 2.6)
 gridExtra::grid.arrange(g2, g3, g1, ncol = 3)
 dev.off()
 
-d <- filter(out_summary, sd_obs == "0.1", df == 2.5)
+d <-
 
 library("beanplot")
 
 axis_col <- "grey55"
+cols <- RColorBrewer::brewer.pal(3, "YlOrRd")
 
-plot_panel_base <- function(x) {
-plot(1, 1, xlim = c(.6, 3.4), ylim = c(0, 30), type = "n",
+plot_panel_base <- function(d, x, hlines = 2.5, col = rep(cols[[3]], 3), x_vals = c(1, 2, 3)) {
+  col <- paste0(col, "")
+  plot(1, 1, xlim = c(.6, 3.4), ylim = c(0, 30), type = "n",
     axes = FALSE, ann = FALSE, yaxs = "i")
-beanplot(as.formula(paste0("df_est ~ ", x)), data = d, what = c(0,1,0,0),
-  log = "", col = "grey80", border = NA,
-  add = TRUE, axes = FALSE, cutmin = 2)
-points(jitter(as.numeric(as.factor(d[,"n_draws"])), amount = 0.05), d$df_est,
-  col = "#00000020", cex = 0.4, pch = 20)
-abline(h = 2.5)
-
-box(col = axis_col)
+  abline(h = hlines, lty = 2, col = "grey65")
+  beanplot(as.formula(paste0("df_est ~ ", x)), data = d, what = c(0,1,0,0),
+    log = "", col = list(col[1], col[2], col[3]), border = NA,
+    add = TRUE, axes = FALSE, cutmin = 2)
+  points(jitter(as.numeric(as.factor(d[,x])), amount = 0.09), d$df_est,
+    col = "#00000020", cex = 0.8, pch = 20)
+  axis(1, at = 1:3, labels = x_vals, col.axis = axis_col, col = axis_col, col.ticks = axis_col, las = 1)
+  box(col = axis_col)
 }
-plot_panel_base("n_draws")
-plot_panel_base("n_draws")
+
+margin_line <- 1.5
+margin_color <- "grey45"
+pdf("figs/recapture-3-base.pdf", width = 7, height = 3)
+par(mfrow = c(1, 3), mar = c(0, 0, 2.9, 0), oma = c(3, 3, 0, 1),
+  cex = 0.8, tcl = -0.2, mgp = c(2, 0.4, 0))
+filter(out_summary, sd_obs == "0.1", n_draws == 25) %>%
+  plot_panel_base("df", hlines = c(2.5, 5, 20), col = rev(cols), x_vals = c(2.5, 5, 20))
+mtext("Degrees of freedom parameter", 1, col = margin_color, line = margin_line, cex = 0.8)
+mtext(expression(Estimated~nu), 2, col = margin_color, line = margin_line, cex = 0.8)
+axis(2, col = axis_col, col.ticks = axis_col, las = 1, col.axis = axis_col, at = c(2, 10, 20, 309))
+
+filter(out_summary, sd_obs == "0.1", df == 2.5) %>%
+  plot_panel_base("n_draws", x_vals = c(5, 15, 25))
+mtext("Number of time steps", 1, col = margin_color, line = margin_line, cex = 0.8)
+
+filter(out_summary, df == "2.5", n_draws == 25) %>%
+  plot_panel_base("sd_obs", x_vals = c(0.1, 0.6, 1.2))
+mtext("Observation error CV", 1, col = margin_color, line = margin_line, cex = 0.8)
+dev.off()
+
 
 1
 # filter(out_summary, CV_est < 100) %>%
