@@ -284,7 +284,7 @@ informative priors on parameters to impose our existing knowledge of reasonable
 values and to aid computation --- particularly of difficult to estimate
 parameters such as the degrees of freedom parameter in the MVT. In the case of
 the degrees of freedom parameter, $\nu$, we bound the lower value to $2$ for
-computational stability and use a Gamma(2, 0.1) prior (i.e., shape = 2, scale = 0.1), 
+computational stability and use a Gamma(2, 0.1) prior (i.e., shape = 2, rate = 0.1), 
 which has a mean of $\sim 20$ and a median of $\sim 17$ \citep{juarez2010}. 
 If the data are not informative about heavy
 tails, our estimate of $\nu$ should approximately match the prior.
@@ -504,6 +504,20 @@ for computational stability.
 \label{fig:recapture}
 \end{center}
 \end{figure}
+
+\begin{figure}[htb]
+\begin{center}
+  \includegraphics[width=0.45\textwidth]{../figs/map.pdf}
+\caption{One panel of a multipanel figure. 
+  Other panels will show posterior and prior densities for $\nu$,
+  a photo of mountain pine beetles and pine trees affected by an outbreak,
+  and a density plot showing the ratios of credible intervals between the 2 models. 
+}
+\label{fig:map-etc}
+\end{center}
+\end{figure}
+
+\clearpage
 
 \begin{figure}[htb]
 \begin{center}
