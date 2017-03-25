@@ -486,16 +486,21 @@ the third draw for the MVT spatial process.}
 \begin{center}
   % \includegraphics[width=0.65\textwidth]{../figs/sim-recapture-small.pdf}
   \includegraphics[width=0.95\textwidth]{../figs/recapture-3-base.pdf}
-\caption{Old caption! Results from simulation testing the ability to recapture the degree 
-of spatial heavy tailedness with varying number of time steps and varying 
-true values of the degrees of freedom parameter, $\nu$. The number of time steps 
-had the strongest effect on the ability to recapture $\nu$. Other elements to
-the simulation testing are shown in Figure SXX. Dots show the 
-median estimates from individual simulation runs and the polygons 
-show the density. The color scale approximately indicates how heavy tailed 
-the true distribution is: yellow (effectively normal), red (very heavy tailed).
+\caption{Results from simulation testing the ability to recapture the degree 
+of spatial heavy tailedness. Panels show 
+tests with (a) various true values of $\nu$ (the MVT degrees of freedom parameter),
+(b) an increasing number of time steps in the data set (with low observation error),
+and (c) an increasing level of observation error (with 25 time steps of data).
+The full factorial results are shown in Figure~\ref{fig:recapture-factorial}. 
+Individual dots show the median estimates from individual simulation runs
+with random jitter added on the horizontal axis for visualization.
+Polygons show the density of the distribution of estimates. 
+The colour scale indicates the true degree of heavy tailedness from
+yellow (effectively normal) to red (very heavy tailed; $\nu = 2.5$).
+The parameter $\nu$ has a lower limit of $2$ in the model 
+for computational stability. 
 }
-\label{fig:didactic}
+\label{fig:recapture}
 \end{center}
 \end{figure}
 
@@ -516,12 +521,18 @@ the true distribution is: yellow (effectively normal), red (very heavy tailed).
 
 \section{Supporting Information}
 
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thetable}{S\arabic{table}}
+\setcounter{figure}{0}
+\setcounter{table}{0}
+
 \begin{figure}[htb]
 \begin{center}
   \includegraphics[width=0.90\textwidth]{../figs/sim-recapture.pdf}
-\caption{sim
+\caption{
+  Full factorial results from the simulation shown in Fig.~\ref{fig:recapture}.
 }
-\label{fig:beetle-pred}
+\label{fig:recapture-factorial}
 \end{center}
 \end{figure}
 

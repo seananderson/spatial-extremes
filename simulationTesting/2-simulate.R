@@ -177,8 +177,8 @@ pdf("figs/recapture-3.pdf", width = 7, height = 2.6)
 gridExtra::grid.arrange(g2, g3, g1, ncol = 3)
 dev.off()
 
-d <-
-
+# --------------------
+# Make a version with base graphics 
 library("beanplot")
 
 axis_col <- "grey55"
@@ -186,7 +186,7 @@ cols <- RColorBrewer::brewer.pal(3, "YlOrRd")
 
 plot_panel_base <- function(d, x, hlines = 2.5, col = rep(cols[[3]], 3), x_vals = c(1, 2, 3)) {
   col <- paste0(col, "")
-  plot(1, 1, xlim = c(.6, 3.4), ylim = c(0, 30), type = "n",
+  plot(1, 1, xlim = c(.6, 3.4), ylim = c(2, 30), type = "n",
     axes = FALSE, ann = FALSE, yaxs = "i")
   abline(h = hlines, lty = 2, col = "grey65")
   beanplot(as.formula(paste0("df_est ~ ", x)), data = d, what = c(0,1,0,0),
@@ -200,21 +200,33 @@ plot_panel_base <- function(d, x, hlines = 2.5, col = rep(cols[[3]], 3), x_vals 
 
 margin_line <- 1.5
 margin_color <- "grey45"
-pdf("figs/recapture-3-base.pdf", width = 7, height = 3)
-par(mfrow = c(1, 3), mar = c(0, 0, 2.9, 0), oma = c(3, 3, 0, 1),
+pdf("figs/recapture-3-base.pdf", width = 7, height = 2.6)
+par(mfrow = c(1, 3), mar = c(0, 0, 1, 0), oma = c(3, 4, 0, 1),
   cex = 0.8, tcl = -0.2, mgp = c(2, 0.4, 0))
 filter(out_summary, sd_obs == "0.1", n_draws == 25) %>%
   plot_panel_base("df", hlines = c(2.5, 5, 20), col = rev(cols), x_vals = c(2.5, 5, 20))
 mtext("Degrees of freedom parameter", 1, col = margin_color, line = margin_line, cex = 0.8)
-mtext(expression(Estimated~nu), 2, col = margin_color, line = margin_line, cex = 0.8)
+mtext(expression(Estimated~nu), 2, col = margin_color, line = margin_line +1, cex = 0.8)
+mtext("(MVT degrees of freedom parameter)   ", 2, col = margin_color, line = margin_line, cex = 0.8)
 axis(2, col = axis_col, col.ticks = axis_col, las = 1, col.axis = axis_col, at = c(2, 10, 20, 309))
+x_text <- 0.5
+cex_text <- 0.9
+text(x_text, 28, "(a)", pos = 4, cex = cex_text, col = margin_color)
+text(x_text, 25, "Obs. CV = 0.1", pos = 4, cex = cex_text, col = margin_color)
+text(x_text, 23, "25 time steps", pos = 4, cex = cex_text, col = margin_color)
 
 filter(out_summary, sd_obs == "0.1", df == 2.5) %>%
   plot_panel_base("n_draws", x_vals = c(5, 15, 25))
-mtext("Number of time steps", 1, col = margin_color, line = margin_line, cex = 0.8)
+mtext("Number of time steps", 1, col = margin_color, line = margin_line, cex = cex_text)
+text(x_text, 28, "(b)", pos = 4, cex = cex_text, col = margin_color)
+# text(x_text, 27, expression(nu==2.5), pos = 4, cex = cex_text, col = margin_color)
+text(x_text, 25, "Obs. CV = 0.1", pos = 4, cex = cex_text, col = margin_color)
 
 filter(out_summary, df == "2.5", n_draws == 25) %>%
   plot_panel_base("sd_obs", x_vals = c(0.1, 0.6, 1.2))
+text(x_text, 28, "(c)", pos = 4, cex = cex_text, col = margin_color)
+text(x_text, 25, "25 time steps", pos = 4, cex = cex_text, col = margin_color)
+# text(x_text, 27, expression(nu==2.5), pos = 4, cex = cex_text, col = margin_color)
 mtext("Observation error CV", 1, col = margin_color, line = margin_line, cex = 0.8)
 dev.off()
 
