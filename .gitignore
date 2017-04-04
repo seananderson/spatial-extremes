@@ -39,13 +39,20 @@ simulationTesting/gamma-sim-testing.rds
 *.vim
 examples/moths/moth-dat.csv
 examples/moths/moth-sites.csv
+<<<<<<< Updated upstream
 examples/beetles/Washington*
 examples/beetles/Pacific*
 examples/beetles/2-mountain-pine-model_*
 examples/beetles/Northern/*
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+
+>>>>>>> Stashed changes
 examples/OR_blooms/stanMod_norm.rds
 examples/OR_blooms/or-blooms-priors.pdf
 examples/OR_blooms/stanMod_norm.rds
+<<<<<<< Updated upstream
 bound0m_shp_nt00298
 
 *.bbl
@@ -53,3 +60,11 @@ bound0m_shp_nt00298
 *.blg
 
 *.gz
+=======
+=======
+=======
+
+examples/rockfish/canary_rockfish.R
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
