@@ -58,14 +58,14 @@ changes, but also on variability and extremes. In ecological systems, extremes
 can happen in time, such as population crashes, or in space, such as rapid
 range contractions. Here, we introduce a statistical model that extends current
 methods for joint inference about temporal and spatial dynamics (spatiotemporal
-modelling) to allow for and detect extremes that occur simultaneously in time
-and space. Specifically, our model is a Bayesian predictive-process model that
-uses a multivariate-t distribution to describe spatial random effects. The
-model is easily implemented with our flexible new R package \textbf{rrfields},
-which uses an interface that should be familiar to anyone who has worked with
-regression in R. We illustrate applications of our model and R package simulated and
-real-world data. First, we \ldots
-Second, we predict tree mortality from mountain pine beetle (\emph{Dendroctonus
+modelling with Gaussian random fields) to allow for and detect extremes that
+occur simultaneously in time and space. Specifically, our model is a Bayesian
+predictive-process model that uses a multivariate-t distribution to describe
+spatial random effects. The model is easily implemented with our flexible new R
+package \textbf{rrfields}, which uses an interface that should be familiar to
+anyone who has worked with regression in R. We illustrate applications of our
+model and R package simulated and real-world data. First, we \ldots Second, we
+predict tree mortality from mountain pine beetle (\emph{Dendroctonus
   ponderosae}) outbreaks in the US Pacific Northwest over the last 16 years. In
 both cases, we show that our model provides more accurate and certain
 predictions of these ecological processes compared to traditional
@@ -92,6 +92,7 @@ existing R packages, including but not limited to \textbf{spBayes}
 \citep{finley2007}, \textbf{spTimer} \citep{bakar2015}, \textbf{INLA}
 \citep{rue2009}, \textbf{RandomFields} \citep{schlather2016}, and
 \textbf{spate} \citep{sigrist2015}.
+% Perhaps it¿d be good if we also differentiated models that include spatial processes in the mean (e.g. a GAM) versus those that explicitly model spatial covariance, though this would have to get into obs vs process errors
 
 For large datasets that include more than several hundred spatial locations,
 estimation of multivariate random effects at the locations of the data may be
@@ -152,14 +153,12 @@ predictive models using the multivariate-t distribution, easily implemented in
 our new R package \textbf{rrfields} (robust random fields). Using simulation
 testing to compare the multivariate normal to multivariate-t spatial processes,
 we illustrate that the multivariate-t leads to better prediction (less bias,
-lower uncertainty). Second, we illustrate applications of these modeling
-approaches to real-world data that include spatial extremes, using chlorophyll
-data from the west coast of the United States \citep{mckibben2012}, and counts
-of European starlings (\emph{Sturnus vulgaris}) from the North American
-Breeding Bird Survey \citep{pardieck2016}. These applications differ in their
-observation error model (normal, Gamma) and treatment of temporal change,
-illustrating the flexibility of these robust spatial models to other
-applications in ecology and related fields.
+lower uncertainty). We then illustrate the application of this modeling approach
+to real-world data that includes spatial extremes, using data on mountain pine
+beetle outbreaks in the Pacific Northwest of the United States. These
+applications differ in their observation error model (normal, Gamma) and
+treatment of temporal change, illustrating the flexibility of these robust
+spatial models to other applications in ecology and related fields.
 
 \section{Methods}
 
@@ -175,13 +174,13 @@ United States.
 
 \subsection{The MVT predictive process model}
 
-\citet{latimer2009} provide an overview of predictive process
-models for ecologists; here, we summarize the important elements of these
-models and highlight how our models differs from the usual MVN version. Our
-model is essentially a generalized linear model (GLM) with a spatiotemporal
-element described by a MVT random field. Our model describes the mean or expected
-value of the response, $\mu \equiv \mathbb{E}(y)$, at location in space $s$ and
-time $t$ as
+\citet{latimer2009} provide an overview of predictive process models for
+ecologists; here, we summarize the important elements of these models and
+highlight how our models differs from the usual MVN version. Our model is
+essentially a generalized linear model (GLM) with a spatiotemporal element
+described by a MVT random field. Our model describes the mean or expected value
+of the response, $\mu \equiv \mathbb{E}(y)$, at a set of locations in space $s$
+and time $t$ as
 
 \begin{equation}
   g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},
@@ -193,13 +192,13 @@ vector of estimated coefficients.
 The symbol $\gamma$ represents the spatiotemporal process,
 which we describe below. 
 The variance of the observation component of
-our model, as in any GLM, is a function of the mean via a
-probability distribution from the exponential family such as the Gaussian,
-Poisson, or gamma. 
+our model is a function of the mean via a
+probability distribution such as the Gaussian, Poisson, or Gamma.
 
 %A random field is a term used to describe ``random effects'' drawn from a
 %multivariate probability distribution representing deviations in a two-dimensional space (REF). 
-Most commonly, random fields are represented by 
+Most commonly, ``random effects'' are represented
+as Gaussian random fields using
 a MVN distribution with some covariance matrix.
 Instead, we draw our values from a (MVT). The MVT
 has one extra parameter compared to the MVN: the degrees of freedom parameter
@@ -464,6 +463,7 @@ and the likelihood is evaluated at the locations of the observed data.}
 \label{fig:didactic}
 \end{center}
 \end{figure}
+% Might be good to just clarify the values being proposed are values of observed data - not spatial locations
 
 \clearpage
 
@@ -508,7 +508,7 @@ for computational stability.
 \begin{figure}[htb]
 \begin{center}
   \includegraphics[width=0.45\textwidth]{../figs/map.pdf}
-\caption{One panel of a multipanel figure. 
+\caption{One panel of a multipanel figure.
   Other panels will show posterior and prior densities for $\nu$,
   a photo of mountain pine beetles and pine trees affected by an outbreak,
   and a density plot showing the ratios of credible intervals between the 2 models. 

@@ -2,7 +2,7 @@ TEXT = mvt-fields
 SOM = supp
 REFS = spatial-extremes
 
-all: $(TEXT).pdf
+all: $(TEXT).pdf dropbox
 
 %.pdf: %.tex $(REFS).bib
 	latexmk -pdf $<
@@ -10,3 +10,5 @@ all: $(TEXT).pdf
 continuous:
 	while true; do make --silent; sleep 1; done
 
+dropbox:
+	cp mvt-fields.pdf ~/Dropbox/
