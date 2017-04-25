@@ -151,7 +151,20 @@ United States.
 \subsection{The MVT predictive process model}
 
 \citet{latimer2009} provide an overview of predictive process models for
-ecologists; here, we summarize the important elements of these models and
+ecologists. For large datasets that include more than several hundred spatial
+locations, estimation of multivariate random effects at the locations of the
+data may be computationally prohibitive. One solution to this dimensionality
+problem is to estimate the random field as correlated random effects at a
+smaller subset of locations or $m$ 'knots' \citep[e.g.][]{latimer2009, shelton2014},
+where $m < n$, the number of data points. Instead of estimating an
+unconstrained $m \times m$ covariance matrix, a covariance function is
+specified \emph{a priori} to estimate the covariance between locations (e.g. exponential,
+Gaussian, Matern). Given the estimated random effects at the locations of these knots,
+and the known distance matrix between the knots and observed data,
+it is straightforward to project or interpolate those random effects to the
+locations of observations \citep{latimer2009, finley2009}.
+
+Here, we summarize the important elements of these models and
 highlight how our models differs from the usual MVN version. Our model is
 essentially a generalized linear model (GLM) with a spatiotemporal element
 described by a MVT random field. Our model describes the mean or expected value
