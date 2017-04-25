@@ -426,6 +426,47 @@ between the MVN and MVT models.
 
 \section{Discussion}
 
+As the simulation results from our MVT versus MVN models indicate, the largest
+benefit of modeling random effects as MVT instead of MVN distributions is the
+improved precision of predictions, both for training and out of sample data.
+For example, the CV of predictions was XX percent smaller with the MVT model.
+When MVN models are applied to data that include spatial extremes, we found that
+the MVT model compensated by increasing the process variance. Because the MVT model
+converges to the MVN model for large df, and only includes one additional parameter,
+we recommend using models with MVT spatial fields even if anomalous events are not
+thoguht to be present a priori.
+
+[paragraph on bark beetles]
+
+[I don't know if this is really needed, but something like this could be expanded
+
+As complex spatial models have become more user-friendly, we expect the rapid use
+of spatiotemporal models to be continued. Examples of possible applications beyond
+bark beetles include to models of fisheries (cite Thorson ECE paper), applications
+to climate anomalies (http://www.pnas.org/content/106/Supplement_2/19723.short),
+or to other disturbances - wildfires, oil spills, and disease outbreaks.]
+
+There are a number of features included in the 'rrfields' package that may be
+useful to ecologists, but beyond the scope of this paper. Examples of features
+include the addition of covariates (numeric or factors), models for temporal
+processes (random effects), and flexible models for the evolution of the spatial
+process (a static field shared across time, fields modeled as an AR(1) process,
+or fields modeled as exchangeable). Like GLMs, we have also provided a range of
+commonly encountered discrete and continuous observation models to fit a wide
+range of data types.
+
+One approach not currently included in 'rrfields', but an important recommendation
+for future research is to include sparse matrix algorithms in spatial models of
+extreme events. Recent advances to spatial models with very large datasets has
+been the stochastic partial differential equation (SPDE)  approximation to
+Gaussian random fields proposed by \citet{lindgren2011}. These methods have
+been accessible via the integrated nested Laplace approximation (INLA)
+\citep{rue2009}, which allows for approximate Bayesian sampling of the posterior
+without Markov chain Monte Carlo (MCMC) sampling. Use of the SPDE-INLA approach has
+increased rapidly in ecology over the last five years \citep[e.g.][]{illian2013, ono2016},
+and is significantly faster than other approaches (in part, because of integration with
+TMB, cite VAST etc.).
+
 \section{Acknowledgements}
 
 \section{Data Accessibility}
