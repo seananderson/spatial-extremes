@@ -434,7 +434,16 @@ When MVN models are applied to data that include spatial extremes, we found that
 the MVT model compensated by increasing the process variance. Because the MVT model
 converges to the MVN model for large df, and only includes one additional parameter,
 we recommend using models with MVT spatial fields even if anomalous events are not
-thoguht to be present a priori.
+thought to be present a priori.
+
+One of the biggest hurdles in identifying support for MVT spatial fields (small estimated
+df parameter) is using spatiotemporal data sets that have enough time slices to capture
+extreme events. [tie into sim results]. The ability to detect spatial anomalies in ecological 
+processes may also be affected by the number or selection of knots, however our results
+show that spatial extremes can be identified even using a small numbers of knots. Like other
+state-space models, inference about spatial extremes may be corrupted by observation 
+error (both the observation model, and magnitude). Our results indicate that spatial events
+can be identified with moderate to high observation error (coefficient of variation ~ 1). 
 
 [paragraph on bark beetles]
 
