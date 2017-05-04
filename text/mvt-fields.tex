@@ -276,7 +276,7 @@ tails, our estimate of $\nu$ should approximately match the prior.
 
 \subsection{Testing the recovery of extremeness}
 
-We undertook simulation testing to evaluate how well we could recover the degree to
+We used simulation testing to evaluate how well we could recover the degree to
 which there were heavy tails in the spatial process under various conditions.
 We simulated 50 data points collected at the same survey locations each year
 for 5, 15, or 25 years. We simulated the spatial process as independent each
@@ -285,11 +285,11 @@ $\eta = 1$ (the ``wiggliness'' or spatial correlation decay parameter), and
 with spatial data locations drawn uniformly from 0 to 10 on both spatial axes
 (thereby affecting $\delta_{ij}$, the spatial distances).
 We selected 15 knots to represent the spatial pattern as described above.
-The simulated degrees of freedom parameter $\nu$ was set at
+We set the degrees of freedom parameter $\nu$ to
 one of three values: 2.5, 5, or 20, representing very heavy tails, moderately heavy
 tails, and effectively normal tails. A final step in our data
 simulation was to corrupt the ``true'' data by including measurement or
-observation error. We assumed observations to be generated from a gamma
+observation error. We assumed observations were generated from a gamma
 distribution with a log link, $Y_{it}\sim \mathrm{Gamma}\left(a,\frac
   {a}{\mathbb{E}(Y_{it})} \right)$, where the gamma shape parameter $a$ can be
 reparameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
@@ -312,7 +312,8 @@ parameter 3). We initially sampled from each model with 500 iterations across
 four chains discarding the first half of the iterations as warm-up. If the
 samples had not converged after this initial run, we resampled from the model
 with 2000 iterations across four chains. We measured convergence as a minimum
-effective sample size of $\ge 100$ and a maximum $\hat{R}$ of $\le 1.05$).
+effective sample size of $\ge 100$ and a maximum $\hat{R}$ of $\le 1.05$)
+across all parameters.
 
 \subsection{Diagnosing the advantage of allowing for extremes}
 
@@ -333,7 +334,7 @@ simulated data from the following model:
 from locations ranging between 0 and 10 along both axes. Again, the locations
 of the data, and the 15 knots, were held constant through time to enable faster
 computations (this is not a general restriction of the model).
-We set the degrees of freedom parameter $\nu$ to 2.5 and used a
+We set the degrees of freedom parameter $\nu$ to 2.5 (very heavy tails) and used a
 Gaussian observation model with standard deviation, $\sigma_{\mathrm{obs}}$, of
 0.2. We chose a Gaussian observation
 model and identity link for simplicity and to demonstrate an alternative
@@ -347,10 +348,20 @@ spatiotemporal models and the \textbf{rrfields} package,
 we fit MVT and Gaussian random field models
 to a data set representing
 mountain pine beetle outbreaks in the
-US Pacific Northwest (REF). We modeled the
+US Pacific Northwest \citep{usdaforestservice2017}. 
+We converted latitude and longitude degrees into UTMs to have a constant
+distance relationship throughout the spatial region and divided the UTM values
+by $10^5$ to make the range of $\delta_{ij}$ approximately 10 and therefore
+place $\eta$ on a reasonable scale.
+We rasterized the map into a 500 by 500 grid
+and then aggregated this high-resolution grid
+into percent cover in a coarser grid reduced by a factor of 25.
+This maintained a reasonable resolution
+while limiting the data size for rapid model fitting.
+We then modeled the
 proportion of grid cells affected by outbreaks
-in the US states of XX and XX from 1994 to 2014.
-Because the maximum proportion affected was far from 1.0, we
+in the US states of Oregon and Washington from 1994 to 2014.
+Because the maximum proportion affected was far from $1$, we
 can fit a model with a log link and lognormal observation distribution
 (as opposed to a logit link and a beta observation distribution).
 The log of the mean proportion affected at location $s$ and time $t$, $\mu_{s,t}$,
@@ -361,12 +372,13 @@ and the spatiotemporal process $\gamma_{s,t}$:
   \log(\mu_{s,t}) &= \beta_0 + \beta_t + \gamma_{s,t},
   \end{align}
 
-\noindent with the spatial process modeled as autoregressive
-and centered at each time step:
+\noindent with the spatial process modeled as autoregressive:
+% and centered at each time step:
 
 \begin{align}
-    \gamma_{s,t} &= \phi \left(\gamma_{s,t-1} -
-      \mathbb{E}[\gamma_{t-1}]\right) + W_{s,t},\\ \label{eq:beetle-mu}
+    % \gamma_{s,t} &= \phi \left(\gamma_{s,t-1} -
+      % \mathbb{E}[\gamma_{t-1}]\right) + W_{s,t},\\ \label{eq:beetle-mu}
+    \gamma_{s,t} &= \phi \gamma_{s,t-1} + W_{s,t},\\ \label{eq:beetle-mu}
      W_{s,t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right).
  \end{align}
 
@@ -381,16 +393,7 @@ with scale parameter $\sigma_{\mathrm{obs}}$:
   y_{s,t} &\sim \mathrm{LogNormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right).
  \end{align}
 
-We converted latitude and longitude degrees into UTMs to have a constant
-distance relationship throughout the spatial region and divided the UTM values
-by $10^5$ to make the range of $\delta_{ij}$ approximately 10 and therefore
-place $\eta$ on a reasonable scale.
-We rasterized the map into a 500 by 500 grid
-and then aggregated this high-resolution grid
-into percent cover in a coarser grid reduced by a factor of 25.
-This maintained a reasonable resolution
-while limiting the data size for rapid model fitting.
-We chose 25 knots to represent the spatial process as described above.
+We chose 25 knots to represent the spatial process.
 We fit the models with half-t(3, 0, 3) priors on all
 scale parameters as described above,
 a Normal(0, 10) prior on $\beta_0$,
@@ -412,10 +415,10 @@ from the MVN and MVT models.
 We also compared the leave-one-out information criteria
 \citep[LOOIC;][]{vehtari2016}, a Bayesian information criteria that approximates
 leave-one-out predictive performance,
-between the MVN and MVT models.
+between the MVT and MVN models.
 
-% A complete reproducible version of this analysis written in R Markdown is
-% available as Supporting Information and at TODO.
+A complete reproducible version of this analysis is available at
+\url{https://github.com/seananderson/spatiotemporal-extremes} DOI: TODO.
 
 \section{Results}
 
@@ -447,7 +450,7 @@ can be identified with moderate to high observation error (coefficient of variat
 As complex spatial models have become more user-friendly, we expect the rapid use
 of spatiotemporal models to be continued. Examples of possible applications beyond
 bark beetles include to models of fisheries (cite Thorson ECE paper), applications
-to climate anomalies (http://www.pnas.org/content/106/Supplement_2/19723.short),
+to climate anomalies (http://www.pnas.org/content/106/Supplement\_2/19723.short),
 or to other disturbances - wildfires, oil spills, and disease outbreaks.]
 
 There are a number of features included in the 'rrfields' package that may be
