@@ -1,10 +1,10 @@
 ---
 title: "MVT vs. MVN random field differences"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_document
+output: rmarkdown::html_vignette
 ---
 
-In this document we will simulate some data that come from a MVT random field and then it models that allow for the MVT random field or assume the standard MVN Gaussian random field. 
+In this document we will simulate some data that comes from a MVT random field model and then fit models that allow for the MVT random field or assume the standard MVN Gaussian random field. 
 
 ```{r set-knitr-options, cache=FALSE, echo=FALSE}
 library("knitr")
@@ -47,7 +47,7 @@ We set the degrees of freedom parameter to 2. This represents data about have so
 
 Let's fit a model where we estimate the degrees of freedom parameter. 
 
-```{r, message=FALSE, cache=FALSE}
+```{r, message=FALSE, results=FALSE, message=FALSE}
 m1 <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
   lat = "lat", lon = "lon", nknots = nknots,
   iter = ITER, chains = CHAINS, estimate_df = TRUE)
@@ -75,7 +75,7 @@ The coverage of our prediction intervals is approximately correct.
 
 Now let's fit a model where we force the random field to be multivariate normal by fixing the degrees of freedom parameter at a large value. 
 
-```{r, message=FALSE, cache=FALSE}
+```{r, message=FALSE, results=FALSE, message=FALSE}
 m_wrong <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
   lat = "lat", lon = "lon", nknots = nknots,
   iter = ITER, chains = CHAINS,
