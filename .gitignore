@@ -68,3 +68,11 @@ examples/rockfish/canary_rockfish.R
 >>>>>>> Stashed changes
 >>>>>>> Stashed changes
 >>>>>>> Stashed changes
+
+*.png
+
+simulationTesting/mvt-mvn-difference_cache/html/__globals
+
+simulationTesting/mvt-mvn-difference_cache/html/__packages
+
+simulationTesting/mvt-mvn-difference_cache/html/__objects
