@@ -50,8 +50,8 @@ Let's fit a model where we estimate the degrees of freedom parameter.
 ```{r, message=FALSE, results=FALSE, message=FALSE}
 m1 <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
   lat = "lat", lon = "lon", nknots = nknots,
-  iter = ITER, chains = CHAINS, estimate_df = TRUE)
-print(m1)
+  iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE)
+# print(m1)
 ```
 
 So we have recovered the degrees of freedom parameter. 
@@ -79,8 +79,8 @@ Now let's fit a model where we force the random field to be multivariate normal 
 m_wrong <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
   lat = "lat", lon = "lon", nknots = nknots,
   iter = ITER, chains = CHAINS,
-  estimate_df = FALSE, fixed_df_value = 500)
-print(m_wrong)
+  estimate_df = FALSE, fixed_df_value = 500,  save_log_lik = TRUE)
+# print(m_wrong)
 ```
 
 Let's look at the difference between the parameter estimates.
@@ -197,3 +197,41 @@ ggplot(ms1, aes(time, rmse)) +
 ```
 
 So the multivariate model almost always has the same or higher root mean square error.
+
+Perhaps a better way to compare the models incorporating the 4 posterior and not just point estimates as with a posterior log score.
+
+```{r, eval=FALSE}
+p <- predict(m1, return_mcmc = TRUE)
+scores <- matrix(0, nrow = nrow(p), ncol = ncol(p))
+sigma <- extract(m1$model)$sigma
+for(draw in seq_len(ncol(p))){
+  scores[, draw] <- dnorm(d$y,
+    mean = p[, draw], sd = sigma[draw])
+}
+
+p_wrong <- predict(m_wrong, return_mcmc = TRUE)
+sigma_wrong <- extract(m1$model)$sigma
+scores_wrong <- matrix(0, nrow = nrow(p), ncol = ncol(p))
+for(draw in seq_len(ncol(p))){
+  scores_wrong[, draw] <- dnorm(d$y,
+    mean = p_wrong[, draw], sd = sigma_wrong[draw])
+}
+
+mean(log(rowMeans(scores)))
+mean(log(rowMeans(scores_wrong)))
+
+# hist(log(rowMeans(scores)))
+# hist(log(rowMeans(scoresn)))
+```
+
+We can look at the leave one out information criteria to compare the models.
+
+```{r}
+library(loo)
+loo_t <- loo(extract_log_lik(m1$model))
+loo_n <- loo(extract_log_lik(m_wrong$model))
+loo_t$looic
+loo_n$looic
+```
+
+Indeed the leave one out information criteria favors the correct MVT model here. 
