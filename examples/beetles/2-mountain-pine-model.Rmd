@@ -102,6 +102,8 @@ d <- group_by(d, year) %>%
       sample(row_number, size = 25L)) %>% 
   ungroup()
 
+saveRDS(d, file = "examples/beetles/mountain-pine-beetle-data.rds")
+
 # or the intercept prior will be off:
 assert_that(mean(log(d$cover+0.5)) > -5 & mean(log(d$cover+0.5)) < 5)
 # make sure data volume is reasonable:
@@ -113,7 +115,7 @@ Fit the model. First the multivariate t model.
 
 ```{r model, cache=FALSE, warning=FALSE, message=FALSE, results='hide'}
 model_file <- paste0("examples/beetles/", id, "-", 
-  "mvt-normal", "-", nbin, "x", nbin, ".rda")
+  "mvt-lognormal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
   mvt <- rrfield(cover ~ 1, 
     data = dplyr::filter(d, !hold_out),
