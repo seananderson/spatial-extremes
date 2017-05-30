@@ -1,0 +1,83 @@
+---
+title: "MVT vs. MVN performance for true versus observed values"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+---
+
+```{r set-knitr-options, cache=FALSE, echo=FALSE}
+library("knitr")
+opts_chunk$set(message=FALSE, fig.width=7, fig.height=5, cache = FALSE, autodep = TRUE)
+```
+  
+```{r}
+library(rrfields)
+library(dplyr)
+library(ggplot2)
+library(rstan)
+library(bayesplot)
+```
+
+Let's initialize some argument and parameter values that we will use throughout.
+
+```{r setup}
+options(mc.cores = parallel::detectCores())
+ITER <- 400
+CHAINS <- 2
+SEED <- 123
+gp_sigma <- 0.3
+sigma <- 0.3
+df <- 2.5
+gp_scale <- 1.2
+n_draws <- 15
+nknots <- 10
+```
+
+Let's simulate some data that has heavy tails, fit correct and mismatched models, make predictions, and then calculate the root mean squared error compared to the true values.
+
+The following function will accomplish that. 
+
+```{r simulate-and-fit-data}
+set.seed(SEED)
+
+simulate_and_fit <- function() {
+  s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
+    gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
+  
+  m1 <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
+    lat = "lat", lon = "lon", nknots = nknots,
+    iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE)
+  
+  m_wrong <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
+    lat = "lat", lon = "lon", nknots = nknots,
+    iter = ITER, chains = CHAINS,
+    estimate_df = FALSE, fixed_df_value = 10000, save_log_lik = TRUE)
+  
+  p <- predict(m1, type = "response")
+  p_wrong <- predict(m_wrong, type = "response")
+  
+  d <- data.frame(s$dat, p)
+  d_wrong <- data.frame(s$dat, p_wrong)
+  d_combined <- data.frame(d, select(d_wrong, estimate) %>% rename(est_wrong = estimate))
+  
+  proj <- reshape2::melt(s$proj)
+  names(proj) <- c("time", "pt", "proj")
+  proj <- dplyr::arrange_(proj, "time", "pt")
+  d2 <- data.frame(d_combined, proj = proj$proj)
+  
+  rmse <- d2 %>% summarize(rmse_wrong = sqrt(mean((est_wrong - proj) ^ 2)),
+    rmse = sqrt(mean((estimate - proj) ^ 2)),
+    rmse_wrong_y = sqrt(mean((est_wrong - y) ^ 2)),
+    rmse_y = sqrt(mean((estimate - y) ^ 2))
+  )
+  
+  rmse
+}
+```
+
+Now let's run our function a number of times:
+
+```{r}
+output <- plyr::rdply(.n = 5, simulate_and_fit)
+```
+
+

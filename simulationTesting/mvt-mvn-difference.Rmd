@@ -8,7 +8,7 @@ In this document we will simulate some data that comes from a MVT random field m
 
 ```{r set-knitr-options, cache=FALSE, echo=FALSE}
 library("knitr")
-opts_chunk$set(message=FALSE, fig.width=7, fig.height=5, cache = TRUE, autodep = TRUE)
+opts_chunk$set(message=FALSE, fig.width=7, fig.height=5, cache = FALSE, autodep = TRUE)
 ```
   
 ```{r}
@@ -25,7 +25,7 @@ Let's initialize some argument and parameter values that we will use throughout.
 options(mc.cores = parallel::detectCores())
 ITER <- 600
 CHAINS <- 2
-SEED <- 42
+SEED <- 1
 gp_sigma <- 0.3
 sigma <- 0.8
 df <- 2
@@ -79,7 +79,7 @@ Now let's fit a model where we force the random field to be multivariate normal 
 m_wrong <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
   lat = "lat", lon = "lon", nknots = nknots,
   iter = ITER, chains = CHAINS,
-  estimate_df = FALSE, fixed_df_value = 500,  save_log_lik = TRUE)
+  estimate_df = FALSE, fixed_df_value = 1e6, save_log_lik = TRUE)
 # print(m_wrong)
 ```
 
@@ -133,8 +133,8 @@ So here we can see that the credible intervals are considerably wider for the mi
 Let's look at the sum of the squared residuals:
 
 ```{r}
-sum((p$estimate - s$dat$y)^2)
-sum((p_wrong$estimate - s$dat$y)^2)
+mean((p$estimate - s$dat$y)^2)
+mean((p_wrong$estimate - s$dat$y)^2)
 ```
 
 So the sum of the squared residuals are also larger for the mismatched model. 
@@ -188,7 +188,11 @@ Let's look at the root mean squared error for the 2 models.
 
 ```{r}
 ms1 <- group_by(d2, time) %>%
-  mutate(rmse_wrong = sqrt(mean((est_wrong - proj) ^ 2)),
+  summarize(rmse_wrong = sqrt(mean((est_wrong - proj) ^ 2)),
+  rmse = sqrt(mean((estimate - proj) ^ 2)))
+ 
+d2 %>%
+  summarize(rmse_wrong = sqrt(mean((est_wrong - proj) ^ 2)),
   rmse = sqrt(mean((estimate - proj) ^ 2)))
 
 ggplot(ms1, aes(time, rmse)) +
@@ -200,7 +204,7 @@ So the multivariate model almost always has the same or higher root mean square 
 
 Perhaps a better way to compare the models incorporating the 4 posterior and not just point estimates as with a posterior log score.
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 p <- predict(m1, return_mcmc = TRUE)
 scores <- matrix(0, nrow = nrow(p), ncol = ncol(p))
 sigma <- extract(m1$model)$sigma
@@ -210,21 +214,18 @@ for(draw in seq_len(ncol(p))){
 }
 
 p_wrong <- predict(m_wrong, return_mcmc = TRUE)
-sigma_wrong <- extract(m1$model)$sigma
+sigma_wrong <- extract(m_wrong$model)$sigma
 scores_wrong <- matrix(0, nrow = nrow(p), ncol = ncol(p))
 for(draw in seq_len(ncol(p))){
   scores_wrong[, draw] <- dnorm(d$y,
     mean = p_wrong[, draw], sd = sigma_wrong[draw])
 }
 
-mean(log(rowMeans(scores)))
-mean(log(rowMeans(scores_wrong)))
-
-# hist(log(rowMeans(scores)))
-# hist(log(rowMeans(scoresn)))
+-mean(log(rowMeans(1/scores)))
+-mean(log(rowMeans(1/scores_wrong)))
 ```
 
-We can look at the leave one out information criteria to compare the models.
+We can look at the leave-one-out information criteria to compare the models.
 
 ```{r}
 library(loo)
@@ -234,4 +235,50 @@ loo_t$looic
 loo_n$looic
 ```
 
-Indeed the leave one out information criteria favors the correct MVT model here. 
+Indeed the leave one out information criteria favors the correct MVT model here.
+
+The gold standard is cross validation. 
+
+```{r}
+set.seed(1)
+
+s$dat$leave_out <- ifelse(s$dat$pt %in% sample(1:100, 10), TRUE, FALSE)
+
+m1 <- rrfield(y ~ 0, data = filter(s$dat, !leave_out), time = "time", station = "station_id",
+  lat = "lat", lon = "lon", nknots = nknots,
+  iter = ITER, chains = CHAINS, estimate_df = TRUE)
+
+m_wrong <- rrfield(y ~ 0, data = filter(s$dat, !leave_out), time = "time", station = "station_id",
+  lat = "lat", lon = "lon", nknots = nknots,
+  iter = ITER, chains = CHAINS,
+  estimate_df = FALSE, fixed_df_value = 1e9)
+
+d1 <- filter(s$dat, leave_out)
+d1$pred <- predict(m1, newdata = filter(s$dat, leave_out))
+d1$pred_wrong <- predict(m_wrong, newdata = filter(s$dat, leave_out))
+
+sqrt(mean((d1$pred_wrong - d1$y) ^ 2))
+sqrt(mean((d1$pred - d1$y) ^ 2))
+
+
+
+p <- predict(m1, return_mcmc = TRUE)
+scores <- matrix(0, nrow = nrow(p), ncol = ncol(p))
+sigma <- extract(m1$model)$sigma
+for(draw in seq_len(ncol(p))){
+  scores[, draw] <- dnorm(d$y,
+    mean = p[, draw], sd = sigma[draw])
+}
+
+p_wrong <- predict(m_wrong, return_mcmc = TRUE)
+sigma_wrong <- extract(m_wrong$model)$sigma
+scores_wrong <- matrix(0, nrow = nrow(p), ncol = ncol(p))
+for(draw in seq_len(ncol(p))){
+  scores_wrong[, draw] <- dnorm(d$y,
+    mean = p_wrong[, draw], sd = sigma_wrong[draw])
+}
+
+-mean(log(rowMeans(1/scores)))
+-mean(log(rowMeans(1/scores_wrong)))
+```
+
