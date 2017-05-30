@@ -14,7 +14,6 @@ library(rrfields)
 library(dplyr)
 library(ggplot2)
 library(rstan)
-library(bayesplot)
 ```
 
 Let's initialize some argument and parameter values that we will use throughout.
@@ -25,7 +24,7 @@ ITER <- 400
 CHAINS <- 2
 SEED <- 123
 gp_sigma <- 0.3
-sigma <- 0.3
+sigma <- 0.6
 df <- 2.5
 gp_scale <- 1.2
 n_draws <- 15
@@ -45,12 +44,12 @@ simulate_and_fit <- function() {
   
   m1 <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
     lat = "lat", lon = "lon", nknots = nknots,
-    iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE)
+    iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = FALSE)
   
   m_wrong <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
     lat = "lat", lon = "lon", nknots = nknots,
     iter = ITER, chains = CHAINS,
-    estimate_df = FALSE, fixed_df_value = 10000, save_log_lik = TRUE)
+    estimate_df = FALSE, fixed_df_value = 10000, save_log_lik = FALSE)
   
   p <- predict(m1, type = "response")
   p_wrong <- predict(m_wrong, type = "response")
@@ -77,7 +76,35 @@ simulate_and_fit <- function() {
 Now let's run our function a number of times:
 
 ```{r}
-output <- plyr::rdply(.n = 5, simulate_and_fit)
+output <- plyr::rdply(.n = 8, simulate_and_fit)
+output
 ```
 
+The first figure shows the distribution of root mean squared error for the various runs. The labels "_y" indicate the models compared to the data and the once without "_y" are compared to the true values. 
+
+The last 2 figures look at the ratio of correctly specified root mean squared error to the incorrectly specified model root mean squared error. 
+
+```{r}
+reshape2::melt(output, ".n") %>% 
+  mutate(type = grepl("y", variable)) %>%
+  ggplot(aes(variable, value)) +
+  geom_boxplot() + 
+  facet_wrap(~type, scales = "free")
+
+output %>%
+  ggplot(aes(0, rmse / rmse_wrong)) + geom_point()
+
+output %>%
+  ggplot(aes(0, rmse_y / rmse_wrong_y)) + geom_point()
+```
+
+So what is the difference? Let's look at the parameter estimates. 
+
+```{r}
+# median(extract(m1$model)$sigma)
+# median(extract(m_wrong$model)$sigma)
+# 
+# extract(m1$model)$sigma %>% median()
+# extract(m_wrong$model)$sigma %>% median()
+```
 
