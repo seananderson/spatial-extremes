@@ -30,7 +30,7 @@
 \bibpunct{(}{)}{;}{a}{}{;}
 \bibliographystyle{mee}
 
-\title{Modelling spatiotemporal extremes in ecology}
+\title{Black swans in space: modelling spatiotemporal extremes in ecology}
 \author{
 Sean C. Anderson$^1$ and
 Eric J. Ward$^2$
@@ -41,13 +41,16 @@ Eric J. Ward$^2$
 
 \maketitle
 
-\begin{spacing}{1.25}
+\begin{spacing}{1.5}
 
-  % Point 1: set the context and purpose for the work;
+% Point 1: set the context and purpose for the work;
 % Point 2: indicate the approach and methods used;
 % Point 3: outline the main results;
 % Point 4: identify the conclusions, the wider implications and the relevance to management or policy.
 % •	Key-words: Provide a maximum of 10 keywords or phrases.
+
+
+% \begin{flushleft}
 
 \begin{abstract}
 
@@ -64,10 +67,12 @@ predictive-process model that uses a multivariate-t distribution to describe
 spatial random effects. The model is easily implemented with our flexible new R
 package \textbf{rrfields}, which uses an interface that should be familiar to
 anyone who has worked with regression in R. We illustrate applications of our
-model and R package simulated and real-world data. First, we \ldots Second, we
-predict tree mortality from mountain pine beetle (\emph{Dendroctonus
-  ponderosae}) outbreaks in the US Pacific Northwest over the last 16 years. In
-both cases, we show that our model provides more accurate and certain
+model and R package simulated and real-world data. First, using simulated data,
+we demonstrate the ability to recapture spatiotemporal extremes, and explore
+the consequences of fitting models that ignore such extremes. Second, apply our
+models to predict tree mortality from mountain pine beetle (\emph{Dendroctonus
+  ponderosae}) outbreaks in the US Pacific Northwest over the last 16 years. 
+We show that our model provides more accurate and certain
 predictions of these ecological processes compared to traditional
 spatiotemporal models that do not allow for extremes. Jointly modelling
 ecological processes in time and space represents an important step forward to
@@ -233,8 +238,8 @@ The elements of the covariance matrix at the $m$ knot locations are therefore
 defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta}  \right)$ with the
 parameter $\sigma$ scaling the amplitude of the spatial process deviations. Our
 package also allows for the exponential covariance function $H(\delta_{ij}) =
-\exp \left(-\frac{\delta_{ij} }{\eta} \right)$ and could be extended to allow for other
-common covariance functions such as the Matern or anisotropic covariance
+\exp \left(-\frac{\delta_{ij} }{\eta} \right)$ and the Matern and could be
+extended to include anisotropic 
 functions in which covariance is not uniform in all directions.
 Following \citet{latimer2009}, we can also calculate the covariance matrix
 between the locations of the data and the knots,
@@ -272,7 +277,9 @@ which has a mean of $20$ and a median of $\sim 17$ \citep{juarez2010}.
 If the data are not informative about heavy
 tails, our estimate of $\nu$ should approximately match the prior.
 
-%Ju?rez and Steel (2010) (Model-based clustering of non-Gaussian panel data based on skew-t distributions. Journal of Business & Economic Statistics 28, 52?66.)
+%Ju?rez and Steel (2010) (Model-based clustering of non-Gaussian panel data
+%based on skew-t distributions. Journal of Business & Economic Statistics 28,
+%52?66.)
 
 \subsection{Testing the recovery of extremeness}
 
@@ -572,7 +579,11 @@ for computational stability.
 
 \bibliography{spatial-extremes}
 
+% \end{flushleft}
+
 \end{spacing}
+
+\clearpage
 
 \section{Supporting Information}
 
@@ -590,6 +601,7 @@ for computational stability.
 \label{fig:recapture-factorial}
 \end{center}
 \end{figure}
+
 
 \end{document}
 
