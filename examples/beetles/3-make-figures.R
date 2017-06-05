@@ -58,7 +58,7 @@ ggplot(data.frame(df = e$df), aes(df)) +
 
 
 posterior <- density(e$df, cut = 0, from = 2, to = 20)
-# hist(e$df, probability = TRUE)
+
 par(las = 1, mgp = c(2, 0.6, 0), xaxs = "i")
 plot(0,0, xlim = c(2, 20), ylim = c(0, 0.7),type = "n")
 lines(posterior)
@@ -76,11 +76,13 @@ pred <- predict(mvt, interval = "confidence", conf_level = 0.95,
   newdata = d)
 pred <- pred %>% mutate(x = d$x, y = d$y, observed = d$cover,
   year = d$year, residual = log(observed) - estimate)
+pred$hold_out <- d$hold_out
 
 pred_mvn <- predict(mvn, interval = "confidence", conf_level = 0.95,
   newdata = d)
 pred_mvn <- pred_mvn %>% mutate(x = d$x, y = d$y, observed = d$cover,
   year = d$year, residual = log(observed) - estimate)
+pred_mvn$hold_out <- d$hold_out
 
 combined <- bind_rows(
   mutate(pred, model = "mvt"),
@@ -100,54 +102,94 @@ cis <- mutate(combined, conf_width = conf_high - conf_low) %>%
   mutate(median_ratio = median(conf_width_ratio))
 hist(cis$conf_width_ratio)
 
+
+############
+pred <- predict(mvt, interval = "prediction", type = "response", conf_level = 0.95,
+  newdata = d)
+pred <- pred %>% mutate(x = d$x, y = d$y, observed = d$cover,
+  year = d$year, residual = log(observed) - log(estimate))
+pred$hold_out <- d$hold_out
+
+pred_mvn <- predict(mvn, interval = "prediction", type = "response", conf_level = 0.95,
+  newdata = d)
+pred_mvn <- pred_mvn %>% mutate(x = d$x, y = d$y, observed = d$cover,
+  year = d$year, residual = log(observed) - log(estimate))
+pred_mvn$hold_out <- d$hold_out
+
+combined <- bind_rows(
+  mutate(pred, model = "mvt"),
+  mutate(pred_mvn, model = "mvn"))
+##############
+combined <- mutate(combined, id = paste(x, y))
+combined %>%
+  filter(hold_out) %>%
+  group_by(model) %>%
+  mutate(included = observed > conf_low & observed < conf_high) %>%
+  summarise(coverage = sum(included) / n())
+
+rmse <- combined %>% filter(hold_out) %>%
+  group_by(model) %>%
+  mutate(error = log(estimate) - log(observed)) %>%
+  ungroup()
+
+ggplot(rmse, aes(abs(error), colour = model)) +
+  geom_freqpoly()
+
+rmse %>%
+  group_by(model) %>%
+  summarise(rmse = sqrt(mean(error^2)))
+
 ########
 # Let's try the log predictive posterior distribution
 p <- predict(mvt, interval = "confidence", conf_level = 0.95,
-  type = "link", newdata = filter(d, hold_out), return_mcmc = TRUE)
+  type = "link", newdata = d, return_mcmc = TRUE)
 pn <- predict(mvn, interval = "confidence", conf_level = 0.95,
-  type = "link", newdata = filter(d, hold_out), return_mcmc = TRUE)
+  type = "link", newdata = d, return_mcmc = TRUE)
 sigma <- extract(mvt$model)$sigma
 sigman <- extract(mvn$model)$sigma
 
-holdout_data <- filter(d, hold_out)
+# p <- filter(p, hold_out)
+# pn <- filter(pn, hold_out)
+# holdout_data <- filter(d, hold_out)
 
+holdout_data <- d
 
 scores <- matrix(0, nrow = nrow(p), ncol = ncol(p))
 for(draw in seq_len(ncol(p))){
-  scores[, draw] <- 1/dlnorm(holdout_data$cover,
+  scores[, draw] <- dlnorm(holdout_data$cover,
     mean = p[, draw], sd = sigma[draw])
 }
 
 scoresn <- matrix(0, nrow = nrow(p), ncol = ncol(p))
 for(draw in seq_len(ncol(p))){
-  scoresn[, draw] <- 1/dlnorm(holdout_data$cover,
+  scoresn[, draw] <- dlnorm(holdout_data$cover,
     mean = pn[, draw], sd = sigman[draw])
 }
 
--mean(log(rowMeans(scores)))
--mean(log(rowMeans(scoresn)))
+s1 <- mean(log(rowMeans(scores)))
+s2 <- mean(log(rowMeans(scoresn)))
+(s1-s2)/s2
 
-sum(rowMeans(scores))/nrow(p)
-sum(rowMeans(scoresn))/nrow(pn)
+# s <- data.frame(scores = log(rowMeans(scores)), model = "mvt")
+# sn <- data.frame(scores = log(rowMeans(scoresn)), model = "mvn")
+# s <- bind_rows(s, sn)
+# ggplot(s, aes(scores, colour = model)) +
+#   geom_freqpoly()
+#
+# hist(log(rowMeans(scores)))
+# hist(log(rowMeans(scoresn)))
+#
+# holdout_data$scores <- log(rowMeans(scores))
+# holdout_data$scoresn <- log(rowMeans(scoresn))
+# ggplot(holdout_data, aes(log(scores/scoresn))) + geom_histogram() +
+#   facet_wrap(~year)
 
-lps <- -sum(log(rowMeans(scores)))/ length(TestIdx)
+hist(holdout_data$scores - holdout_data$scoresn, breaks = 30)
 
-scores <- vector(mode = "numeric", length = nrow(p))
-for (i in seq_len(nrow(p))) {
-  scores[i] <- density(p[i,],
-    from=log(holdout_data$cover[1]), to=log(holdout_data$cover[1]), n=1)$y
-}
-sum((scores))
+# mean(holdout_data$scores - holdout_data$scoresn)
 
-scores <- vector(mode = "numeric", length = nrow(p))
-for (i in seq_len(nrow(pt))) {
-  scores[i] <- density(pt[i,],
-    from=log(holdout_data$cover[1]), to=log(holdout_data$cover[1]), n=1)$y
-}
-sum((scores))
-
-#################
-
+# sum(rowMeans(scores))/nrow(p)
+# sum(rowMeans(scoresn))/nrow(pn)
 
 # This creates a data frame to label the years:
 yr <- unique(select(d, year))
