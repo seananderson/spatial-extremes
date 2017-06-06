@@ -8,7 +8,7 @@ output: rmarkdown::html_vignette
 library("knitr")
 opts_chunk$set(message=FALSE, fig.width=7, fig.height=5, cache = FALSE, autodep = TRUE)
 ```
-  
+
 ```{r}
 library(rrfields)
 library(dplyr)
@@ -16,105 +16,114 @@ library(ggplot2)
 library(rstan)
 ```
 
-Let's initialize some argument and parameter values that we will use throughout.
+Let's initialize some argument and parameter values that we will use
+throughout.
 
 ```{r setup}
+set.seed(123)
 options(mc.cores = parallel::detectCores())
-ITER <- 400
+ITER <- 500
 CHAINS <- 2
-SEED <- 1
+SEED <- 2
 gp_sigma <- 0.3
-sigma <- 0.6
+sigma <- 0.8
 df <- 2
 gp_scale <- 1.2
-n_draws <- 15
-nknots <- 10
+n_draws <- 16
+nknots <- 12
+
+s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
+  gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
+
+print(s$plot)
 ```
 
-Let's simulate some data that has heavy tails, fit correct and mismatched models, make predictions, and then calculate the root mean squared error compared to the true values.
+Let's simulate some data that has heavy tails, fit correct and mismatched
+models, make predictions, and then calculate the root mean squared error
+compared to the true values.
 
 The following function will accomplish that. 
 
 ```{r simulate-and-fit-data}
 simulate_and_fit <- function() {
+  
   s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
     gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
   
   d <- s$dat
+  
   d <- mutate(d, withhold = station_id %in% sample(unique(station_id), 10))
+  # d$withhold <- FALSE
   
   m1 <- rrfield(y ~ 0, data = filter(d, !withhold), 
     time = "time", station = "station_id",
     lat = "lat", lon = "lon", nknots = nknots,
-    iter = ITER, chains = CHAINS, estimate_df = TRUE)
+    iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE)
   
   m_wrong <- rrfield(y ~ 0, data = filter(d, !withhold), 
     time = "time", station = "station_id",
     lat = "lat", lon = "lon", nknots = nknots,
     iter = ITER, chains = CHAINS,
-    estimate_df = FALSE, fixed_df_value = 1e6)
+    estimate_df = FALSE, fixed_df_value = 2000, save_log_lik = TRUE)
   
-  diag <- broom::tidy(m1$model, rhat = TRUE, ess = TRUE) %>% select(rhat, ess)
-  diagw <- broom::tidy(m_wrong$model, rhat = TRUE, ess = TRUE) %>% select(rhat, ess)
+  diag <- broom::tidy(m1$model, rhat = TRUE, ess = TRUE)
+  diagw <- broom::tidy(m_wrong$model, rhat = TRUE, ess = TRUE)
   
-  assertthat::assert_that(max(diag$rhat) < 1.05)
-  assertthat::assert_that(max(diagw$rhat) < 1.05)
-  assertthat::assert_that(max(diag$ess) > 100)
-  assertthat::assert_that(max(diagw$ess) > 100)
-  
-  p <- predict(m1, type = "response", newdata = filter(d, withhold))
-  p_wrong <- predict(m_wrong, newdata = filter(d, withhold), type = "response")
-  
-  out <- data.frame(filter(d, withhold), p)
-  out_wrong <- data.frame(filter(d, withhold), p_wrong)
-  d_combined <- data.frame(out, select(out_wrong, estimate) %>% 
-      rename(est_wrong = estimate))
-  
-  proj <- reshape2::melt(s$proj)
-  names(proj) <- c("time", "pt", "proj")
-  proj <- dplyr::arrange_(proj, "time", "pt")
-  d2 <- data.frame(d_combined, proj = proj$proj)
-  
-  rmse <- d2 %>% summarize(rmse_wrong = sqrt(mean((est_wrong - proj) ^ 2)),
-    rmse = sqrt(mean((estimate - proj) ^ 2)))
-  
-  rmse
+  i <<- i + 1
+  list(i = i, sim = s, dat = d, m = m1, m_wrong = m_wrong, 
+    diag = diag, diag_wrong = diagw)
 }
 ```
 
 Now let's run our function a number of times:
 
 ```{r}
-set.seed(SEED)
-output <- plyr::rdply(.n = 1, simulate_and_fit)
-output
+set.seed(42131)
+i <<- 0
+output <- plyr::rlply(.n = 5, simulate_and_fit)
 ```
 
-The first figure shows the distribution of root mean squared error for the various runs. The labels "_y" indicate the models compared to the data and the once without "_y" are compared to the true values. 
-
-The last 2 figures look at the ratio of correctly specified root mean squared error to the incorrectly specified model root mean squared error. 
+Let's calculate the root mean squared error:
 
 ```{r}
-reshape2::melt(output, ".n") %>% 
-  mutate(type = grepl("y", variable)) %>%
-  ggplot(aes(variable, value)) +
-  geom_boxplot() + 
-  facet_wrap(~type, scales = "free")
-
-output %>%
-  ggplot(aes(0, rmse / rmse_wrong)) + geom_point()
-
-output %>%
-  ggplot(aes(0, rmse_y / rmse_wrong_y)) + geom_point()
+rmse <- plyr::ldply(output, function(x) {
+  p <- predict(x$m, interval = "confidence", type = "response", 
+    newdata = x$s$dat)
+  p_wrong <- predict(x$m_wrong, interval = "confidence", type = "response",
+    newdata = x$s$dat)
+  proj <- reshape2::melt(x$s$proj)
+  names(proj) <- c("time", "pt", "proj")
+  proj <- dplyr::arrange_(proj, "time", "pt")
+  
+  assertthat::assert_that(identical(proj[,1:2], x$s$dat[,1:2]))
+  
+  d <- data.frame(x$dat, p)
+  d_wrong <- data.frame(x$dat, p_wrong)
+  d_combined <- data.frame(d, 
+    select(d_wrong, estimate) %>% rename(est_wrong = estimate))
+  
+  assertthat::assert_that(identical(proj[,1:2], d_combined[,1:2]))
+  d2 <- data.frame(d_combined, proj = proj$proj)
+  
+  d2 %>% 
+    filter(withhold) %>% 
+    mutate(
+      sq_error = (estimate - proj)^2,
+      sq_error_wrong = (est_wrong - proj)^2) %>% 
+    summarize(
+      rmse = sqrt(mean(sq_error)),
+      rmse_wrong = sqrt(mean(sq_error_wrong))) %>% 
+    mutate(i = i) %>% 
+    mutate(perc_better = (rmse_wrong - rmse) / rmse_wrong * 100)
+})
+rmse
 ```
 
-So what is the difference? Let's look at the parameter estimates. 
 
 ```{r}
-# median(extract(m1$model)$sigma)
-# median(extract(m_wrong$model)$sigma)
-# 
-# extract(m1$model)$sigma %>% median()
-# extract(m_wrong$model)$sigma %>% median()
+# l1 <- loo::loo(loo::extract_log_lik(output[[3]]$m$model))
+# l2 <- loo::loo(loo::extract_log_lik(output[[3]]$m_wrong$model))
+# l1$looic
+# l2$looic
+# loo::compare(l1, l2)
 ```
-
