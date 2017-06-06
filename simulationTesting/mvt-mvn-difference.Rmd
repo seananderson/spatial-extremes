@@ -10,7 +10,7 @@ In this document we will simulate some data that comes from a MVT random field m
 library("knitr")
 opts_chunk$set(message=FALSE, fig.width=6, fig.height=5, cache = TRUE, autodep = TRUE)
 ```
-  
+
 ```{r}
 library(rrfields)
 library(dplyr)
@@ -23,15 +23,15 @@ Let's initialize some argument and parameter values that we will use throughout.
 
 ```{r setup}
 options(mc.cores = parallel::detectCores())
-ITER <- 600
+ITER <- 500
 CHAINS <- 2
-SEED <- 7
-gp_sigma <- 0.4
-sigma <- 0.26
+SEED <- 42131
+gp_sigma <- 0.3
+sigma <- 0.8
 df <- 2
-gp_scale <- 1.5
-n_draws <- 20
-nknots <- 15
+gp_scale <- 1.2
+n_draws <- 16
+nknots <- 12
 ```
 
 Let's simulate some data that has heavy tails. 
@@ -49,7 +49,7 @@ Let's fit a model where we estimate the degrees of freedom parameter.
 
 ```{r, message=FALSE, results=FALSE, message=FALSE}
 m1 <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
-  lat = "lat", lon = "lon", nknots = nknots,
+  lat = "lat", lon = "lon", nknots = nknots, fixed_df_value = 1,
   iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE)
 print(m1)
 ```
@@ -59,7 +59,7 @@ So we have recovered the degrees of freedom parameter.
 Let's look at the coverage of our correct model. 
 
 ```{r}
-p <- predict(m1, type = "response")
+p <- predict(m1, interval = "confidence", type = "response")
 pp <- predict(m1, interval = "prediction", type = "response")
 (coverage <- mean(s$dat$y > pp$conf_low & s$dat$y < pp$conf_high) %>% round(3))
 ```
@@ -72,7 +72,7 @@ Now let's fit a model where we force the random field to be multivariate normal 
 m_wrong <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
   lat = "lat", lon = "lon", nknots = nknots,
   iter = ITER, chains = CHAINS,
-  estimate_df = FALSE, fixed_df_value = 1e6, save_log_lik = TRUE)
+  estimate_df = FALSE, fixed_df_value = 2000, save_log_lik = TRUE)
 print(m_wrong)
 ```
 
@@ -95,7 +95,7 @@ So to compensate, the MVN model (the mismatched model; the one on the bottom), h
 Let's calculate the same credible intervals for the mismatched model. 
 
 ```{r}
-p_wrong <- predict(m_wrong, type = "response")
+p_wrong <- predict(m_wrong, interval = "confidence", type = "response")
 pp_wrong <- predict(m_wrong, interval = "prediction", type = "response")
 
 mean(s$dat$y > pp_wrong$conf_low & s$dat$y < pp_wrong$conf_high) %>% round(3)
@@ -116,6 +116,16 @@ ggplot(data.frame(y = s$dat$y, cis = cis, ratio = exp(log(cis_wrong) - log(cis))
   geom_hline(yintercept = 1, lty = 2) +
   coord_flip() +
   ylab("Ratio of credible intervals (mismatched model / correct model)")
+
+ggplot(data.frame(y = s$dat$y, cis = cis, ratio = (cis_wrong / cis), 
+  time = as.factor(s$dat$time)), 
+  aes(ratio)) +
+  geom_histogram() +
+  geom_vline(xintercept = 1, lty = 2) +
+  ylab("Ratio of credible intervals (mismatched model / correct model)")
+
+mean(cis_wrong / cis)
+median(cis_wrong / cis)
 ```
 
 So here we can see that the credible intervals are considerably wider for the mismatched model.
@@ -185,3 +195,56 @@ loo_n$looic
 ```
 
 Indeed the leave one out information criteria favors the correct MVT model here.
+
+Let's try the log predictive posterior distribution:
+
+```{r}
+p <- predict(m1, interval = "confidence", conf_level = 0.95,
+  type = "link", newdata = s$dat, return_mcmc = TRUE)
+pn <- predict(m_wrong, interval = "confidence", conf_level = 0.95,
+  type = "link", newdata = s$dat, return_mcmc = TRUE)
+sigma <- extract(m1$model)$sigma
+sigman <- extract(m_wrong$model)$sigma
+
+# p <- filter(p, hold_out)
+# pn <- filter(pn, hold_out)
+# holdout_data <- filter(d, hold_out)
+
+holdout_data <- s$dat
+
+scores <- matrix(0, nrow = nrow(p), ncol = ncol(p))
+for(draw in seq_len(ncol(p))){
+  scores[, draw] <- dnorm(holdout_data$y,
+    mean = p[, draw], sd = sigma[draw], log = F)
+}
+
+scoresn <- matrix(0, nrow = nrow(p), ncol = ncol(p))
+for(draw in seq_len(ncol(pn))){
+  scoresn[, draw] <- dnorm(holdout_data$y,
+    mean = pn[, draw], sd = sigman[draw], log = F)
+}
+
+s1 <- mean(log(rowMeans(scores)))
+s2 <- mean(log(rowMeans(scoresn)))
+(s1-s2)/s2 * 100
+exp(s1)
+exp(s2)
+(exp(s1)-exp(s2))/exp(s2) * 100
+
+
+# sc <- data.frame(lp = apply(scores, 2, sum), model = "mvt")
+# sc2 <- data.frame(lp = apply(scoresn, 2, sum), model = "mvn")
+# sc <- bind_rows(sc, sc2)
+
+ggplot(sc, aes(lp)) +
+  geom_histogram(fill = "red", alpha = 0.5) +
+  geom_histogram(data = sc2, aes(lp), fill = "blue", alpha = 0.5)
+
+sc <- data.frame(lp = log(rowMeans(scores)), model = "mvt")
+sc2 <- data.frame(lp = log(rowMeans(scoresn)), model = "mvn")
+
+ggplot(sc, aes(lp)) +
+  geom_histogram(fill = "red", alpha = 0.5) +
+  geom_histogram(data = sc2, aes(lp), fill = "blue", alpha = 0.5)
+```
+
