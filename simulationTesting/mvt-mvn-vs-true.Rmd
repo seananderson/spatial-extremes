@@ -22,14 +22,14 @@ throughout.
 ```{r setup}
 set.seed(123)
 options(mc.cores = parallel::detectCores())
-ITER <- 500
+ITER <- 600
 CHAINS <- 2
 SEED <- 2
 gp_sigma <- 0.3
 sigma <- 0.8
 df <- 2
 gp_scale <- 1.2
-n_draws <- 16
+n_draws <- 15
 nknots <- 12
 
 s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
@@ -78,9 +78,9 @@ simulate_and_fit <- function() {
 Now let's run our function a number of times:
 
 ```{r}
-set.seed(42131)
+set.seed(1)
 i <<- 0
-output <- plyr::rlply(.n = 5, simulate_and_fit)
+output <- plyr::rlply(.n = 25, simulate_and_fit)
 ```
 
 Let's calculate the root mean squared error:
@@ -106,7 +106,7 @@ rmse <- plyr::ldply(output, function(x) {
   d2 <- data.frame(d_combined, proj = proj$proj)
   
   d2 %>% 
-    filter(withhold) %>% 
+    filter(withhold) %>%
     mutate(
       sq_error = (estimate - proj)^2,
       sq_error_wrong = (est_wrong - proj)^2) %>% 
@@ -117,6 +117,22 @@ rmse <- plyr::ldply(output, function(x) {
     mutate(perc_better = (rmse_wrong - rmse) / rmse_wrong * 100)
 })
 rmse
+hist(rmse$perc_better, breaks = 8)
+# ggplot(rmse, aes(perc_better)) + geom_histogram(binwidth = 2)
+```
+
+What about leave-one-out information criteria?
+
+```{r}
+library(loo)
+loo <- plyr::ldply(output, function(x) {
+  loo_t <- loo(extract_log_lik(x$m$model))
+  loo_n <- loo(extract_log_lik(x$m_wrong$model))
+  data.frame(loo_t = loo_t$looic, loo_n = loo_n$looic, i = x$i)
+})
+loo <- loo %>% mutate(delta_loo = loo_t - loo_n)
+hist(loo$delta_loo)
+mean(loo$delta_loo)
 ```
 
 
