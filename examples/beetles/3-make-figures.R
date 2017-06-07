@@ -8,6 +8,9 @@ library(ggsidekick) # devtools::install_github("seananderson/ggsidekick")
 
 d <- readRDS("examples/beetles/mountain-pine-beetle-data.rds")
 
+# --------------------
+# This creates a map of Washington and Oregon State:
+
 # Bring in the background map data
 
 library(mapdata)
@@ -24,22 +27,40 @@ proj4string(mp2) <- CRS("+proj=longlat +datum=NAD83")
 mp2 <- spTransform(mp2, CRS(proj))
 mp2 <- fortify(as.data.frame(mp2))
 
-# --------------------
-# This creates a map of Washington and Oregon State:
+id <- "mountain-pine-beetle-pnw-raster"
+nbin <- 500
+d_highres <- readRDS(paste0("examples/beetles/",
+  id, "-", "dataframe", "-", nbin, "x", nbin, "highres.rds"))
+
+d_highres <- dplyr::filter(d_highres, cover > 0)
+
 margin_gap_y <- c(-2, 2)
 margin_gap_x <- c(-1, 2)
 
-ggplot(filter(d_highres, year == 2010), aes(x/1e5, y/1e5)) +
-  geom_polygon(data = mp2, aes(long/1e5, lat/1e5, group = group),
-    inherit.aes = FALSE, fill = "white", col = "grey40", lwd = 0.3) +
-  geom_point(size = 0.1, alpha = 0.2) +
-  # facet_wrap(~year) +
-  theme_sleek()+
-  theme(panel.background = element_rect(fill="#e6e8ed")) +
-  coord_fixed(xlim = range(d_highres$x)/1e5 + margin_gap_x, ylim = range(d_highres$y)/1e5 + margin_gap_y) +
-  xlab(expression(10^5~UTM~West)) +
-  ylab(expression(10^5~UTM~North))
-ggsave("figs/map.pdf", width = 4, height = 5)
+par(las = 1, mgp = c(2, 0.6, 0), xaxs = "i", yaxs = "i")
+plot(0,0, xlim = range(d_highres$x)/1e5 + margin_gap_x,
+  ylim = range(d_highres$y)/1e5 + margin_gap_y, type = "n", ann = TRUE,
+  xlab = expression(10^5~UTM~West), ylab = expression(10^5~UTM~North),
+  asp = 1)
+rect(-30, 20, -10, 35, col = "#e6e8ed")
+for (i in unique(mp2$group)) {
+  x <- filter(mp2, group == i)
+  with(x, polygon(long/1e5, lat/1e5, border = "grey40", lwd = 0.7, col = "white"))
+}
+with(filter(d_highres, year == 2010), points(x/1e5, y/1e5, cex = 0.1,
+  col = "#00000020", pch = 19))
+
+# ggplot(filter(d_highres, year == 2010), aes(x/1e5, y/1e5)) +
+#   geom_polygon(data = mp2, aes(long/1e5, lat/1e5, group = group),
+#     inherit.aes = FALSE, fill = "white", col = "grey40", lwd = 0.3) +
+#   geom_point(size = 0.1, alpha = 0.2) +
+#   # facet_wrap(~year) +
+#   theme_sleek()+
+#   theme(panel.background = element_rect(fill="#e6e8ed")) +
+#   coord_fixed(xlim = range(d_highres$x)/1e5 + margin_gap_x, ylim = range(d_highres$y)/1e5 + margin_gap_y) +
+#   xlab(expression(10^5~UTM~West)) +
+#   ylab(expression(10^5~UTM~North))
+# ggsave("figs/map.pdf", width = 4, height = 5)
 
 # --------------------
 # Create a panel showing the nu parameter from the mvt model
@@ -51,57 +72,63 @@ prior <- data.frame(df = rgamma(1e6, shape = 2, rate = 0.1))  %>%
   filter(df > 2)
 
 ggplot(data.frame(df = e$df), aes(df)) +
-  geom_density() +
+  geom_density(fill = "grey60", colour = "grey60") +
   theme_sleek() +
-  geom_density(data = prior, aes(df), inherit.aes = FALSE) +
-  scale_x_continuous(limits = c(2, 20))
+  geom_density(data = prior, aes(df), inherit.aes = FALSE,
+    colour = "grey30", lty = 2) +
+  scale_x_continuous(limits = c(2, 30))
 
-
-posterior <- density(e$df, cut = 0, from = 2, to = 20)
-
-par(las = 1, mgp = c(2, 0.6, 0), xaxs = "i")
-plot(0,0, xlim = c(2, 20), ylim = c(0, 0.7),type = "n")
-lines(posterior)
-# hist(e$df, probability = TRUE)
-lines(density(prior$df, cut = 0, from = 2, to = 20), col = "grey40",
+par(las = 1, mgp = c(2, 0.6, 0), xaxs = "i", yaxs = "i")
+plot(0,0, xlim = c(2, 40), ylim = c(0, 0.7),type = "n", ann = FALSE)
+h <- hist(e$df, probability = TRUE, breaks = seq(2, 40, 1), plot = FALSE,
+  warn.unused = FALSE)
+for(j in seq_along(h$breaks)) {
+  rect(h$breaks[j], 0, h$breaks[j+1], h$density[j], border = "white",
+    col = "grey70", lwd = 1)
+}
+lines(density(prior$df, cut = 0, from = 2, to = 40), col = "grey40",
   lty = 2)
 
-
-
-
-# --------------------
-# Make the main spatiotemporal prediction plot for the
-# MVT random fields model
+# --------------------------
+# Look at the ratio of the credible intervals
 pred <- predict(mvt, interval = "confidence", conf_level = 0.95,
-  newdata = d)
-pred <- pred %>% mutate(x = d$x, y = d$y, observed = d$cover,
-  year = d$year, residual = log(observed) - estimate)
-pred$hold_out <- d$hold_out
+  newdata = d, type = "link")
+pred <- data.frame(pred, d)
+pred <- pred %>% mutate(residual = log(cover) - estimate)
 
 pred_mvn <- predict(mvn, interval = "confidence", conf_level = 0.95,
-  newdata = d)
-pred_mvn <- pred_mvn %>% mutate(x = d$x, y = d$y, observed = d$cover,
-  year = d$year, residual = log(observed) - estimate)
-pred_mvn$hold_out <- d$hold_out
+  newdata = d, type = "link")
+pred_mvn <- data.frame(pred_mvn, d)
+pred_mvn <- pred_mvn %>% mutate(residual = log(cover) - estimate)
 
 combined <- bind_rows(
   mutate(pred, model = "mvt"),
   mutate(pred_mvn, model = "mvn"))
 
 combined <- mutate(combined, id = paste(x, y))
-# combined$hold_out <- c(d$hold_out, d$hold_out)
 
 cis <- mutate(combined, conf_width = conf_high - conf_low) %>%
   group_by(year, x, y) %>%
   summarize(conf_width_ratio =
-      conf_width[model=="mvn"]/conf_width[model=="mvt"]
-    # hold_out = unique(hold_out)
+      conf_width[model=="mvn"]/conf_width[model=="mvt"],
+    hold_out = unique(hold_out)
   ) %>%
-  ungroup() %>%
-  group_by(year) %>%
-  mutate(median_ratio = median(conf_width_ratio))
-hist(cis$conf_width_ratio)
+  ungroup()
+# hist(cis$conf_width_ratio)
+h <- hist(cis$conf_width_ratio, probability = TRUE,
+  breaks = seq(0, 2, length.out = 30), plot = FALSE,
+  warn.unused = FALSE)
+par(las = 1, mgp = c(2, 0.6, 0), xaxs = "i", yaxs = "i")
+plot(0,0, xlim = c(0, 2), ylim = c(0, max(h$counts) * 1.02),type = "n", ann = FALSE)
+for(j in seq_along(h$breaks)) {
+  rect(h$breaks[j], 0, h$breaks[j+1], h$counts[j], border = "white",
+    col = "grey70", lwd = 1)
+}
+abline(v = 1, lty = 2, col = "grey30")
 
+# --------------------
+# Make the main spatiotemporal prediction plot for the
+# MVT random fields model
 
 ############
 pred <- predict(mvt, interval = "prediction", type = "response", conf_level = 0.95,
@@ -135,9 +162,12 @@ rmse <- combined %>% filter(hold_out) %>%
 ggplot(rmse, aes(abs(error), colour = model)) +
   geom_freqpoly()
 
-rmse %>%
+r <- rmse %>%
   group_by(model) %>%
   summarise(rmse = sqrt(mean(error^2)))
+
+r <- as.data.frame(r)
+(r[r$model=="mvn","rmse"] - r[r$model=="mvt","rmse"]) / r[r$model=="mvt","rmse"] * 100
 
 ########
 # Let's try the log predictive posterior distribution
@@ -157,18 +187,23 @@ holdout_data <- d
 scores <- matrix(0, nrow = nrow(p), ncol = ncol(p))
 for(draw in seq_len(ncol(p))){
   scores[, draw] <- dlnorm(holdout_data$cover,
-    mean = p[, draw], sd = sigma[draw])
+    mean = p[, draw], sd = sigma[draw], log = T)
 }
 
 scoresn <- matrix(0, nrow = nrow(p), ncol = ncol(p))
 for(draw in seq_len(ncol(p))){
   scoresn[, draw] <- dlnorm(holdout_data$cover,
-    mean = pn[, draw], sd = sigman[draw])
+    mean = pn[, draw], sd = sigman[draw], log = T)
 }
 
-s1 <- mean(log(rowMeans(scores)))
-s2 <- mean(log(rowMeans(scoresn)))
+s1 <- mean((rowMeans(scores)))
+s2 <- mean((rowMeans(scoresn)))
+s2
+s1
+exp(s2)
+exp(s1)
 (s1-s2)/s2
+(exp(s1)-exp(s2))/exp(s2) * 100
 
 # s <- data.frame(scores = log(rowMeans(scores)), model = "mvt")
 # sn <- data.frame(scores = log(rowMeans(scoresn)), model = "mvn")
@@ -216,3 +251,6 @@ g <- ggplot(dplyr::filter(pred),#, year %in% c(2002, 2006, 2010, 2014)),
 print(g)
 ggsave("figs/beetles-mvt-predictions.pdf", width = 5.4, height = 5)
 
+
+# https://flic.kr/p/rj1GFA
+# https://flic.kr/p/e8SuTi https://creativecommons.org/licenses/by/2.0/
