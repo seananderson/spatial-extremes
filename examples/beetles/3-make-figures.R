@@ -103,17 +103,21 @@ sigman <- extract(mvn$model)$sigma
 scores <- matrix(0, nrow = nrow(p), ncol = ncol(p))
 for(draw in seq_len(ncol(p))){
   scores[, draw] <- dlnorm(dat$cover,
-    mean = p[, draw], sd = sigma[draw], log = T)
+    mean = p[, draw], sd = sigma[draw], log = TRUE)
 }
 
 scoresn <- matrix(0, nrow = nrow(p), ncol = ncol(p))
 for(draw in seq_len(ncol(pn))){
   scoresn[, draw] <- dlnorm(dat$cover,
-    mean = pn[, draw], sd = sigman[draw], log = T)
+    mean = pn[, draw], sd = sigman[draw], log = TRUE)
 }
 
+# Sum the log densities within each MCMC iteration:
 sc <- data.frame(lp = apply(scores, 2, sum), model = "mvt")
 sc2 <- data.frame(lp = apply(scoresn, 2, sum), model = "mvn")
+
+# Make sure we summed across MCMC chains and not across rows of data:
+assertthat::assert_that(identical(length(sigma), nrow(sc)))
 
 # ggplot(sc, aes(lp)) +
   # geom_histogram(fill = "red", alpha = 0.5) +
@@ -122,7 +126,6 @@ sc2 <- data.frame(lp = apply(scoresn, 2, sum), model = "mvn")
 all_samples <- c(sc$lp, sc2$lp)
 l <- min(all_samples)
 u <- max(all_samples)
-# hist(cis$conf_width_ratio)
 h <- hist(sc$lp, probability = TRUE,
   breaks = seq(l, u, length.out = 25), plot = FALSE,
   warn.unused = FALSE)
@@ -169,7 +172,6 @@ cis <- mutate(combined, conf_width = exp(conf_high) - exp(conf_low)) %>%
     hold_out = unique(hold_out)
   ) %>%
   ungroup()
-# hist(cis$conf_width_ratio)
 h <- hist(cis$conf_width_ratio, probability = TRUE,
   breaks = seq(0, max(cis$conf_width_ratio)*1.001, length.out = 20), plot = FALSE,
   warn.unused = FALSE)
