@@ -76,3 +76,5 @@ simulationTesting/mvt-mvn-difference_cache/html/__globals
 simulationTesting/mvt-mvn-difference_cache/html/__packages
 
 simulationTesting/mvt-mvn-difference_cache/html/__objects
+
+*.jpg
