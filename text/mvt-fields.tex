@@ -71,7 +71,7 @@ model and R package simulated and real-world data. First, using simulated data,
 we demonstrate the ability to recapture spatiotemporal extremes, and explore
 the consequences of fitting models that ignore such extremes. Second, apply our
 models to predict tree mortality from mountain pine beetle (\emph{Dendroctonus
-  ponderosae}) outbreaks in the US Pacific Northwest over the last 16 years. 
+  ponderosae}) outbreaks in the US Pacific Northwest over the last 16 years.
 We show that our model provides more accurate and certain
 predictions of these ecological processes compared to traditional
 spatiotemporal models that do not allow for extremes. Jointly modelling
@@ -213,7 +213,7 @@ dependent on the spatial pattern at time $t-1$ to a degree defined by $\phi$,
 % while $\gamma_{s,t}$ defines the spatial process and how it evolves through
 % time --- potentially letting ``hotspots'' remain hotspots through time while
 % keeping the means of the spatial process $\gamma_{s,t}$ stationary and centred
-% on zero. 
+% on zero.
 We determine the location of the $m$ knots in a random field
 using the partitioning around
 algorithm \citep[the \texttt{pam} function in the R package
@@ -239,7 +239,7 @@ defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta}  \right)
 parameter $\sigma$ scaling the amplitude of the spatial process deviations. Our
 package also allows for the exponential covariance function $H(\delta_{ij}) =
 \exp \left(-\frac{\delta_{ij} }{\eta} \right)$ and the Matern and could be
-extended to include anisotropic 
+extended to include anisotropic
 functions in which covariance is not uniform in all directions.
 Following \citet{latimer2009}, we can also calculate the covariance matrix
 between the locations of the data and the knots,
@@ -355,7 +355,7 @@ spatiotemporal models and the \textbf{rrfields} package,
 we fit MVT and Gaussian random field models
 to a data set representing
 mountain pine beetle outbreaks in the
-US Pacific Northwest \citep{usdaforestservice2017}. 
+US Pacific Northwest \citep{usdaforestservice2017}.
 We converted latitude and longitude degrees into UTMs to have a constant
 distance relationship throughout the spatial region and divided the UTM values
 by $10^5$ to make the range of $\delta_{ij}$ approximately 10 and therefore
@@ -443,12 +443,12 @@ thought to be present a priori.
 
 One of the biggest hurdles in identifying support for MVT spatial fields (small estimated
 df parameter) is using spatiotemporal data sets that have enough time slices to capture
-extreme events. [tie into sim results]. The ability to detect spatial anomalies in ecological 
+extreme events. [tie into sim results]. The ability to detect spatial anomalies in ecological
 processes may also be affected by the number or selection of knots, however our results
 show that spatial extremes can be identified even using a small numbers of knots. Like other
-state-space models, inference about spatial extremes may be corrupted by observation 
+state-space models, inference about spatial extremes may be corrupted by observation
 error (both the observation model, and magnitude). Our results indicate that spatial events
-can be identified with moderate to high observation error (coefficient of variation ~ 1). 
+can be identified with moderate to high observation error (coefficient of variation ~ 1).
 
 [paragraph on bark beetles]
 
@@ -529,7 +529,6 @@ the third draw for the MVT spatial process.}
 
 \begin{figure}[htb]
 \begin{center}
-  % \includegraphics[width=0.65\textwidth]{../figs/sim-recapture-small.pdf}
   \includegraphics[width=0.85\textwidth]{../figs/recapture-3-base.pdf}
 \caption{Results from simulation testing the ability to recapture the degree
 of spatial heavy tailedness. Panels show
@@ -551,11 +550,9 @@ for computational stability.
 
 \begin{figure}[htb]
 \begin{center}
-  \includegraphics[width=0.45\textwidth]{../figs/map.pdf}
-\caption{One panel of a multipanel figure.
-  Other panels will show posterior and prior densities for $\nu$,
-  a photo of mountain pine beetles and pine trees affected by an outbreak,
-  and a density plot showing the ratios of credible intervals between the 2 models.
+  \includegraphics[width=0.8\textwidth]{../figs/beetle-performance.pdf}
+\caption{
+  Model comparison.
 }
 \label{fig:map-etc}
 \end{center}
