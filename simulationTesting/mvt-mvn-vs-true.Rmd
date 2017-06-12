@@ -4,9 +4,12 @@ date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 ---
 
+This file creates a figure that compares matched and mismatched models.
+
 ```{r set-knitr-options, cache=FALSE, echo=FALSE}
 library("knitr")
-opts_chunk$set(message=FALSE, fig.width=7, fig.height=5, cache = FALSE, autodep = TRUE)
+opts_chunk$set(message=FALSE, fig.width=7, fig.height=5,
+  cache = FALSE, autodep = TRUE)
 ```
 
 ```{r}
@@ -32,45 +35,44 @@ gp_scale <- 1.2
 n_draws <- 15
 nknots <- 12
 
-s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
-  gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
-
-print(s$plot)
+# s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
+#   gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
+#
+# print(s$plot)
 ```
 
 Let's simulate some data that has heavy tails, fit correct and mismatched
 models, make predictions, and then calculate the root mean squared error
 compared to the true values.
 
-The following function will accomplish that. 
+The following function will accomplish that.
 
 ```{r simulate-and-fit-data}
 simulate_and_fit <- function() {
-  
+
   s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
     gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
-  
+
   d <- s$dat
-  
+
   d <- mutate(d, withhold = station_id %in% sample(unique(station_id), 10))
-  # d$withhold <- FALSE
-  
-  m1 <- rrfield(y ~ 0, data = filter(d, !withhold), 
+
+  m1 <- rrfield(y ~ 0, data = filter(d, !withhold),
     time = "time", station = "station_id",
     lat = "lat", lon = "lon", nknots = nknots,
     iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE)
-  
-  m_wrong <- rrfield(y ~ 0, data = filter(d, !withhold), 
+
+  m_wrong <- rrfield(y ~ 0, data = filter(d, !withhold),
     time = "time", station = "station_id",
     lat = "lat", lon = "lon", nknots = nknots,
     iter = ITER, chains = CHAINS,
     estimate_df = FALSE, fixed_df_value = 2000, save_log_lik = TRUE)
-  
+
   diag <- broom::tidy(m1$model, rhat = TRUE, ess = TRUE)
   diagw <- broom::tidy(m_wrong$model, rhat = TRUE, ess = TRUE)
-  
+
   i <<- i + 1
-  list(i = i, sim = s, dat = d, m = m1, m_wrong = m_wrong, 
+  list(i = i, sim = s, dat = d, m = m1, m_wrong = m_wrong,
     diag = diag, diag_wrong = diagw)
 }
 ```
@@ -80,45 +82,54 @@ Now let's run our function a number of times:
 ```{r}
 set.seed(1)
 i <<- 0
-output <- plyr::rlply(.n = 25, simulate_and_fit)
+if (!file.exists("simulatedTesting/match-mismatch.rds")) {
+  output <- plyr::rlply(.n = 40, simulate_and_fit)
+  saveRDS(output, "simulationTesting/match-mismatch.rds")
+} else {
+  output <- readRDS("simulationTesting/match-mismatch.rds")
+}
 ```
 
 Let's calculate the root mean squared error:
 
 ```{r}
-rmse <- plyr::ldply(output, function(x) {
-  p <- predict(x$m, interval = "confidence", type = "response", 
-    newdata = x$s$dat)
-  p_wrong <- predict(x$m_wrong, interval = "confidence", type = "response",
-    newdata = x$s$dat)
-  proj <- reshape2::melt(x$s$proj)
-  names(proj) <- c("time", "pt", "proj")
-  proj <- dplyr::arrange_(proj, "time", "pt")
-  
-  assertthat::assert_that(identical(proj[,1:2], x$s$dat[,1:2]))
-  
-  d <- data.frame(x$dat, p)
-  d_wrong <- data.frame(x$dat, p_wrong)
-  d_combined <- data.frame(d, 
-    select(d_wrong, estimate) %>% rename(est_wrong = estimate))
-  
-  assertthat::assert_that(identical(proj[,1:2], d_combined[,1:2]))
-  d2 <- data.frame(d_combined, proj = proj$proj)
-  
-  d2 %>% 
-    filter(withhold) %>%
-    mutate(
-      sq_error = (estimate - proj)^2,
-      sq_error_wrong = (est_wrong - proj)^2) %>% 
-    summarize(
-      rmse = sqrt(mean(sq_error)),
-      rmse_wrong = sqrt(mean(sq_error_wrong))) %>% 
-    mutate(i = i) %>% 
-    mutate(perc_better = (rmse_wrong - rmse) / rmse_wrong * 100)
-})
+if (!file.exists("simulatedTesting/match-mismatch-rmse.rds")) {
+  rmse <- plyr::ldply(output, function(x) {
+    p <- predict(x$m, interval = "confidence", type = "response",
+      newdata = x$s$dat)
+    p_wrong <- predict(x$m_wrong, interval = "confidence", type = "response",
+      newdata = x$s$dat)
+    proj <- reshape2::melt(x$s$proj)
+    names(proj) <- c("time", "pt", "proj")
+    proj <- dplyr::arrange_(proj, "time", "pt")
+
+    assertthat::assert_that(identical(proj[,1:2], x$s$dat[,1:2]))
+
+    d <- data.frame(x$dat, p)
+    d_wrong <- data.frame(x$dat, p_wrong)
+    d_combined <- data.frame(d,
+      select(d_wrong, estimate) %>% rename(est_wrong = estimate))
+
+    assertthat::assert_that(identical(proj[,1:2], d_combined[,1:2]))
+    d2 <- data.frame(d_combined, proj = proj$proj)
+
+    d2 %>%
+      filter(withhold) %>%
+      mutate(
+        sq_error = (estimate - proj)^2,
+        sq_error_wrong = (est_wrong - proj)^2) %>%
+      summarize(
+        rmse = sqrt(mean(sq_error)),
+        rmse_wrong = sqrt(mean(sq_error_wrong))) %>%
+      mutate(i = i) %>%
+      mutate(perc_better = (rmse_wrong - rmse) / rmse_wrong * 100)
+  })
+  saveRDS(rmse, file = "simulationTesting/match-mismatch-rmse.rds")
+} else {
+  rmse <- readRDS("simulationTesting/match-mismatch-rmse.rds")
+}
 rmse
-hist(rmse$perc_better, breaks = 8)
-# ggplot(rmse, aes(perc_better)) + geom_histogram(binwidth = 2)
+ggplot(rmse, aes(perc_better)) + geom_histogram(binwidth = 2)
 ```
 
 What about leave-one-out information criteria?
@@ -135,11 +146,6 @@ hist(loo$delta_loo)
 mean(loo$delta_loo)
 ```
 
-
 ```{r}
-# l1 <- loo::loo(loo::extract_log_lik(output[[3]]$m$model))
-# l2 <- loo::loo(loo::extract_log_lik(output[[3]]$m_wrong$model))
-# l1$looic
-# l2$looic
-# loo::compare(l1, l2)
+
 ```
