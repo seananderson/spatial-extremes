@@ -224,11 +224,85 @@ text(1.7, 0.95, "MVT\nmore\nprecise", col = bar_colour_dark, pos = 4)
 
 dev.off()
 
+# ------------------------------------
+# Multi-panel figure
+mpc <- ggplot2::map_data("worldHires", "Canada")
+mps <- ggplot2::map_data("state")
+# ggplot(mps, aes(long, lat, group = group)) + 
+  # geom_polygon()
+mpc$group <- mpc$group + max(mps$group)
+mp <- rbind(mps, mpc)
+mp2 <- mp
+mp2 <- select(mp2, long, lat, group)
+ml <- split(mp2, mp2$group)
+ml2 <- lapply(ml, function(x) { x["group"] <- NULL; x })
+ps <- lapply(ml2, Polygon)
+# add id variable
+p1 <- lapply(seq_along(ps), function(i) Polygons(list(ps[[i]]), 
+    ID = names(ml)[i]  ))
+proj <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"
+my_spatial_polys <- SpatialPolygons(p1, proj4string = CRS("+proj=longlat +datum=NAD83")) 
+my_spatial_polys_df <- SpatialPolygonsDataFrame(my_spatial_polys, 
+  data.frame(id = names(ml), 
+    row.names = names(ml)))
+my_spatial_polys_df <- spTransform(my_spatial_polys_df, CRS(proj))
+library(rgeos)
+# https://gis.stackexchange.com/questions/163445/r-solution-for-topologyexception-input-geom-1-is-invalid-self-intersection-er
+# simplify the polgons a tad (tweak 0.00001 to your liking)
+my_spatial_polys_df <- gSimplify(my_spatial_polys_df, tol = 0.0001)
+# this is a well known R / GEOS hack (usually combined with the above) to 
+# deal with "bad" polygons
+my_spatial_polys_df <- gBuffer(my_spatial_polys_df, byid=TRUE, width=0)
+# plot(my_spatial_polys_df)
+
+# blank background
+crds <- data.frame(long=c(-140,-140, -110, -110), 
+  lat=c(40, 60, 60, 40))
+coordinates(crds) <- c("long", "lat")
+Pl <- Polygon(crds) 
+ID <- "blank"
+Pls <- Polygons(list(Pl), ID=ID) 
+SPls <- SpatialPolygons(list(Pls), proj4string = CRS("+proj=longlat +datum=NAD83")) 
+df <- data.frame(value=1, row.names=ID) 
+blank_box <- SpatialPolygonsDataFrame(SPls, df) 
+blank_box <- spTransform(blank_box, CRS(proj))
+# plot(blank_box, add = TRUE, col = "blue")
+
+water <- gDifference(blank_box, my_spatial_polys_df)
+# plot(water, col = "red")
+
+water_f <- fortify(water)
+# ggplot(water_f, aes(long, lat, group = group)) +
+  # geom_polygon(fill = "red")
+
 # This creates a data frame to label the years:
 yr <- unique(select(d, year))
 yr <- mutate(yr, x = -17, y = 24)
 
-g <- ggplot(dplyr::filter(pred),#, year %in% c(2002, 2006, 2010, 2014)),
+xy <- unique(select(d, x, y))
+l <- list()
+for (i in seq_len(length(unique(d$year)))) {
+  l[[i]] <- xy
+  l[[i]]$year <- unique(d$year)[i]
+}
+dp <- do.call("rbind", l)
+dp$cover <- NA
+
+# if (!exists("pred")) {
+load("examples/beetles/mountain-pine-beetle-pnw-raster-mvt-lognormal-500x500.rda")
+  pred <- predict(mvt, interval = "confidence", conf_level = 0.95,
+    newdata = dp, type = "link")
+  pred <- data.frame(pred, dp)
+# }
+
+l <- list()
+for (i in seq_len(length(unique(pred$year)))) {
+  l[[i]] <- water_f
+  l[[i]]$year <- unique(pred$year)[i]
+}
+water_f_l <- do.call("rbind", l)
+
+g <- ggplot(dplyr::filter(pred), # year %in% c(2010)),
   aes(x, y, colour = exp(estimate), fill = exp(estimate))) +
   geom_tile() +
   facet_wrap(~year) +
@@ -236,14 +310,20 @@ g <- ggplot(dplyr::filter(pred),#, year %in% c(2002, 2006, 2010, 2014)),
   scale_fill_viridis(option = "B", trans = "sqrt", breaks = seq(0.1, 1.3, 0.3)) +
   scale_color_viridis(option = "B", trans = "sqrt", breaks = seq(0.1, 1.3, 0.3)) +
   coord_fixed() +
+  coord_cartesian(ylim=range(pred$y) + c(-0.1, 0.1), 
+    xlim = range(pred$x) + c(-0.1, 0.1)) +
+  geom_polygon(data = water_f_l, aes(x = long/1e5, y = lat/1e5, group = group), 
+    fill = "white", inherit.aes = FALSE) +
   scale_x_continuous(breaks = seq(-23, -17, 4)) +
   ylab(expression(10^5~UTM~North)) +
   xlab(expression(10^5~UTM~West)) +
   labs(color = "Beetle\n% cover", fill = "Beetle\n% cover") +
-  theme(panel.spacing = unit(-0.1, "lines")) +
+  theme(panel.spacing = unit(-0.1, "lines"), 
+    panel.background = element_rect(fill = "white")) +
   theme(strip.background = element_blank(),
     strip.text.x = element_blank(), legend.position = "right") +
   geom_text(data = yr, aes(x = x, y = y, label = year), inherit.aes = FALSE, size = 3)
+# print(g)
 
 ggsave("figs/beetles-mvt-predictions.pdf", width = 5.4, height = 5)
 
