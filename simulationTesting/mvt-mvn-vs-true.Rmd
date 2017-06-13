@@ -60,13 +60,19 @@ simulate_and_fit <- function() {
   m1 <- rrfield(y ~ 0, data = filter(d, !withhold),
     time = "time", station = "station_id",
     lat = "lat", lon = "lon", nknots = nknots,
-    iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE)
+    iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE,
+    prior_gp_scale = half_t(3, 0, 3),
+    prior_gp_sigma = half_t(3, 0, 3),
+    prior_sigma = half_t(3, 0, 3))
 
   m_wrong <- rrfield(y ~ 0, data = filter(d, !withhold),
     time = "time", station = "station_id",
     lat = "lat", lon = "lon", nknots = nknots,
     iter = ITER, chains = CHAINS,
-    estimate_df = FALSE, fixed_df_value = 2000, save_log_lik = TRUE)
+    estimate_df = FALSE, fixed_df_value = 2000, save_log_lik = TRUE,
+    prior_gp_scale = half_t(3, 0, 3),
+    prior_gp_sigma = half_t(3, 0, 3),
+    prior_sigma = half_t(3, 0, 3))
 
   diag <- broom::tidy(m1$model, rhat = TRUE, ess = TRUE)
   diagw <- broom::tidy(m_wrong$model, rhat = TRUE, ess = TRUE)
@@ -82,18 +88,17 @@ Now let's run our function a number of times:
 ```{r}
 set.seed(1)
 i <<- 0
-if (!file.exists("simulatedTesting/match-mismatch.rds")) {
-  output <- plyr::rlply(.n = 40, simulate_and_fit)
+# system("rm simulationTesting/match-mismatch.rds")
+if (!file.exists("simulationTesting/match-mismatch.rds")) {
+  output <- plyr::rlply(.n = 50, simulate_and_fit)
   saveRDS(output, "simulationTesting/match-mismatch.rds")
 } else {
-  output <- readRDS("simulationTesting/match-mismatch.rds")
+  output <- readRDS("simulationTestingg/match-mismatch.rds")
 }
 ```
 
-Let's calculate the root mean squared error:
-
 ```{r}
-if (!file.exists("simulatedTesting/match-mismatch-rmse.rds")) {
+if (!file.exists("simulationTesting/match-mismatch-rmse.rds")) {
   rmse <- plyr::ldply(output, function(x) {
     p <- predict(x$m, interval = "confidence", type = "response",
       newdata = x$s$dat)
