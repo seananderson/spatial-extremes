@@ -1,7 +1,8 @@
 library(dplyr)
 library(ggplot2)
 source("simulationTesting/sim_mvt_rf.R")
-source("simulationTesting/theme_gg.R")
+library(ggsidekick)
+# source("simulationTesting/theme_gg.R")
 g <- expand.grid(lon = seq(1, 10, 0.5),
   lat = seq(1, 10, 0.5))
 
@@ -9,69 +10,23 @@ exp_cor <- function(delta_ij, phi) {
   exp(-phi * delta_ij)
 }
 
-library(manipulate)
-manipulate({
-  d <- seq(0, max, length.out = 200)
-  r <- diff(range(d))
-  scaled_phi <- phi_raw / r
-  par(mfrow = c(2, 1), mar = c(3, 3, 1, 1))
-  plot(d, exp_cor(d, phi = scaled_phi), type = "l",
-    main = paste("scaled phi =", round(scaled_phi, 2)))
-  x <- seq(0, (sd_prior_raw / r) * 3, length.out = 200)
-  plot(x, dnorm(x, sd = sd_prior_raw / r), type = "l")
-  abline(v = scaled_phi)
-}, phi_raw = slider(1, 20, 5),
-  max = slider(1, 20, 10),
-  sd_prior_raw = slider(1, 50, 10))
 
-gauss_cor <- function(delta_ij, phi) {
-  exp(-phi * (delta_ij^2))
-}
-
-manipulate({
-  d <- seq(0, max, length.out = 200)
-  r <- diff(range(d))
-  scaled_phi <- phi_raw / (r^2)
-  par(mfrow = c(2, 1), mar = c(3, 3, 1, 1))
-  plot(d, gauss_cor(d, phi = scaled_phi), type = "l",
-    main = paste("scaled phi =", round(scaled_phi, 2)))
-  x <- seq(0, (sd_prior_raw / (r^2)) * 3, length.out = 200)
-  # plot(x, dnorm(x, sd = sd_prior_raw / (r^2)), type = "l")
-  plot(x, metRology::dt.scaled(x, df = df_prior, sd = sd_prior_raw / (r^2)),
-    type = "l")
-  abline(v = scaled_phi)
-}, phi_raw = slider(0.1, 400, 5, step = 0.1),
-  max = slider(1, 20, 10),
-  sd_prior_raw = slider(1, 600, 10),
-  df_prior = slider(1, 50, 3))
-
-manipulate({
-  d <- seq(0, max, length.out = 200)
-  r <- diff(range(d))
-  par(mfrow = c(2, 1), mar = c(3, 3, 1, 1))
-  plot(d, gauss_cor(d, phi = scaled_phi / (r^2)), type = "l",
-    main = paste("scaled phi =", round(scaled_phi, 2)))
-  x <- seq(0, (sd_prior * 3), length.out = 200)
-  plot(x, metRology::dt.scaled(x, df = df_prior, sd = sd_prior, ncp = 0),
-    type = "l")
-  abline(v = scaled_phi)
-}, scaled_phi = slider(0.1, 4, 0.2, step = 0.05),
-  max = slider(1, 20, 10),
-  sd_prior = slider(1, 30, 10),
-  df_prior = slider(1, 50, 3))
-
-# ds <- sim_mvt_rf(n_pts = nrow(g), grid = g)
-
-# n_pts = 100, n_knots = 30, n_draws = 20, gp_scale = 0.3,
-# sigma_t = 0.2, mvt = TRUE, df = 3,
-# grid = cbind(lon = runif(n_pts, 5, 15), lat = runif(n_pts, 5, 15)))
+library(rrfields)
 
 draws <- lapply(c(2, 1e9),
   function(x) {
-    draws <- 5
-    s <- sim_mvt_rf(df = x, grid = g, n_pts = nrow(g), seed = 29,
-      n_draws = draws, gp_scale = 2, sigma_t = 0.3, n_knots = 30)
-    out <- reshape2::melt(s$proj)
+    # n_data_points <- 400
+    # g <- data.frame(lon = runif(n_data_points, 0, 10), 
+      # lat = runif(n_data_points, 0, 10)))
+    g <- expand.grid(lon = seq(1, 10, length.out = 25), 
+      lat = seq(1, 10, length.out = 25))
+    draws <- 3
+    # s <- sim_mvt_rf(df = x, grid = g, n_pts = nrow(g), seed = 29,
+      # n_draws = draws, gp_scale = 0.2, sigma_t = 0.3, n_knots = 30)
+    s2 <- rrfields::sim_rrfield(df = x, n_draws = draws, 
+      gp_scale = 1.6, gp_sigma = 0.3, n_knots = 30, seed = 9,
+      g = g, n_data_points = nrow(g))
+    out <- reshape2::melt(s2$proj)
     names(out) <- c("i", "pt", "re")
     out <- arrange(out, i, pt)
     out$nu <- x
@@ -95,7 +50,7 @@ p <- draws %>%
   geom_raster() +
   # scale_fill_gradient2(low = "#01665e", mid = "#f5f5f5", high = "#8c510a") +
   viridis::scale_fill_viridis() +
-  theme_gg() +
+  theme_sleek() +
   theme(axis.line=element_blank(),
     axis.text.x=element_blank(),
     axis.text.y=element_blank(),
@@ -108,9 +63,9 @@ p <- draws %>%
     panel.grid.major=element_blank(),
     panel.grid.minor=element_blank(),
     plot.background=element_blank()) +
-  theme(panel.spacing = unit(0.001, "lines"))
+  theme(panel.spacing = unit(-0.15, "lines"))
 print(p)
-ggsave("figs/nu-rf-illustration-high-gpscale.pdf", width = 7, height = 3)
+ggsave("figs/nu-rf-illustration-small.pdf", width = 4.5, height = 3)
 
 # for irregular spacing interpolation:
 # ds <- akima::interp(x = lon, y = lat, z = v))
