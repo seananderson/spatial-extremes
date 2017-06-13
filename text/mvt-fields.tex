@@ -13,6 +13,8 @@
 \renewcommand\linenumberfont{\normalfont\tiny\sffamily\color{gray}}
 \modulolinenumbers[2]
 
+\usepackage{booktabs}
+
 % Linux Libertine:
 \usepackage{textcomp}
 \usepackage[sb]{libertine}
@@ -25,6 +27,13 @@
   raised=-.13em]{superiors}
 
 \textheight 22.0cm
+
+\usepackage{pdflscape}
+\usepackage{makecell}
+% \renewcommand{\cellalign/theadalign}{cl}
+
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
 \usepackage[round,sectionbib]{natbib}
 \bibpunct{(}{)}{;}{a}{}{;}
@@ -39,10 +48,10 @@ Eric J. Ward$^2$
 
 \begin{document}
 
+ \begin{flushleft}
 \maketitle
 
 \begin{spacing}{1.9}
-
 % Point 1: set the context and purpose for the work;
 % Point 2: indicate the approach and methods used;
 % Point 3: outline the main results;
@@ -494,65 +503,64 @@ The R package \textbf{rrfields} is available at TODO.
 \section{Figures}
 
 \begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.55\textwidth]{../figs/nu-rf-illustration-small.pdf}
-
-\caption{An illustration of five draws from a MVN random field (top row)
-vs.\ five draws from a MVT random field with heavy tails
-(degrees of freedom, $\nu$, of 2; bottom row). Random seeds are held constant
-between the rows
-to illustrate the effect. Draws represent slices of time with independent spatial
-processes at each time slice. Note the considerably more extreme values in
-the third draw for the MVT spatial process.}
-\label{fig:nu}
-\end{center}
+  \begin{center}
+    \includegraphics[width=0.55\textwidth]{../figs/nu-rf-illustration-small.pdf}
+    \caption{An illustration of five draws from a MVN random field (top row)
+      vs.\ five draws from a MVT random field with heavy tails
+      (degrees of freedom, $\nu$, of 2; bottom row). Random seeds are held constant
+      between the rows
+      to illustrate the effect. Draws represent slices of time with independent spatial
+      processes at each time slice. Note the considerably more extreme values in
+      the second draw for the MVT spatial process.}
+    \label{fig:nu}
+  \end{center}
 \end{figure}
 
 \clearpage
 
 \begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.85\textwidth]{../figs/recapture-3-base.pdf}
-\caption{Results from simulation testing the ability to recapture the degree
-of spatial heavy tailedness. Panels show
-tests with (a) various true values of $\nu$ (the MVT degrees of freedom parameter),
-(b) an increasing number of time steps in the data set (with low observation error),
-and (c) an increasing level of observation error (with 25 time steps of data).
-The full factorial results are shown in Figure~\ref{fig:recapture-factorial}.
-Individual dots show the median estimates from individual simulation runs
-with random jitter added on the horizontal axis for visualization.
-Polygons show the density of the distribution of estimates.
-The colour scale indicates the true degree of heavy tailedness from
-yellow (effectively normal) to red (very heavy tailed; $\nu = 2.5$).
-The parameter $\nu$ has a lower limit of $2$ in the model
-for computational stability.
-}
-\label{fig:recapture}
-\end{center}
+  \begin{center}
+    \includegraphics[width=0.85\textwidth]{../figs/recapture-3-base.pdf}
+    \caption{Results from simulation testing the ability to recapture the degree
+      of spatial heavy tailedness. Panels show
+      tests with (a) various true values of $\nu$ (the MVT degrees of freedom parameter),
+      (b) an increasing number of time steps in the data set (with low observation error),
+      and (c) an increasing level of observation error (with 25 time steps of data).
+      The full factorial results are shown in Figure~\ref{fig:recapture-factorial}.
+      Individual dots show the median estimates from individual simulation runs
+      with random jitter added on the horizontal axis for visualization.
+      Polygons show the density of the distribution of estimates.
+      The colour scale indicates the true degree of heavy tailedness from
+      yellow (effectively normal) to red (very heavy tailed; $\nu = 2.5$).
+      The parameter $\nu$ has a lower limit of $2$ in the model
+      for computational stability.
+    }
+    \label{fig:recapture}
+  \end{center}
 \end{figure}
 
 \begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.6\textwidth]{../figs/beetle-performance.pdf}
-\caption{
-  Model comparison.
-}
-\label{fig:map-etc}
-\end{center}
+  \begin{center}
+    \includegraphics[width=0.6\textwidth]{../figs/beetle-performance.pdf}
+    \caption{
+      Model comparison.
+    }
+    \label{fig:map-etc}
+  \end{center}
 \end{figure}
 
 \clearpage
 
 \begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.65\textwidth]{../figs/beetles-mvt-predictions.pdf}
-\caption{Predicted severity of mountain pine beetle outbreaks in Washington and
-  Oregon State in the United States from 1999 to 2014.
-  Shown are medians of the modeled parameter $\mu_{s,t}$ from Equation \ref{eq:beetle-mu}
-  --- a spatiotemporal MVT random fields model.
-}
-\label{fig:beetle-pred}
-\end{center}
+  \begin{center}
+    \includegraphics[width=0.65\textwidth]{../figs/beetles-mvt-predictions.pdf}
+    \caption{Predicted severity of mountain pine beetle outbreaks in Washington and
+      Oregon State in the United States from 1999 to 2014.
+      Shown are medians of the modeled parameter $\mu_{s,t}$ from Equation \ref{eq:beetle-mu}
+      --- a spatiotemporal MVT random fields model.
+    }
+    \label{fig:beetle-pred}
+  \end{center}
 \end{figure}
 
 \clearpage
@@ -573,18 +581,18 @@ for computational stability.
 \setcounter{table}{0}
 
 \begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.7\textwidth]{../figs/pp-illustration.pdf}
-\caption{
-Illustration of the steps to fitting a predictive process model.
-First we observe spatial data, we select knot locations,
-and we calculate the covariance between the knots and the observed data.
-Then we fit the model with the knots and data remaining constant throughout.
-For each MCMC iteration, values are proposed for the
-knots, those values are projected from the knots to the locations of the observed data,
-and the likelihood is evaluated at the locations of the observed data.}
-\label{fig:didactic}
-\end{center}
+  \begin{center}
+    \includegraphics[width=0.7\textwidth]{../figs/pp-illustration.pdf}
+    \caption{
+      Illustration of the steps to fitting a predictive process model.
+      First we observe spatial data, we select knot locations,
+      and we calculate the covariance between the knots and the observed data.
+      Then we fit the model with the knots and data remaining constant throughout.
+      For each MCMC iteration, values are proposed for the
+      knots, those values are projected from the knots to the locations of the observed data,
+      and the likelihood is evaluated at the locations of the observed data.}
+    \label{fig:didactic}
+  \end{center}
 \end{figure}
 % Might be good to just clarify the values being proposed are values of observed data - not spatial locations
 
@@ -592,15 +600,42 @@ and the likelihood is evaluated at the locations of the observed data.}
 
 
 \begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.90\textwidth]{../figs/sim-recapture.pdf}
-\caption{
-  Full factorial results from the simulation shown in Fig.~\ref{fig:recapture}.
-}
-\label{fig:recapture-factorial}
-\end{center}
+  \begin{center}
+    \includegraphics[width=0.90\textwidth]{../figs/sim-recapture.pdf}
+    \caption{
+      Full factorial results from the simulation shown in Fig.~\ref{fig:recapture}.
+    }
+    \label{fig:recapture-factorial}
+  \end{center}
 \end{figure}
 
+\renewcommand\theadfont{\scriptsize}
+\renewcommand\theadalign{cl}
 
+\begin{landscape}
+  \begin{table}
+    \caption{
+      Comparison of select R packages for spatiotemporal analysis with random fields.
+    }
+    \begin{scriptsize}
+      \begin{tabular}{llllL{2cm}lL{2.5cm}lL{2.5cm}llL{2.5cm}}
+        \toprule
+        Package  & \thead[l]{MVT \\ random \\ fields} & \thead[l]{Formula          \\ interface} & Multivariate                                                     & Estimation & \thead[l]{Simulation                              \\ function} & \thead[l]{Observation \\ model}                                                      & \thead[l]{Maximum \\ likelihood \\ estimation} & \thead[l]{Covariance \\ functions} & \thead[l]{AR Spatial \\ Fields} & \thead[l]{Dynamic \\ Linear \\ Models} & URL \\
+        \midrule
+        spTimer  & No             & ??      & No      & MCMC                        & No         & Gaussian                                                         & No         & Exponential, Gaussian, Matern family, Spherical    & Yes       & No                     & https://cran.r-project.org/web/packages/spTimer/index.html \\
+        spate    & No             & ??      & No      & MCMC/SPDE                   & Yes        & Gaussian, skewed Tobit                                           & Yes        & Matern family                                      & No        & No                     & https://cran.r-project.org/web/packages/spate/index.html   \\
+        spBayes  & No             & ??      & Yes     & MCMC                        & No         & Gaussian, Binomial, Poisson                                      & No         & Exponential, Gaussian, Matern family, Spherical    & No        & Yes                    & https://cran.r-project.org/web/packages/spBayes/index.html \\
+        INLA     & No             & Yes     & Yes     & Approximate Posterior/SPDE  & Yes        & Many                                                             & Yes        & Exponential, Gaussian, Matern family, many others  & Yes       & Yes                    & http://www.r-inla.org/                                     \\
+        VAST     & No             & No      & No      & MCMC/SPDE                   & Yes        & Gaussian, Lognormal, Gamma, Binomial, Poisson, Negative Binomial & Yes        & Matern family                                      & Yes       & No                     & https://github.com/James-Thorson/VAST                      \\
+        rrfields & Yes            & Yes     & No      & MCMC/NUTS                   & Yes        & Gaussian, Lognormal, Gamma, Binomial, Poisson, Negative Binomial & No         & Exponential, Gaussian, Matern family               & Yes       & Yes                    & https://github.com/seananderson/rrfields                   \\
+        \bottomrule
+      \end{tabular}
+    \end{scriptsize}
+  \end{table}
+\end{landscape}
+
+
+
+ \end{flushleft}
 \end{document}
 
