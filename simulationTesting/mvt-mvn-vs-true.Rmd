@@ -90,10 +90,10 @@ set.seed(1)
 i <<- 0
 # system("rm simulationTesting/match-mismatch.rds")
 if (!file.exists("simulationTesting/match-mismatch.rds")) {
-  output <- plyr::rlply(.n = 100, simulate_and_fit)
+  output <- plyr::rlply(.n = 40, simulate_and_fit)
   saveRDS(output, "simulationTesting/match-mismatch.rds")
 } else {
-  output <- readRDS("simulationTestingg/match-mismatch.rds")
+  output <- readRDS("simulationTesting/match-mismatch.rds")
 }
 ```
 
@@ -134,8 +134,8 @@ if (!file.exists("simulationTesting/match-mismatch-rmse.rds")) {
 } else {
   rmse <- readRDS("simulationTesting/match-mismatch-rmse.rds")
 }
-rmse
-ggplot(rmse, aes(perc_better)) + geom_histogram(binwidth = 2)
+# rmse
+# ggplot(rmse, aes(perc_better)) + geom_histogram(binwidth = 2)
 ```
 
 What about leave-one-out information criteria?
@@ -148,10 +148,22 @@ loo <- plyr::ldply(output, function(x) {
   data.frame(loo_t = loo_t$looic, loo_n = loo_n$looic, i = x$i)
 })
 loo <- loo %>% mutate(delta_loo = loo_t - loo_n)
+saveRDS(loo, file = "simulationTesting/match-mismatch-loo.rds")
+loo <- readRDS("simulationTesting/match-mismatch-loo.rds")
 hist(loo$delta_loo)
 mean(loo$delta_loo)
 ```
 
-```{r}
+Plot example parameter estimates:
 
+```{r}
+set.seed(3)
+i <<- 1
+ITER <- 1000
+CHAINS <- 4
+n_draws <- 20
+o <- simulate_and_fit()
+e1 <- rstan::extract(o$m$model)
+e2 <- rstan::extract(o$m_wrong$model)
+save(e1, e2, file = "simulationTesting/match-mismatch-example.rda")
 ```
