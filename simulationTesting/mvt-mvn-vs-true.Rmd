@@ -90,7 +90,7 @@ set.seed(1)
 i <<- 0
 # system("rm simulationTesting/match-mismatch.rds")
 if (!file.exists("simulationTesting/match-mismatch.rds")) {
-  output <- plyr::rlply(.n = 50, simulate_and_fit)
+  output <- plyr::rlply(.n = 100, simulate_and_fit)
   saveRDS(output, "simulationTesting/match-mismatch.rds")
 } else {
   output <- readRDS("simulationTestingg/match-mismatch.rds")
@@ -98,6 +98,7 @@ if (!file.exists("simulationTesting/match-mismatch.rds")) {
 ```
 
 ```{r}
+# system("rm simulationTesting/match-mismatch-rmse.rds")
 if (!file.exists("simulationTesting/match-mismatch-rmse.rds")) {
   rmse <- plyr::ldply(output, function(x) {
     p <- predict(x$m, interval = "confidence", type = "response",
