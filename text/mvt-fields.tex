@@ -59,6 +59,7 @@ Eric J. Ward$^2$
 
 
 \begin{spacing}{1.3}
+% \begin{spacing}{1.9}
 % Point 1: set the context and purpose for the work;
 % Point 2: indicate the approach and methods used;
 % Point 3: outline the main results;
@@ -146,14 +147,14 @@ model extremes include the use of multivariate-$t$ (MVT) spatial random fields
 have not been applied in the ecology, fisheries, or environmental sciences.
 
 In this paper we introduce the use of robust spatial predictive models using
-the MVT distribution, and provide a user-friendly implementation in our new R
-package \textbf{rrfields} (robust random fields). Using simulation testing to
-compare the multivariate normal (MVN) to MVT spatial processes, we illustrate
-that the MVT leads to better prediction (greater accuracy, more precision)
-when the underlying special process is heavy-tailed. We then illustrate the
-application of this approach to real-world data that includes spatial
-extremes, using data on mountain pine beetle outbreaks in the Pacific
-Northwest of the United States.
+the MVT distribution, and provide a user-friendly implementation in our new
+R package \textbf{rrfields} (robust random fields). Using simulation testing
+to compare the multivariate normal (MVN) to MVT spatial processes, we
+illustrate that the MVT leads to better prediction (greater accuracy, more
+precision) when the underlying special process is heavy-tailed. We then
+illustrate the application of this approach to real-world data that includes
+spatial extremes, using data on mountain pine beetle (\textit{Dendroctonus
+  ponderosae}) outbreaks in the Pacific Northwest of the United States.
 
 \section{Methods}
 
@@ -378,8 +379,7 @@ spatiotemporal models and the \textbf{rrfields} package,
 we fit MVT and Gaussian random field models
 to a data set representing
 mountain pine beetle outbreaks in the
-US Pacific Northwest \citep{usdaforestservice2017}.
-% TODO: species and region
+US Pacific Northwest states of Oregon and Washington \citep{usdaforestservice2017}.
 We converted latitude and longitude degrees into UTMs to have a constant
 distance relationship throughout the spatial region and divided the UTM values
 by $10^5$ to make the range of $\delta_{ij}$ approximately 10 and therefore
@@ -522,7 +522,7 @@ The R package \textbf{rrfields} is available at TODO.
 \begin{figure}[htb]
   \begin{center}
     \includegraphics[width=0.55\textwidth]{../figs/nu-rf-illustration-small.pdf}
-    \caption{An illustration of five draws from a MVN random field (top row)
+    \caption{An illustration of three draws from a MVN random field (top row)
       vs.\ five draws from a MVT random field with heavy tails
       (degrees of freedom, $\nu$, of 2; bottom row). Random seeds are held constant
       between the rows
@@ -537,20 +537,30 @@ The R package \textbf{rrfields} is available at TODO.
 
 \begin{figure}[htb]
   \begin{center}
-    \includegraphics[width=0.85\textwidth]{../figs/recapture-3-base.pdf}
-    \caption{Results from simulation testing the ability to recapture the degree
-      of spatial heavy tailedness. Panels show
-      tests with (a) various true values of $\nu$ (the MVT degrees of freedom parameter),
+    \includegraphics[width=0.95\textwidth]{../figs/recapture-3-base.pdf}
+    \caption{Simulation testing the MVT random fields model.
+      Upper row
+      panels illustrate the ability to recapture the
+      degree of spatial heavy tailedness.
+      Shown are tests with
+      (a) various true values of $\nu$ (the MVT degrees of freedom parameter),
       (b) an increasing number of time steps in the data set (with low observation error),
-      and (c) an increasing level of observation error (with 25 time steps of data).
+      and (c) an increasing level of observation error.
       The full factorial results are shown in Figure~\ref{fig:recapture-factorial}.
-      Individual dots show the median estimates from individual simulation runs
-      with random jitter added on the horizontal axis for visualization.
-      Polygons show the density of the distribution of estimates.
+      Individual dots show the median estimates from individual simulation runs.
+      % Polygons show the density of the distribution of estimates.
       The colour scale indicates the true degree of heavy tailedness from
-      yellow (effectively normal) to red (very heavy tailed; $\nu = 2.5$).
-      The parameter $\nu$ has a lower limit of $2$ in the model
-      for computational stability.
+      yellow (effectively normal) to red (very heavy tailed).
+      % The parameter $\nu$ has a lower limit of $2$ in the model
+      % for computational stability.
+      Lower row panels illustrate the impact of fitting MVN and MVT models
+      when the true underlying data are drawn from MVT random fields.
+      (d) Parameter posteriors for an
+      example model fit of a mismatched MVN model (white)
+      and a correct MVT model (grey) (red dots show the true values).
+      (e) Percent greater root mean squared error (RMSE)
+      and (f) $\Delta$ LOOIC (leave-one-out information criteria)
+      for the mismatched MVN model compared to the correct MVT model.
     }
     \label{fig:recapture}
   \end{center}
@@ -560,7 +570,14 @@ The R package \textbf{rrfields} is available at TODO.
   \begin{center}
     \includegraphics[width=0.6\textwidth]{../figs/beetle-performance.pdf}
     \caption{
-      Model comparison.
+      Model fit characteristics of autoregressive random fields 
+      models fit to mountain pine beetle data from the US Pacific Northwest.
+      (a) Map of the region with individual observations for one year shown with 
+      brown dots. 
+      (b) Photograph of a pine beetle infested forest in British Columbia, Canada.
+      (c) Posterior and prior distributions of the degrees of freedom parameter, $\nu$.
+      (d) Log predictive density for held-out data for MVT (blue) and MVN (orange) models.
+      (e) The ratio of 95\% credible interval widths between the MVN and MVT models.
     }
     \label{fig:map-etc}
   \end{center}

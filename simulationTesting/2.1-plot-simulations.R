@@ -36,7 +36,7 @@ plot_panel_base <- function(d, x, hlines = 2.5, col = rep(cols[[3]], 3), x_vals 
 
 margin_line <- 1.5
 margin_color <- "grey45"
-# pdf("figs/recapture-3-base.pdf", width = 7, height = 2.6)
+pdf("figs/simulation-results.pdf", width = 7, height = 5.5)
 par(mfrow = c(2, 3), mar = c(2.5, 0, 1, 0), oma = c(.5, 4, 0, 1),
   cex = 0.8, tcl = -0.2, mgp = c(2, 0.4, 0))
 filter(out_summary, sd_obs == "0.1", n_draws == 25) %>%
@@ -156,7 +156,7 @@ box(col = axis_colour)
 # mtext("A", side = 3, line = 0, cex = 1.2, adj = -0.6, font = 2)
 
 
-plot(0,0, xlim = c(-5, 25), ylim = c(0, 20), type = "n",
+plot(0,0, xlim = c(-5, 25), ylim = c(0, 15), type = "n",
   xlab = "", axes = FALSE,
   ylab = "Count")
 mtext("% RMSE", side = 1, line = 1.5, cex = 0.75, col = text_colour)
@@ -175,7 +175,7 @@ axis(1, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
 
 
-plot(0,0, xlim = range(loo$delta_loo), ylim = c(0, 20), type = "n",
+plot(0,0, xlim = range(loo$delta_loo), ylim = c(0, 15), type = "n",
   xlab = "", axes = FALSE,
   ylab = "Count")
 mtext("Delta LOOIC", side = 1, line = 1.5, cex = 0.75, col = text_colour)
@@ -193,5 +193,5 @@ axis(1, col = axis_colour, col.axis = axis_colour)
 # axis(2, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
 
-
+dev.off()
 
