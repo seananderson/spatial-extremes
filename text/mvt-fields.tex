@@ -35,6 +35,11 @@
 \usepackage{array}
 \newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
+\usepackage{parskip}
+% \setlength{\parindent}{0pt}
+% \setlength{\parskip}{1\bigskipamount plus \smallskipamount minus \smallskipamount}
+\usepackage{ragged2e}
+
 \usepackage[round,sectionbib]{natbib}
 \bibpunct{(}{)}{;}{a}{}{;}
 \bibliographystyle{mee}
@@ -48,10 +53,12 @@ Eric J. Ward$^2$
 
 \begin{document}
 
- \begin{flushleft}
 \maketitle
+\RaggedRight
+\hyphenpenalty=500
 
-\begin{spacing}{1.9}
+
+\begin{spacing}{1.3}
 % Point 1: set the context and purpose for the work;
 % Point 2: indicate the approach and methods used;
 % Point 3: outline the main results;
@@ -95,12 +102,13 @@ and scientists in other disciplines interested in predicting extreme events.
 
 Applications of statistical models that allow for joint inference about spatial
 and temporal dynamics have advanced rapidly in ecology over the last several
-decades \citep{bascompte1995, latimer2009}. Spatiotemporal models have also
-been widely used in other disciplines, including applications to weather,
+decades \citep[e.g.][]{bascompte1995, latimer2009}. Spatiotemporal models have
+also been widely used in other disciplines, including applications to weather,
 remote sensing, human disease dynamics, and crime \citep{cressie2011}. When
 ecological data are spatially structured, explicitly accounting for spatial
 autocorrelation improves model predictions and inference about parameters of
-interest --- including recommendations used in management or conservation planning.
+interest --- including recommendations used in management or conservation
+planning (REF).
 
 Including spatial components in statistical models involves extending models
 that most ecologists are already familiar with, such as generalized linear
@@ -109,54 +117,52 @@ be included as predictors in models of the mean (such as in a 2-dimensional
 GAM) or can be included in models of the covariance (e.g.\ kriging). Recent
 extensions of these spatial covariance models include modeling spatial
 deviations in GLMs or GAMs as multivariate random effects (Gaussian random
-fields). Examples of these methods in existing R packages include but are
-not limited to \textbf{spBayes} \citep{finley2007}, \textbf{spTimer}
+fields). Examples of these methods in existing R packages include but are not
+limited to \textbf{spBayes} \citep{finley2007}, \textbf{spTimer}
 \citep{bakar2015}, \textbf{INLA} \citep{rue2009}, \textbf{RandomFields}
-\citep{schlather2016}, and \textbf{spate} \citep{sigrist2015}.
+\citep{schlather2016}, and \textbf{spate} \citep{sigrist2015}
+(Table~\ref{tab:packages}).
 
-A limitation of spatial models that include Gaussian random fields is that
-they may perform poorly when underlying data include anomalous or extreme events.
+A limitation of spatial models that include Gaussian random fields is that they
+may perform poorly when underlying data include anomalous or extreme events.
 When these models also include an observation model, for example, anomalous
 observations may be reconciled by increasing the variance of the observation
-model (rather than attributing these to extremes in the ecological process being
-modeled). Extreme events in temporal processes have been modeled using a variety
-of methods in ecology, typically by including finite mixtures of normal and
-heavy-tailed distributions \citep{everitt1996, ward2007, thorson2011}. More
-recently, the use of the Student-t distribution has been proposed as a robust
-solution to modeling process variation in population dynamics \citep{anderson2017}.
+model (rather than attributing these to extremes in the ecological process
+being modeled). Extreme events in temporal processes have been modeled using a
+variety of methods in ecology, typically by including mixtures of normal and
+heavy-tailed distributions \citep[e.g.][]{everitt1996, ward2007, thorson2011}.
+More recently, the Student-t distribution has been proposed as a
+solution to modeling process variation with extremes in population dynamics
+\citep{anderson2017}.
 
 Several robust extensions of Gaussian random fields have been proposed to
 better capture extreme spatial events, including applications of max-stable or
 extreme value theory \citep{davison2012, davison2012a}. Many of the
 applications of these models, such as understanding extremes in rainfall or
 flooding, are interested in quantifying the probabilities of exceeding some
-threshold \citep{davis2008}. Other extensions of spatiotemporal models to model
-extremes include the use of multivariate-t spatial (MVT) random fields
+threshold \citep{davis2008}. Other extensions of spatiotemporal models to
+model extremes include the use of multivariate-t (MVT) spatial random fields
 \citep{roislien2007}. Focusing on the latter, to our knowledge these methods
-have not been considered for data in the ecology, fisheries, or environmental
-sciences.
+have not been applied in the ecology, fisheries, or environmental sciences.
 
-The objectives of this paper are to introduce the use of robust spatial
-predictive models using the multivariate-t distribution, and provide a
-user-friendly implementation in our new R package \textbf{rrfields} (robust
-random fields). Using simulation testing to compare the multivariate normal to
-multivariate-t spatial processes, we illustrate that the multivariate-t leads
-to better prediction (less bias, lower uncertainty) when the underlying special
-process is heavy-tailed. We then illustrate the application of this modeling
-approach to real-world data that includes spatial extremes, using data on
-mountain pine beetle outbreaks in the Pacific Northwest of the United States.
+In this paper we introduce the use of robust spatial predictive models using
+the MVT distribution, and provide a user-friendly implementation in our new R
+package \textbf{rrfields} (robust random fields). Using simulation testing to
+compare the multivariate normal (MVN) to MVT spatial processes, we illustrate
+that the MVT leads to better prediction (greater accuracy, more precision)
+when the underlying special process is heavy-tailed. We then illustrate the
+application of this approach to real-world data that includes spatial
+extremes, using data on mountain pine beetle outbreaks in the Pacific
+Northwest of the United States.
 
 \section{Methods}
-
-\subsection{Overview}
 
 We seek to allow for large deviations in an ecological spatial pattern over
 time by extending a spatiotemporal predictive process model to use a MVT
 distribution instead of the usual Gaussian MVN. Below we describe the form of
 our model as implemented in \textbf{rrfields}, describe two simulation tests
 exploring model performance, and finally describe the application of our model
-to a data set representing mountain pine beetle outbreaks in the Pacific
-Northwest of the United States.
+to a data set of mountain pine beetle outbreaks.
 
 \subsection{The MVT predictive process model}
 
@@ -166,20 +172,20 @@ locations, estimation of multivariate random effects at the locations of the
 data may be computationally prohibitive. One solution to this dimensionality
 problem is to estimate the random field as correlated random effects at a
 smaller subset of locations or $m$ 'knots' \citep[e.g.][]{latimer2009,
-  shelton2014}, where $m < n$, the number of data points. Instead of estimating
-an unconstrained $m \times m$ covariance matrix, a covariance function is
-specified \emph{a priori} to estimate the covariance between locations (e.g.
-exponential, Gaussian, Matern). Given the estimated random effects at the
-locations of these knots, and the known distance matrix between the knots and
-observed data, it is straightforward to project or interpolate those random
-effects to the locations of observations \citep{latimer2009, finley2009}.
+  shelton2014}, where $m < n$, the number of data points. Instead of
+estimating an unconstrained $m \times m$ covariance matrix, a covariance
+function is specified \emph{a priori} to estimate the covariance between
+locations (e.g. exponential, Gaussian, Matern). Given the estimated random
+effects at the locations of these knots, and the known distance matrix between
+the knots and observed data, the knot random effects can be projected to the
+locations of the observations \citep[][Figure~\ref{fig:didactic}]{latimer2009,
+  finley2009}.
 
-Here, we summarize the important elements of these models and
-highlight how our models differs from the usual MVN version. Our model is
-essentially a generalized linear model (GLM) with a spatiotemporal element
-described by a MVT random field. Our model describes the mean or expected value
-of the response, $\mu \equiv \mathbb{E}(y)$, at a set of locations in space $s$
-and time $t$ as
+Here, we summarize the important elements of these models and highlight how
+our models differs from the usual MVN version. Our model is essentially a
+generalized linear model (GLM) with a spatiotemporal element described by a
+MVT random field. The model describes the expected value of the response, $\mu
+\equiv \mathbb{E}(y)$, at a set of locations in space $s$ and time $t$ as
 
 \begin{equation}
   g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},
@@ -197,16 +203,17 @@ probability distribution such as the Gaussian, Poisson, or Gamma.
 %A random field is a term used to describe ``random effects'' drawn from a
 %multivariate probability distribution representing deviations in a
 %two-dimensional space (REF).
-Most commonly, random effects are represented as Gaussian random fields using a
-MVN distribution with some covariance matrix. Instead, we draw our values from
-a MVT. The MVT has one extra parameter compared to the MVN: the degrees of
-freedom parameter $\nu$. When $\nu$ is small (say $\nu < 10$) the distribution
-has heavier tails than the MVN --- it has a higher probability of events far
-from the mean than the MVN (Fig.~\ref{fig:nu}). As $\nu$ approaches infinity,
-the distribution approaches the MVN. For most purposes, the MVT and MVN are
-indistinguishable for moderate values of $\nu$ (say $\nu > 20$) similarly to
-the univariate t-distribution compared with the univariate normal distribution
-\citep[e.g.,][]{anderson2017}.
+Most commonly, spatial random effects are represented as Gaussian random
+fields using a MVN distribution with some covariance matrix. Instead, we draw
+our values from a MVT. The MVT has one extra parameter compared to the MVN:
+the degrees of freedom parameter $\nu$. When $\nu$ is small (say $\nu < 10$)
+the distribution has considerably heavier tails than the MVN --- it has a
+higher probability of events far from the mean than the MVN
+(Fig.~\ref{fig:nu}). As $\nu$ approaches infinity, the distribution approaches
+the MVN. For most purposes, the MVT and MVN are indistinguishable for moderate
+values of $\nu$ (say $\nu > 20$) similarly to the univariate t-distribution
+compared with the univariate normal distribution
+\citep[e.g.][]{anderson2017}.
 
 If $W_{s,t}$ defines a random field, then the spatiotemporal element,
 $\gamma_{s,t}$, can be made temporally constant (one field shared across time,
@@ -237,23 +244,21 @@ covariance functions for spatiotemporal models and models the correlation
 between points $i$ and $j$ as $H(\delta_{ij}) = \exp
 \left(-\frac{\delta_{ij}^2}{2 \eta} \right)$, where $\delta_{ij}$ describes the
 distance between points $i$ and $j$ and $\eta$ describes how steeply
-correlation declines with increasing distance or the ``wiggliness'' of the
+correlation declines with increasing distance or the wiggliness of the
 spatial process. For a given set of $\delta_{ij}$, large values of $\eta$
 correspond to smooth spatial patterns and small values correspondence to wiggly
-spatial patterns --- the degree of ``wiggliness'' implied by a value of $\eta$
+spatial patterns --- the degree of wiggliness implied by a value of $\eta$
 depends on the scale of the $\delta_{ij}$.
 
 The elements of the covariance matrix at the $m$ knot locations are therefore
 defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta}  \right)$ with the
 parameter $\sigma$ scaling the amplitude of the spatial process deviations. Our
 package also allows for the exponential covariance function $H(\delta_{ij}) =
-\exp \left(-\frac{\delta_{ij} }{\eta} \right)$ and the Matern and could be
-extended to include anisotropic
-functions in which covariance is not uniform in all directions.
-Following \citet{latimer2009}, we can also calculate the covariance matrix
-between the locations of the data and the knots,
+\exp \left(-\frac{\delta_{ij} }{\eta} \right)$ and the Matern family and could be
+extended to include anisotropic functions in which covariance is not uniform
+in all directions. Following \citet{latimer2009}, we can calculate the
+covariance matrix between the locations of the data and the knots,
 $\Sigma_{\left(W, W^* \right)}$.
-%TODO replace phi
 % Each element of the covariance matrix $\Sigma^*$ is thus dependent on
 % three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
 % $j$ squared, (2) the scale parameter $\phi$, which determines how steeply the
@@ -500,6 +505,10 @@ All code and data associated with this paper are available at
 \url{https://zenodo.org/XX}.
 The R package \textbf{rrfields} is available at TODO.
 
+\bibliography{spatial-extremes}
+
+\clearpage
+
 \section{Figures}
 
 \begin{figure}[htb]
@@ -563,10 +572,6 @@ The R package \textbf{rrfields} is available at TODO.
   \end{center}
 \end{figure}
 
-\clearpage
-
-\bibliography{spatial-extremes}
-
 % \end{flushleft}
 
 \end{spacing}
@@ -617,6 +622,7 @@ The R package \textbf{rrfields} is available at TODO.
     \caption{
       Comparison of select R packages for spatiotemporal analysis with random fields.
     }
+    \label{tab:packages}
     \begin{scriptsize}
       \begin{tabular}{llllL{2cm}lL{2.5cm}lL{2.5cm}llL{2.5cm}}
         \toprule
@@ -631,11 +637,9 @@ The R package \textbf{rrfields} is available at TODO.
         \bottomrule
       \end{tabular}
     \end{scriptsize}
+
   \end{table}
 \end{landscape}
 
-
-
- \end{flushleft}
 \end{document}
 

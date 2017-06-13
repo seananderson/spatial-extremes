@@ -2,7 +2,7 @@ TEXT = mvt-fields
 SOM = supp
 REFS = spatial-extremes
 
-all: $(TEXT).pdf dropbox
+all: $(TEXT).pdf
 
 %.pdf: %.tex $(REFS).bib
 	latexmk -pdf $<
