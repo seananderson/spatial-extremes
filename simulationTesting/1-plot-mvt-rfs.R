@@ -16,14 +16,14 @@ library(rrfields)
 draws <- lapply(c(2, 1e9),
   function(x) {
     # n_data_points <- 400
-    # g <- data.frame(lon = runif(n_data_points, 0, 10), 
+    # g <- data.frame(lon = runif(n_data_points, 0, 10),
       # lat = runif(n_data_points, 0, 10)))
-    g <- expand.grid(lon = seq(1, 10, length.out = 25), 
+    g <- expand.grid(lon = seq(1, 10, length.out = 25),
       lat = seq(1, 10, length.out = 25))
     draws <- 3
     # s <- sim_mvt_rf(df = x, grid = g, n_pts = nrow(g), seed = 29,
       # n_draws = draws, gp_scale = 0.2, sigma_t = 0.3, n_knots = 30)
-    s2 <- rrfields::sim_rrfield(df = x, n_draws = draws, 
+    s2 <- rrfields::sim_rrfield(df = x, n_draws = draws,
       gp_scale = 1.6, gp_sigma = 0.3, n_knots = 30, seed = 9,
       g = g, n_data_points = nrow(g))
     out <- reshape2::melt(s2$proj)
