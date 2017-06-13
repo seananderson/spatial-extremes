@@ -131,7 +131,7 @@ model (rather than attributing these to extremes in the ecological process
 being modeled). Extreme events in temporal processes have been modeled using a
 variety of methods in ecology, typically by including mixtures of normal and
 heavy-tailed distributions \citep[e.g.][]{everitt1996, ward2007, thorson2011}.
-More recently, the Student-t distribution has been proposed as a
+More recently, the Student-$t$ distribution has been proposed as a
 solution to modeling process variation with extremes in population dynamics
 \citep{anderson2017}.
 
@@ -141,7 +141,7 @@ extreme value theory \citep{davison2012, davison2012a}. Many of the
 applications of these models, such as understanding extremes in rainfall or
 flooding, are interested in quantifying the probabilities of exceeding some
 threshold \citep{davis2008}. Other extensions of spatiotemporal models to
-model extremes include the use of multivariate-t (MVT) spatial random fields
+model extremes include the use of multivariate-$t$ (MVT) spatial random fields
 \citep{roislien2007}. Focusing on the latter, to our knowledge these methods
 have not been applied in the ecology, fisheries, or environmental sciences.
 
@@ -291,10 +291,6 @@ which has a mean of $20$ and a median of $\sim 17$ \citep{juarez2010}.
 If the data are not informative about heavy
 tails, our estimate of $\nu$ should approximately match the prior.
 
-%Ju?rez and Steel (2010) (Model-based clustering of non-Gaussian panel data
-%based on skew-t distributions. Journal of Business & Economic Statistics 28,
-%52?66.)
-
 \subsection{Testing the recovery of extremeness}
 
 We used simulation testing to evaluate how well we could recover the degree to
@@ -302,7 +298,7 @@ which there were heavy tails in the spatial process under various conditions.
 We simulated 50 data points collected at the same survey locations each year
 for 5, 15, or 25 years. We simulated the spatial process as independent each
 year ($\gamma_{s,t} = W_{s,t}$) with $\sigma^2 = 1$ (the spatial variance),
-$\eta = 1$ (the ``wiggliness'' or spatial correlation decay parameter), and
+$\eta = 1$ (the wiggliness or spatial correlation decay parameter), and
 with spatial data locations drawn uniformly from 0 to 10 on both spatial axes
 (thereby affecting $\delta_{ij}$, the spatial distances).
 We selected 15 knots to represent the spatial pattern as described above.
@@ -325,9 +321,9 @@ our simulation model of data $y_{s,t}$ simplifies to
   \frac{1}{\mathrm{CV}^2 \cdot \mu_{s,t} } \right).
 \end{align}
 
-We attempted to recapture $\nu$ fitting a model that matched the process
+We attempted to recapture $\nu$ by fitting a model that matched the process
 generating the simulated data. We placed weakly informative priors on $\sigma$,
-$\eta$, and CV of half-t(3, 0, 3) (i.e., the positive half of a student t
+$\eta$, and CV of half-$t$(3, 0, 3) (i.e., the positive half of a Student-$t$
 distribution with a degrees of freedom 3, centrality parameter 0, and scale
 parameter 3). We initially sampled from each model with 500 iterations across
 four chains discarding the first half of the iterations as warm-up. If the
@@ -351,16 +347,29 @@ simulated data from the following model:
   y_{s,t} &\sim \mathrm{Normal} \left(\mu_{s,t}, \sigma_{\mathrm{obs}} \right),
 \end{align}
 
-\noindent with $\sigma^2 = 1$, $\eta = 1$, and 50 spatial data points drawn uniformly
+\noindent with $\sigma = 0.3$, $\eta = 1.2$, and 100 spatial data points drawn uniformly
 from locations ranging between 0 and 10 along both axes. Again, the locations
 of the data, and the 15 knots, were held constant through time to enable faster
 computations (this is not a general restriction of the model).
-We set the degrees of freedom parameter $\nu$ to 2.5 (very heavy tails) and used a
+We set the degrees of freedom parameter $\nu$ to 2 (very heavy tails) and used a
 Gaussian observation model with standard deviation, $\sigma_{\mathrm{obs}}$, of
-0.2. We chose a Gaussian observation
+0.8. We chose a Gaussian observation
 model and identity link for simplicity and to demonstrate an alternative
 functional form to the previous simulation. We fit our estimation model as
-described above and with a half-t(3,0,3) prior on $\sigma_{\mathrm{obs}}$.
+described above and with a half-$t$(3,0,3) prior on $\sigma_{\mathrm{obs}}$.
+
+To evaluate out-of-sample predictive accuracy we withheld
+10 randomly selected data points
+per year (10\% of the data) from the model fitting.
+We then compared between the MVT and MVN models:
+the root mean squared error
+between the $\log(\mu^{\mathrm{withheld}}_{s,t})$
+posterior medians and $\log\left(y^{\mathrm{withheld}}_{s,t}\right)$,
+the width of the 95\% credible intervals,
+and the difference in the leave-one-out information criteria
+\citep[LOOIC;][]{vehtari2016},
+a Bayesian information criteria that approximates
+leave-one-out predictive performance.
 
 \subsection{Mountain pine beetles in the US Pacific Northwest}
 
@@ -370,6 +379,7 @@ we fit MVT and Gaussian random field models
 to a data set representing
 mountain pine beetle outbreaks in the
 US Pacific Northwest \citep{usdaforestservice2017}.
+% TODO: species and region
 We converted latitude and longitude degrees into UTMs to have a constant
 distance relationship throughout the spatial region and divided the UTM values
 by $10^5$ to make the range of $\delta_{ij}$ approximately 10 and therefore
@@ -387,21 +397,18 @@ can fit a model with a log link and lognormal observation distribution
 (as opposed to a logit link and a beta observation distribution).
 The log of the mean proportion affected at location $s$ and time $t$, $\mu_{s,t}$,
 is predicted by an initial intercept, $\beta_0$, a year-specific mean estimate, $\beta_t$,
-and the spatiotemporal process $\gamma_{s,t}$:
-
-\begin{align}
-  \log(\mu_{s,t}) &= \beta_0 + \beta_t + \gamma_{s,t},
-  \end{align}
-
-\noindent with the spatial process modeled as autoregressive:
+and the spatiotemporal process $\gamma_{s,t}$,
+with the spatial process modeled as autoregressive:
 % and centered at each time step:
 
+
 \begin{align}
-    % \gamma_{s,t} &= \phi \left(\gamma_{s,t-1} -
-      % \mathbb{E}[\gamma_{t-1}]\right) + W_{s,t},\\ \label{eq:beetle-mu}
-    \gamma_{s,t} &= \phi \gamma_{s,t-1} + W_{s,t},\\ \label{eq:beetle-mu}
-     W_{s,t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right).
- \end{align}
+  \log(\mu_{s,t}) &= \beta_0 + \beta_t + \gamma_{s,t},\\
+  % \gamma_{s,t} &= \phi \left(\gamma_{s,t-1} -
+  % \mathbb{E}[\gamma_{t-1}]\right) + W_{s,t},\\ \label{eq:beetle-mu}
+  \gamma_{s,t} &= \phi \gamma_{s,t-1} + W_{s,t},\\ \label{eq:beetle-mu}
+  W_{s,t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right).
+\end{align}
 
 \noindent Furthermore, we model the annual
 mean estimates, $\beta_t$, as following a random walk
@@ -414,29 +421,30 @@ with scale parameter $\sigma_{\mathrm{obs}}$:
   y_{s,t} &\sim \mathrm{LogNormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right).
  \end{align}
 
-We chose 25 knots to represent the spatial process.
-We fit the models with half-t(3, 0, 3) priors on all
-scale parameters as described above,
+We chose 25 knots to represent the spatial process
+(increasing the number of knots did not substantially affect the results).
+We fit the models with half-$t$(3, 0, 3) priors on all
+scale parameters,
 a Normal(0, 10) prior on $\beta_0$,
-a MVN(0, TODO) prior on $\gamma_{s,t=1}$,
+% a MVN(0, TODO) prior on $\gamma_{s,t=1}$,
 and a Normal(0, 0.5)[-1, 1] prior on $\phi$.
 
 We compared the above MVT
-model to a Gaussian random field model in which
-$W_{s,t} \sim \mathrm{MVN}\left(\nu, 0, \Sigma_{W(s,t)}\right)$.
+model to a Gaussian random field model.
+% in which
+% $W_{s,t} \sim \mathrm{MVN}\left(\nu, 0, \Sigma_{W(s,t)}\right)$.
 To evaluate out-of-sample predictive accuracy we withheld
 25 randomly selected data points
 per year from the model fitting,
 for a total of 400 withheld data points,
 or approximately 10\% of the data.
-We then evaluated the root mean squared error,
-the coverage of credible intervals, and the width of credible intervals
-for predictions on these withheld data points
+% We then evaluated the root mean squared error
+% between the $\log(\mu^{\mathrm{withheld}}_{s,t})$
+% posterior medians and $\log\left(y^{\mathrm{withheld}}_{s,t}\right)$,
+We then compared the log predictive density for the held-out data
+% TODO: equation?
+and the width of the 95\% credible intervals
 from the MVN and MVT models.
-We also compared the leave-one-out information criteria
-\citep[LOOIC;][]{vehtari2016}, a Bayesian information criteria that approximates
-leave-one-out predictive performance,
-between the MVT and MVN models.
 
 A complete reproducible version of this analysis is available at
 \url{https://github.com/seananderson/spatiotemporal-extremes} DOI: TODO.
