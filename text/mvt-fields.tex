@@ -41,7 +41,7 @@ Eric J. Ward$^2$
 
 \maketitle
 
-\begin{spacing}{1.5}
+\begin{spacing}{1.9}
 
 % Point 1: set the context and purpose for the work;
 % Point 2: indicate the approach and methods used;
@@ -495,25 +495,8 @@ The R package \textbf{rrfields} is available at TODO.
 
 \begin{figure}[htb]
 \begin{center}
-  \includegraphics[width=0.7\textwidth]{../figs/pp-illustration.pdf}
-\caption{
-Illustration of the steps to fitting a predictive process model.
-First we observe spatial data, we select knot locations,
-and we calculate the covariance between the knots and the observed data.
-Then we fit the model with the knots and data remaining constant throughout.
-For each MCMC iteration, values are proposed for the
-knots, those values are projected from the knots to the locations of the observed data,
-and the likelihood is evaluated at the locations of the observed data.}
-\label{fig:didactic}
-\end{center}
-\end{figure}
-% Might be good to just clarify the values being proposed are values of observed data - not spatial locations
+  \includegraphics[width=0.55\textwidth]{../figs/nu-rf-illustration-small.pdf}
 
-\clearpage
-
-\begin{figure}[htb]
-\begin{center}
-  \includegraphics[width=0.9\textwidth]{../figs/nu-rf-illustration.pdf}
 \caption{An illustration of five draws from a MVN random field (top row)
 vs.\ five draws from a MVT random field with heavy tails
 (degrees of freedom, $\nu$, of 2; bottom row). Random seeds are held constant
@@ -550,7 +533,7 @@ for computational stability.
 
 \begin{figure}[htb]
 \begin{center}
-  \includegraphics[width=0.8\textwidth]{../figs/beetle-performance.pdf}
+  \includegraphics[width=0.6\textwidth]{../figs/beetle-performance.pdf}
 \caption{
   Model comparison.
 }
@@ -588,6 +571,25 @@ for computational stability.
 \renewcommand{\thetable}{S\arabic{table}}
 \setcounter{figure}{0}
 \setcounter{table}{0}
+
+\begin{figure}[htb]
+\begin{center}
+  \includegraphics[width=0.7\textwidth]{../figs/pp-illustration.pdf}
+\caption{
+Illustration of the steps to fitting a predictive process model.
+First we observe spatial data, we select knot locations,
+and we calculate the covariance between the knots and the observed data.
+Then we fit the model with the knots and data remaining constant throughout.
+For each MCMC iteration, values are proposed for the
+knots, those values are projected from the knots to the locations of the observed data,
+and the likelihood is evaluated at the locations of the observed data.}
+\label{fig:didactic}
+\end{center}
+\end{figure}
+% Might be good to just clarify the values being proposed are values of observed data - not spatial locations
+
+\clearpage
+
 
 \begin{figure}[htb]
 \begin{center}
