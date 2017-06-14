@@ -7,10 +7,19 @@ library(assertthat)
 library(ggsidekick) # devtools::install_github("seananderson/ggsidekick")
 
 d <- readRDS("examples/beetles/mountain-pine-beetle-data.rds")
-axis_colour <- "grey40"
-text_colour <- "grey25"
+axis_colour <- "grey45"
+text_colour <- "grey45"
 bar_colour <- "#2171b570"
 bar_colour_dark <- "#2171b590"
+mvn_bar_colour <- "#f1691370"
+
+add_label <- function(xfrac = 0, yfrac = 0.07, label = "", pos = 4,
+  col = text_colour, ...) {
+  u <- par("usr")
+  x <- u[1] + xfrac * (u[2] - u[1])
+  y <- u[4] - yfrac * (u[4] - u[3])
+  text(x, y, label, pos = pos, col = col, cex = 1.0, ...)
+}
 
 plot_jpeg = function(path, add=FALSE) {
   library('jpeg')
@@ -83,10 +92,12 @@ text(-21.3, 29, "Washington", col = text_colour, pos = 4)
 text(-16, 24, "Idaho", col = text_colour, pos = 4)
 text(-27, 29, "Pacific\nOcean", col = text_colour, pos = 4)
 box(col = axis_colour)
+add_label(label = "a)", yfrac = 0.11)
 
 plot_jpeg("examples/beetles/8621706223_2dbc7e1781_k-edited.jpg")
 mtext("Pine beetle infested forest", side = 1, line = 1,
   cex = 0.75, col = text_colour)
+add_label(label = "b)", yfrac = 0.11, col = "grey20")
 
 # --------------------
 # Create a panel showing the nu parameter from the mvt model
@@ -115,6 +126,7 @@ text(3.5, 0.3, "Posterior", col = bar_colour_dark, pos = 4)
 axis(1, col = axis_colour, col.axis = axis_colour)
 axis(2, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
+add_label(label = "c)", xfrac = 0.03)
 
 # ----------------
 # What about the distribution of log predictive density on the held out data?
@@ -158,7 +170,7 @@ mtext("Log predictive density", side = 1, line = 1.5, cex = 0.75, col = text_col
 mtext("for held-out data", side = 1, line = 2.5, cex = 0.75, col = text_colour)
 for(j in seq_along(h2$breaks)) {
   rect(h2$breaks[j], 0, h2$breaks[j+1], h2$density[j], border = "white",
-    col = "#f1691370", lwd = 1)
+    col = mvn_bar_colour, lwd = 1)
 }
 for(j in seq_along(h$breaks)) {
   rect(h$breaks[j], 0, h$breaks[j+1], h$density[j], border = "white",
@@ -169,6 +181,7 @@ text(-12, 0.11, "MVT", col = bar_colour_dark, pos = 4)
 axis(1, col = axis_colour, col.axis = axis_colour)
 axis(2, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
+add_label(label = "d)")
 
 # --------------------------
 # Look at the ratio of the credible intervals
@@ -219,16 +232,16 @@ abline(v = 1, lty = 2, col = "grey30")
 axis(1, col = axis_colour, col.axis = axis_colour)
 axis(2, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
-text(0, 0.95, "MVN\nmore\nprecise", col = "#f1691390", pos = 4)
-text(1.7, 0.95, "MVT\nmore\nprecise", col = bar_colour_dark, pos = 4)
-
+text(0, 0.85, "MVN\nmore\nprecise", col = "#f1691390", pos = 4)
+text(1.7, 0.85, "MVT\nmore\nprecise", col = bar_colour_dark, pos = 4)
+add_label(label = "e)")
 dev.off()
 
 # ------------------------------------
 # Multi-panel figure
 mpc <- ggplot2::map_data("worldHires", "Canada")
 mps <- ggplot2::map_data("state")
-# ggplot(mps, aes(long, lat, group = group)) + 
+# ggplot(mps, aes(long, lat, group = group)) +
   # geom_polygon()
 mpc$group <- mpc$group + max(mps$group)
 mp <- rbind(mps, mpc)
@@ -238,33 +251,33 @@ ml <- split(mp2, mp2$group)
 ml2 <- lapply(ml, function(x) { x["group"] <- NULL; x })
 ps <- lapply(ml2, Polygon)
 # add id variable
-p1 <- lapply(seq_along(ps), function(i) Polygons(list(ps[[i]]), 
+p1 <- lapply(seq_along(ps), function(i) Polygons(list(ps[[i]]),
     ID = names(ml)[i]  ))
 proj <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"
-my_spatial_polys <- SpatialPolygons(p1, proj4string = CRS("+proj=longlat +datum=NAD83")) 
-my_spatial_polys_df <- SpatialPolygonsDataFrame(my_spatial_polys, 
-  data.frame(id = names(ml), 
+my_spatial_polys <- SpatialPolygons(p1, proj4string = CRS("+proj=longlat +datum=NAD83"))
+my_spatial_polys_df <- SpatialPolygonsDataFrame(my_spatial_polys,
+  data.frame(id = names(ml),
     row.names = names(ml)))
 my_spatial_polys_df <- spTransform(my_spatial_polys_df, CRS(proj))
 library(rgeos)
 # https://gis.stackexchange.com/questions/163445/r-solution-for-topologyexception-input-geom-1-is-invalid-self-intersection-er
 # simplify the polgons a tad (tweak 0.00001 to your liking)
 my_spatial_polys_df <- gSimplify(my_spatial_polys_df, tol = 0.0001)
-# this is a well known R / GEOS hack (usually combined with the above) to 
+# this is a well known R / GEOS hack (usually combined with the above) to
 # deal with "bad" polygons
 my_spatial_polys_df <- gBuffer(my_spatial_polys_df, byid=TRUE, width=0)
 # plot(my_spatial_polys_df)
 
 # blank background
-crds <- data.frame(long=c(-140,-140, -110, -110), 
+crds <- data.frame(long=c(-140,-140, -110, -110),
   lat=c(40, 60, 60, 40))
 coordinates(crds) <- c("long", "lat")
-Pl <- Polygon(crds) 
+Pl <- Polygon(crds)
 ID <- "blank"
-Pls <- Polygons(list(Pl), ID=ID) 
-SPls <- SpatialPolygons(list(Pls), proj4string = CRS("+proj=longlat +datum=NAD83")) 
-df <- data.frame(value=1, row.names=ID) 
-blank_box <- SpatialPolygonsDataFrame(SPls, df) 
+Pls <- Polygons(list(Pl), ID=ID)
+SPls <- SpatialPolygons(list(Pls), proj4string = CRS("+proj=longlat +datum=NAD83"))
+df <- data.frame(value=1, row.names=ID)
+blank_box <- SpatialPolygonsDataFrame(SPls, df)
 blank_box <- spTransform(blank_box, CRS(proj))
 # plot(blank_box, add = TRUE, col = "blue")
 
@@ -310,15 +323,15 @@ g <- ggplot(dplyr::filter(pred), # year %in% c(2010)),
   scale_fill_viridis(option = "B", trans = "sqrt", breaks = seq(0.1, 1.3, 0.3)) +
   scale_color_viridis(option = "B", trans = "sqrt", breaks = seq(0.1, 1.3, 0.3)) +
   coord_fixed() +
-  coord_cartesian(ylim=range(pred$y) + c(-0.1, 0.1), 
+  coord_cartesian(ylim=range(pred$y) + c(-0.1, 0.1),
     xlim = range(pred$x) + c(-0.1, 0.1)) +
-  geom_polygon(data = water_f_l, aes(x = long/1e5, y = lat/1e5, group = group), 
+  geom_polygon(data = water_f_l, aes(x = long/1e5, y = lat/1e5, group = group),
     fill = "white", inherit.aes = FALSE) +
   scale_x_continuous(breaks = seq(-23, -17, 4)) +
   ylab(expression(10^5~UTM~North)) +
   xlab(expression(10^5~UTM~West)) +
   labs(color = "Beetle\n% cover", fill = "Beetle\n% cover") +
-  theme(panel.spacing = unit(-0.1, "lines"), 
+  theme(panel.spacing = unit(-0.1, "lines"),
     panel.background = element_rect(fill = "white")) +
   theme(strip.background = element_blank(),
     strip.text.x = element_blank(), legend.position = "right") +

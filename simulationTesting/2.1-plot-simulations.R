@@ -2,10 +2,24 @@
 
 library("beanplot")
 
-axis_col <- "grey55"
+axis_col <- "grey45"
 cols <- RColorBrewer::brewer.pal(3, "YlOrRd")
 margin_line <- 1.5
 margin_color <- "grey45"
+axis_lab_cex <- 0.8
+mvn_bar_colour <- "#f1691390"
+mvt_bar_colour <- "#2171b590"
+axis_colour <- "grey45"
+text_colour <- "grey45"
+bar_colour <- "grey70"
+bar_colour_dark <- "#2171b590"
+
+add_label <- function(xfrac = 0, yfrac = 0.07, label = "", pos = 4, ...) {
+  u <- par("usr")
+  x <- u[1] + xfrac * (u[2] - u[1])
+  y <- u[4] - yfrac * (u[4] - u[3])
+  text(x, y, label, pos = pos, ...)
+}
 
 out <- readRDS("simulationTesting/mvt-norm-sim-testing2.rds")
 
@@ -36,37 +50,38 @@ plot_panel_base <- function(d, x, hlines = 2.5, col = rep(cols[[3]], 3), x_vals 
 
 margin_line <- 1.5
 margin_color <- "grey45"
-pdf("figs/simulation-results.pdf", width = 7, height = 5.5)
-par(mfrow = c(2, 3), mar = c(2.5, 0, 1, 0), oma = c(.5, 4, 0, 1),
+pdf("figs/simulation-results.pdf", width = 6, height = 4.5)
+par(mfrow = c(2, 3), mar = c(2.5, 0, 1, 0), oma = c(1.2, 3, 0, 1),
   cex = 0.8, tcl = -0.2, mgp = c(2, 0.4, 0))
 filter(out_summary, sd_obs == "0.1", n_draws == 25) %>%
   plot_panel_base("df", hlines = c(2.5, 5, 20), col = rev(cols), x_vals = c(2.5, 5, 20))
-mtext("Degrees of freedom parameter", 1, col = margin_color, line = margin_line, cex = 0.8)
-mtext(expression(Estimated~nu), 2, col = margin_color, line = margin_line +1, cex = 0.8)
-mtext("(MVT degrees of freedom parameter)   ", 2, col = margin_color, line = margin_line, cex = 0.8)
+mtext("Degrees of freedom parameter", 1, col = margin_color, line = margin_line, cex = axis_lab_cex)
+mtext(expression(Estimated~nu), 2, col = margin_color, line = margin_line +.5, cex = axis_lab_cex)
+# mtext("(MVT degrees of freedom parameter)   ", 2, col = margin_color, line = margin_line, cex = axis_lab_cex)
 axis(2, col = axis_col, col.ticks = axis_col, las = 1, col.axis = axis_col, at = c(2, 10, 20, 309))
 x_text <- 0.5
 cex_text <- 0.9
-text(x_text, 28, "(a)", pos = 4, cex = cex_text, col = margin_color)
+text(x_text, 28, "a)", pos = 4, cex = cex_text, col = margin_color)
 text(x_text, 25, "Obs. CV = 0.1", pos = 4, cex = cex_text, col = margin_color)
-text(x_text, 23, "25 time steps", pos = 4, cex = cex_text, col = margin_color)
+text(x_text, 22, "25 time steps", pos = 4, cex = cex_text, col = margin_color)
 
 filter(out_summary, sd_obs == "0.1", df == 2.5) %>%
   plot_panel_base("n_draws", x_vals = c(5, 15, 25))
-mtext("Number of time steps", 1, col = margin_color, line = margin_line, cex = cex_text)
-text(x_text, 28, "(b)", pos = 4, cex = cex_text, col = margin_color)
+mtext("Number of time steps", 1, col = margin_color, line = margin_line, cex = axis_lab_cex)
+text(x_text, 28, "b)", pos = 4, cex = cex_text, col = margin_color)
 # text(x_text, 27, expression(nu==2.5), pos = 4, cex = cex_text, col = margin_color)
 text(x_text, 25, "Obs. CV = 0.1", pos = 4, cex = cex_text, col = margin_color)
 
 filter(out_summary, df == "2.5", n_draws == 25) %>%
   plot_panel_base("sd_obs", x_vals = c(0.1, 0.6, 1.2))
-text(x_text, 28, "(c)", pos = 4, cex = cex_text, col = margin_color)
+text(x_text, 28, "c)", pos = 4, cex = cex_text, col = margin_color)
 text(x_text, 25, "25 time steps", pos = 4, cex = cex_text, col = margin_color)
 # text(x_text, 27, expression(nu==2.5), pos = 4, cex = cex_text, col = margin_color)
-mtext("Observation error CV", 1, col = margin_color, line = margin_line, cex = 0.8)
+mtext("Observation error CV", 1, col = margin_color, line = margin_line, cex = axis_lab_cex)
 # dev.off()
 
 
+# ----------------------------------------------------------------
 gp_sigma <- 0.3
 sigma <- 0.8
 df <- 2
@@ -74,13 +89,11 @@ gp_scale <- 1.2
 rmse <- readRDS("simulationTesting/match-mismatch-rmse.rds")
 loo <- readRDS("simulationTesting/match-mismatch-loo.rds")
 load("simulationTesting/match-mismatch-example.rda")
+rmse <- mutate(rmse, perc_better=(rmse_wrong-rmse)/rmse*100)
 # Plot example parameter estimates:
 
 # hist(e1$df)
-axis_colour <- "grey40"
-text_colour <- "grey25"
-bar_colour <- "grey70"
-bar_colour_dark <- "#2171b590"
+
 
 # par(mfrow = c(1, 3))
 # par(mgp = c(1.8, 0.4, 0), xaxs = "i", yaxs = "i")
@@ -117,7 +130,7 @@ plot(1, 1, xlim = xlim, ylim = c(params+.5, .8), type = "n",
 abline(v = 0, lty = 2, col = "grey40", lwd = 0.6)
 scaling_factor <- 85
 gap <- 0.4
-
+# rect(0,2+gap+0.2,20,1-0.2, col = "grey90", border = NA)
 true <- c(df, gp_sigma, gp_scale, sigma)
 names(e1)
 for(i in 1:length(op)) {
@@ -125,73 +138,82 @@ for(i in 1:length(op)) {
   if (i > 1) {
     polygon(c(op_mvn[[i]]$dens$x, rev(op_mvn[[i]]$dens$x)),
       i + gap + c(op_mvn[[i]]$dens$y/scaling_factor, -rev(op_mvn[[i]]$dens$y/scaling_factor)),
-      border = "grey50", lwd = 0.5, col = "white")
-    segments(
-      op_mvn[[i]]$med_post,
-      gap + i - op_mvn[[i]]$med_dens_height/scaling_factor,
-      op_mvn[[i]]$med_post,
-      gap + i + op_mvn[[i]]$med_dens_height/scaling_factor,
-      col = "grey50", lwd = 1)
+      border = mvn_bar_colour, lwd = 0.5, col = mvn_bar_colour)
+    # segments(
+    #   op_mvn[[i]]$med_post,
+    #   gap + i - op_mvn[[i]]$med_dens_height/scaling_factor,
+    #   op_mvn[[i]]$med_post,
+    #   gap + i + op_mvn[[i]]$med_dens_height/scaling_factor,
+    #   col = "grey50", lwd = 1)
   }
   polygon(c(op[[i]]$dens$x, rev(op[[i]]$dens$x)),
     i + c(op[[i]]$dens$y/scaling_factor, -rev(op[[i]]$dens$y/scaling_factor)),
-    border = "grey50", lwd = 1, col = "grey70")
-  segments(
-    op[[i]]$med_post,
-    i - op[[i]]$med_dens_height/scaling_factor,
-    op[[i]]$med_post,
-    i + op[[i]]$med_dens_height/scaling_factor,
-    col = "grey50", lwd = 1)
-  points(true[i], i, col = "red", pch = 19)
+    border = mvt_bar_colour, lwd = 0.5, col = mvt_bar_colour)
+  # segments(
+  #   op[[i]]$med_post,
+  #   i - op[[i]]$med_dens_height/scaling_factor,
+  #   op[[i]]$med_post,
+  #   i + op[[i]]$med_dens_height/scaling_factor,
+  #   col = "grey50", lwd = 1)
+  points(true[i], i+gap/2, col = "grey10", pch = 4)
   par(xpd = NA)
   par(xpd = FALSE)
 }
 
-axis(2, at = seq_along(op)+.2,
+text(0, 2.5, label = "x = true value", cex = cex_text, col = "grey50", pos = 4)
+text(1.5, 1+gap+0.1, label = expression(MVN~does~not), cex = cex_text, col = mvn_bar_colour, pos = 4)
+text(1.5, 1+gap+0.4, label = expression(estimate~nu), cex = cex_text, col = mvn_bar_colour, pos = 4)
+text(1.5, 2.8, label = expression(MVN), cex = cex_text, col = mvn_bar_colour, pos = 4)
+text(1.5, 2.8+0.3, label = expression(overestimates), cex = cex_text, col = mvn_bar_colour, pos = 4)
+text(1.5, 2.8+0.3+0.3, label = expression(sigma), cex = cex_text, col = mvn_bar_colour, pos = 4)
+
+# symbols(2.2, 2+gap, circles = 0.4, add = TRUE, inches = FALSE)
+
+axis(2, at = seq_along(op)+gap/2,
   labels = c(expression(nu), expression(sigma), expression(eta), expression(sigma[obs])),
-  las = 1, lwd = 0, line = 0.2)
-axis(1, at = seq(0, 5, 1), mgp = c(2, 0.3, 0))
-mtext("Coefficient value", side = 1, line = 1.5, cex = 0.75, col = text_colour)
+  las = 1, lwd = 0, line = 0.2, col.axis = margin_color, col = axis_colour)
+axis(1, at = seq(0, 5, 1), mgp = c(2, 0.3, 0), col = axis_colour, col.axis = axis_colour)
+mtext("Coefficient value", side = 1, line = margin_line, cex = axis_lab_cex, col = margin_color)
 box(col = axis_colour)
 # mtext("A", side = 3, line = 0, cex = 1.2, adj = -0.6, font = 2)
+add_label(label = "d)", cex = cex_text, col = margin_color)
 
 
-plot(0,0, xlim = c(-5, 25), ylim = c(0, 15), type = "n",
+plot(0,0, xlim = range(rmse$perc_better), ylim = c(0, 15), type = "n",
   xlab = "", axes = FALSE,
   ylab = "Count")
-mtext("% RMSE", side = 1, line = 1.5, cex = 0.75, col = text_colour)
-# mtext(expression(nu), side = 1, line = 2.5, cex = 0.75, col = text_colour)
-h <- hist(rmse$perc_better, probability = TRUE, breaks = seq(range(rmse$perc_better)[1], range(rmse$perc_better)[2], length.out = 10), plot = FALSE,
+mtext("% worse RMSE\nwith MVN vs. MVT", side = 1, line = margin_line+1, cex = axis_lab_cex, col = margin_color)
+h <- hist(rmse$perc_better, probability = TRUE, breaks = seq(range(rmse$perc_better)[1], range(rmse$perc_better)[2], length.out = 12), plot = FALSE,
   warn.unused = FALSE)
 for(j in seq_along(h$breaks)) {
   rect(h$breaks[j], 0, h$breaks[j+1], h$counts[j], border = "white",
     col = bar_colour, lwd = 1)
 }
 abline(v = 1, lty = 2, col = "grey30")
-# text(15, 0.07, "Prior", col = text_colour, pos = 4)
-# text(3.5, 0.3, "Posterior", col = bar_colour_dark, pos = 4)
+add_label(xfrac = 0.4, yfrac = 0.2, label = "MVT has\nlower RMSE", cex = cex_text, col = bar_colour_dark)
 axis(1, col = axis_colour, col.axis = axis_colour)
-# axis(2, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
+add_label(label = "e)", cex = cex_text, col = margin_color)
 
 
 plot(0,0, xlim = range(loo$delta_loo), ylim = c(0, 15), type = "n",
   xlab = "", axes = FALSE,
   ylab = "Count")
-mtext("Delta LOOIC", side = 1, line = 1.5, cex = 0.75, col = text_colour)
-# mtext(expression(nu), side = 1, line = 2.5, cex = 0.75, col = text_colour)
-h <- hist(loo$delta_loo, probability = TRUE, breaks = seq(range(loo$delta_loo)[1], range(loo$delta_loo)[2], length.out = 10), plot = FALSE,
+mtext(expression(Delta~LOOIC), side = 1, line = margin_line, cex = axis_lab_cex, col = margin_color)
+mtext("(MVN - MVT)", side = 1, line = margin_line+1, cex = axis_lab_cex, col = margin_color)
+h <- hist(loo$delta_loo, probability = TRUE,
+  breaks = seq(range(loo$delta_loo)[1],
+    range(loo$delta_loo)[2], length.out = 12), plot = FALSE,
   warn.unused = FALSE)
 for(j in seq_along(h$breaks)) {
   rect(h$breaks[j], 0, h$breaks[j+1], h$counts[j], border = "white",
     col = bar_colour, lwd = 1)
 }
 abline(v = 1, lty = 2, col = "grey30")
-# text(15, 0.07, "Prior", col = text_colour, pos = 4)
-# text(3.5, 0.3, "Posterior", col = bar_colour_dark, pos = 4)
 axis(1, col = axis_colour, col.axis = axis_colour)
-# axis(2, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
+add_label(label = "f)", cex = cex_text, col = margin_color)
+add_label(xfrac = 0.2, yfrac = 0.2, label = "LOOIC\nfavours MVT", cex = cex_text, col = bar_colour_dark)
 
 dev.off()
 

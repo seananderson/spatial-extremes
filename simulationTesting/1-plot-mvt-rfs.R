@@ -39,7 +39,7 @@ draws <- mutate(draws, i = paste("Draw", i))
 
 labels <- tibble::tibble(
   nu = c(2, 1e9),
-  nu_lab = c("MVT, df = 2", "MVN")
+  nu_lab = c("MVT, v = 2", "MVN")
 )
 
 draws <- inner_join(draws, labels, by = "nu")
@@ -49,7 +49,7 @@ p <- draws %>%
   facet_grid(nu_lab~i) +
   geom_raster() +
   # scale_fill_gradient2(low = "#01665e", mid = "#f5f5f5", high = "#8c510a") +
-  viridis::scale_fill_viridis() +
+  viridis::scale_fill_viridis(option = "C") +
   theme_sleek() +
   theme(axis.line=element_blank(),
     axis.text.x=element_blank(),
@@ -64,7 +64,9 @@ p <- draws %>%
     panel.grid.minor=element_blank(),
     plot.background=element_blank()) +
   theme(panel.spacing = unit(-0.15, "lines"))
-print(p)
+# cairo_pdf("figs/nu-rf-illustration-small.pdf", width = 4.5, height = 3)
+# print(p)
+# dev.off()
 ggsave("figs/nu-rf-illustration-small.pdf", width = 4.5, height = 3)
 
 # for irregular spacing interpolation:

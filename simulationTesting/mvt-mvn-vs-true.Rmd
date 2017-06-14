@@ -128,7 +128,7 @@ if (!file.exists("simulationTesting/match-mismatch-rmse.rds")) {
         rmse = sqrt(mean(sq_error)),
         rmse_wrong = sqrt(mean(sq_error_wrong))) %>%
       mutate(i = i) %>%
-      mutate(perc_better = (rmse_wrong - rmse) / rmse_wrong * 100)
+      mutate(perc_better = (rmse_wrong - rmse) / rmse * 100)
   })
   saveRDS(rmse, file = "simulationTesting/match-mismatch-rmse.rds")
 } else {

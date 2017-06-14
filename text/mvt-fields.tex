@@ -28,6 +28,7 @@
 
 \textheight 22.0cm
 
+
 \usepackage{pdflscape}
 \usepackage{makecell}
 % \renewcommand{\cellalign/theadalign}{cl}
@@ -523,7 +524,7 @@ The R package \textbf{rrfields} is available at TODO.
   \begin{center}
     \includegraphics[width=0.55\textwidth]{../figs/nu-rf-illustration-small.pdf}
     \caption{An illustration of three draws from a MVN random field (top row)
-      vs.\ five draws from a MVT random field with heavy tails
+      vs.\ three draws from a MVT random field with heavy tails
       (degrees of freedom, $\nu$, of 2; bottom row). Random seeds are held constant
       between the rows
       to illustrate the effect. Draws represent slices of time with independent spatial
@@ -537,7 +538,7 @@ The R package \textbf{rrfields} is available at TODO.
 
 \begin{figure}[htb]
   \begin{center}
-    \includegraphics[width=0.95\textwidth]{../figs/recapture-3-base.pdf}
+    \includegraphics[width=0.8\textwidth]{../figs/simulation-results.pdf}
     \caption{Simulation testing the MVT random fields model.
       Upper row
       panels illustrate the ability to recapture the
@@ -556,8 +557,8 @@ The R package \textbf{rrfields} is available at TODO.
       Lower row panels illustrate the impact of fitting MVN and MVT models
       when the true underlying data are drawn from MVT random fields.
       (d) Parameter posteriors for an
-      example model fit of a mismatched MVN model (white)
-      and a correct MVT model (grey) (red dots show the true values).
+      example model fit of a mismatched MVN model (orange)
+      and a correct MVT model (blue) (black crosses indicate true values).
       (e) Percent greater root mean squared error (RMSE)
       and (f) $\Delta$ LOOIC (leave-one-out information criteria)
       for the mismatched MVN model compared to the correct MVT model.
@@ -568,12 +569,12 @@ The R package \textbf{rrfields} is available at TODO.
 
 \begin{figure}[htb]
   \begin{center}
-    \includegraphics[width=0.6\textwidth]{../figs/beetle-performance.pdf}
+    \includegraphics[width=0.8\textwidth]{../figs/beetle-performance.pdf}
     \caption{
-      Model fit characteristics of autoregressive random fields 
+      Model fit characteristics of autoregressive random fields
       models fit to mountain pine beetle data from the US Pacific Northwest.
-      (a) Map of the region with individual observations for one year shown with 
-      brown dots. 
+      (a) Map of the region with individual observations for one year shown with
+      brown dots.
       (b) Photograph of a pine beetle infested forest in British Columbia, Canada.
       (c) Posterior and prior distributions of the degrees of freedom parameter, $\nu$.
       (d) Log predictive density for held-out data for MVT (blue) and MVN (orange) models.
@@ -588,7 +589,7 @@ The R package \textbf{rrfields} is available at TODO.
 \begin{figure}[htb]
   \begin{center}
     \includegraphics[width=0.65\textwidth]{../figs/beetles-mvt-predictions.pdf}
-    \caption{Predicted severity of mountain pine beetle outbreaks in Washington and
+    \caption{Modeled severity of mountain pine beetle outbreaks in Washington and
       Oregon State in the United States from 1999 to 2014.
       Shown are medians of the modeled parameter $\mu_{s,t}$ from Equation \ref{eq:beetle-mu}
       --- a spatiotemporal MVT random fields model.
@@ -628,7 +629,6 @@ The R package \textbf{rrfields} is available at TODO.
 
 \clearpage
 
-
 \begin{figure}[htb]
   \begin{center}
     \includegraphics[width=0.90\textwidth]{../figs/sim-recapture.pdf}
@@ -644,25 +644,27 @@ The R package \textbf{rrfields} is available at TODO.
 
 \begin{landscape}
   \begin{table}
+    \begin{minipage}{\textwidth}
     \caption{
       Comparison of select R packages for spatiotemporal analysis with random fields.
     }
     \label{tab:packages}
     \begin{scriptsize}
-      \begin{tabular}{llllL{2cm}lL{2.5cm}lL{2.5cm}llL{2.5cm}}
+      \begin{tabular}{llllL{2cm}lL{2.4cm}lL{2.0cm}llL{2.0cm}}
         \toprule
-        Package  & \thead[l]{MVT \\ random \\ fields} & \thead[l]{Formula          \\ interface} & Multivariate                                                     & Estimation & \thead[l]{Simulation                              \\ function} & \thead[l]{Observation \\ model}                                                      & \thead[l]{Maximum \\ likelihood \\ estimation} & \thead[l]{Covariance \\ functions} & \thead[l]{AR Spatial \\ Fields} & \thead[l]{Dynamic \\ Linear \\ Models} & URL \\
+        Package  & \thead[l]{MVT \\ random \\ fields} & \thead[l]{Formula          \\ interface} & \thead[l]{Multi-                                                 \\ variate} & Estimation              & \thead[l]{Simulation \\ function} & \thead[l]{Observation                                      \\ model} & \thead[l]{Maximum \\ likelihood \\ estimation} & \thead[l]{Covariance \\ functions} & \thead[l]{AR Spatial \\ Fields} & \thead[l]{Dynamic \\ Linear \\ Models} & URL \\
         \midrule
-        spTimer  & No             & ??      & No      & MCMC                        & No         & Gaussian                                                         & No         & Exponential, Gaussian, Matern family, Spherical    & Yes       & No                     & https://cran.r-project.org/web/packages/spTimer/index.html \\
-        spate    & No             & ??      & No      & MCMC/SPDE                   & Yes        & Gaussian, skewed Tobit                                           & Yes        & Matern family                                      & No        & No                     & https://cran.r-project.org/web/packages/spate/index.html   \\
-        spBayes  & No             & ??      & Yes     & MCMC                        & No         & Gaussian, Binomial, Poisson                                      & No         & Exponential, Gaussian, Matern family, Spherical    & No        & Yes                    & https://cran.r-project.org/web/packages/spBayes/index.html \\
-        INLA     & No             & Yes     & Yes     & Approximate Posterior/SPDE  & Yes        & Many                                                             & Yes        & Exponential, Gaussian, Matern family, many others  & Yes       & Yes                    & http://www.r-inla.org/                                     \\
-        VAST     & No             & No      & No      & MCMC/SPDE                   & Yes        & Gaussian, Lognormal, Gamma, Binomial, Poisson, Negative Binomial & Yes        & Matern family                                      & Yes       & No                     & https://github.com/James-Thorson/VAST                      \\
-        rrfields & Yes            & Yes     & No      & MCMC/NUTS                   & Yes        & Gaussian, Lognormal, Gamma, Binomial, Poisson, Negative Binomial & No         & Exponential, Gaussian, Matern family               & Yes       & Yes                    & https://github.com/seananderson/rrfields                   \\
+        spTimer  & No             & Yes     & No      & MCMC                        & No         & Gaussian                                                          & No       & Exponential, Gaussian, Matern family, Spherical   & Yes                   & No        & \url{https://CRAN.R-project.org/package=spTimer} \\
+        spate    & No             & No      & No      & MCMC/SPDE                   & Yes        & Gaussian, skewed Tobit                                            & Yes      & Matern family                                     & No                    & No        & \url{https://CRAN.R-project.org/package=spate} \\
+        spBayes  & No             & Yes     & Yes     & MCMC                        & No         & Gaussian, Binomial, Poisson                                       & No       & Exponential, Gaussian, Matern family, Spherical   & No                    & Yes       & \url{https://CRAN.R-project.org/package=spBayes} \\
+        INLA     & No             & Yes     & Yes     & Approximate posterior/SPDE  & Yes        & Many                                                              & Yes      & Exponential, Gaussian, Matern family, many others & Yes                   & Yes       & \url{http://www.r-inla.org/}                                     \\
+        VAST     & No             & No      & No      & Maximum likelihood/SPDE     & Yes        & Gaussian, Lognormal, Gamma, Binomial, Poisson, Negative Binomial  & Yes      & Matern family                                     & Yes                   & No        & \url{https://github.com/James-Thorson/VAST}                      \\
+        rrfields & Yes            & Yes     & No      & MCMC/NUTS                   & Yes        & Gaussian, Lognormal, Gamma, Binomial, Poisson, Negative Binomial  & No       & Exponential, Gaussian, Matern family              & Yes                   & Yes       & \url{https://github.com/seananderson/rrfields}                  \\
         \bottomrule
       \end{tabular}
     \end{scriptsize}
 
+  \end{minipage}
   \end{table}
 \end{landscape}
 
