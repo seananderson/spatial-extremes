@@ -452,6 +452,33 @@ A complete reproducible version of this analysis is available at
 
 \section{Results}
 
+Under most scenarios we were able to recapture the value of $\nu$ with
+reasonable accuracy and without bias (Figure~\ref{fig:recapture}a--c).
+The number of time steps had the largest effect on the ability to detect low
+values of $\nu$. For example, the median absolute proportional error (MAPE)
+between $\nu$ and $\hat{\nu}$ (median of the posterior) was only XX in the case
+with 25 time steps, minimal observation error (CV = 0.1), and $\nu = 2.5$.
+However, the MAPE increased by XX\% and XX\% when the number of time steps was
+reduced to 15 and 5, respectively (Figure~\ref{fig:recapture}b). 
+Observation error did not substantially affect the estimation of $\nu$ until it
+reached considerable levels (i.e. CV = 1.2; Figure~\ref{fig:recapture}c).
+
+When the true underlying data were generated with spatiotemporal extremes (MVT
+$\nu = 2$), fitting a Gaussian (MVN) random fields ignoring these extremes
+affected out-of-sample predictive accuracy and reduced predictive precision
+(Figure~\ref{fig:recapture}d--f). The model misspecification tended to result
+in an overestimate of $\sigma$ (which controls the magnitude of the random
+field deviations) to account for effectively fixing $\nu = \infty$
+(Figure~\ref{fig:recapture}d). For the chosen set of parameters, the
+out-of-sample RMSE was generally higher for the misspecified MVN model compared
+to a correctly specified MVT model that estimated $\nu$ (median RMSE = XX,
+interquartile range = XX; Figure~\ref{fig:recapture}e). TODO: something
+summarizing the credible interval widths here? The leave-one-out information
+criterion (LOOIC) correctly identified the MVT model in XX\% of the
+simulations. 
+
+
+
 \section{Discussion}
 
 As the simulation results from our MVT versus MVN models indicate, the largest
