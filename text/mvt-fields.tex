@@ -606,6 +606,54 @@ The R package \textbf{rrfields} is available at TODO.
 
 \section{Supporting Information}
 
+\subsection{Model comparison calculations}
+
+We compared MVN and MVT models via RMSE (root mean squared error), $\Delta$
+LOOIC (leave-one-out information criteria), credible interval width,
+and log predictive density. Here, we describe these calculations:
+
+We calculated the log predictive density (lpd) as:
+
+\begin{equation}
+  \mathrm{lpd} = \sum^{S}_{s=1}{ \sum^{T}_{t=1}{ \log  p(\mu_{s,t} | \widehat{y_{s,t}}, \theta)}},
+\end{equation}
+
+\noindent where $\mu_{s,t}$ represents the true (unobserved) response value at
+location $s$ and time $t$, $\widehat{y_{s,t}}$ indicates the predicted
+response value at location $s$ and time $t$, and $\theta$ represents estimated
+parameters. We display the distribution of these quantities across MCMC
+samples. 
+
+The Bayesian LOO (leave-one-out) estimate of out-of-sample
+predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
+\begin{equation}
+  \mathrm{elpd}_\mathrm{loo} = \sum^{n}_{i=1}{\log ( p(y_i | y_{-1}) },
+\end{equation}
+
+\noindent where
+
+\begin{equation}
+  p(y_i | y_{i-1}) = \int p(y_i | \theta) p (\theta | y_{-i}) d \theta ,
+\end{equation}
+
+\noindent is the predictive density given the data without the $i$th data
+point \citep{vehtari2016}. For computational efficiency, the LOO R package
+calculates LOO using an approach called Pareto smoothed importance sampling
+\citep{vehtari2016}.
+
+We calculated the root mean squared error (RMSE) as:
+
+\begin{equation}
+  \sqrt{ \sum^{T}_{t=1}{ \sum^{S}_{s=1}{ (\mu_{s,t} - \widehat{ \mu_{s,t} })^2 } } }
+\end{equation}
+
+\noindent where $\widehat{\mu_{s,t}}$ represents the median of the posterior
+of $\mu_{s,t}$.
+
+We calculated the ratio of the credible interval widths as:
+
+TODO
+
 \renewcommand{\thefigure}{S\arabic{figure}}
 \renewcommand{\thetable}{S\arabic{table}}
 \setcounter{figure}{0}
