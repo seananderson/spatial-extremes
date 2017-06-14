@@ -459,34 +459,35 @@ values of $\nu$. For example, the median absolute proportional error (MAPE)
 between $\nu$ and $\hat{\nu}$ (median of the posterior) was only XX in the case
 with 25 time steps, minimal observation error (CV = 0.1), and $\nu = 2.5$.
 However, the MAPE increased by XX\% and XX\% when the number of time steps was
-reduced to 15 and 5, respectively (Figure~\ref{fig:recapture}b). 
+reduced to 15 and 5, respectively (Figure~\ref{fig:recapture}b).
 Observation error did not substantially affect the estimation of $\nu$ until it
 reached considerable levels (i.e. CV = 1.2; Figure~\ref{fig:recapture}c).
 
 When the true underlying data were generated with spatiotemporal extremes (MVT
 $\nu = 2$), fitting a Gaussian (MVN) random fields ignoring these extremes
-affected out-of-sample predictive accuracy and reduced predictive precision
+reduced out-of-sample predictive accuracy and precision
 (Figure~\ref{fig:recapture}d--f). The model misspecification tended to result
 in an overestimate of $\sigma$ (which controls the magnitude of the random
 field deviations) to account for effectively fixing $\nu = \infty$
 (Figure~\ref{fig:recapture}d). For the chosen set of parameters, the
 out-of-sample RMSE was generally higher for the misspecified MVN model compared
-to a correctly specified MVT model that estimated $\nu$ (median RMSE = XX,
-interquartile range = XX; Figure~\ref{fig:recapture}e). TODO: something
-summarizing the credible interval widths here? The leave-one-out information
-criterion (LOOIC) correctly identified the MVT model in XX\% of the
-simulations. 
+to a correctly specified MVT model that estimated $\nu$ (median RMSE = XX;
+Figure~\ref{fig:recapture}e). TODO: something summarizing the credible interval
+widths here? The leave-one-out information criterion (LOOIC) correctly
+identified the MVT model in XX\% of the simulations.
 
-The MVT random fields model generated more accurate and more precise
-out-of-sample predictions for the mountain pine beetle data set
-(Figure~\ref{fig:map-etc}). The degrees of freedom parameter, $\nu$, was
-estimated at a value that indicates considerably heavy tails in the
-autoregressive spatiotemporal process (median $\nu = XX$, 95\% CI = XX--XX,
-Figure~\ref{fig:map-etc}c). The log predictive density (lpd) for held-out data
-was higher for the MVT model compared to the MVN (median lpd = XX vs.\ XX,
-Figure~\ref{fig:map-etc}d). Finally, 95\% credible intervals were on average XX
-times wider for the MVN model compared to the MVT model
-(Figure~\ref{fig:map-etc}e).
+The MVT random fields model generated more accurate and precise out-of-sample
+predictions for the mountain pine beetle data set (Figure~\ref{fig:map-etc}).
+The degrees of freedom parameter, $\nu$, was estimated at a value that
+indicates considerably heavy tails in the autoregressive spatiotemporal process
+(median $\nu = XX$, 95\% CI = XX--XX, Figure~\ref{fig:map-etc}c). The log
+predictive density (lpd) for held-out data was higher for the MVT model
+compared to the MVN (median lpd = XX vs.\ XX, Figure~\ref{fig:map-etc}d).
+Finally, the 95\% credible intervals were on average XX times wider for the MVN
+model compared to the MVT model (Figure~\ref{fig:map-etc}e). Spatiotemporal
+predictions from the MVT model demonstrate evolving hotspots of pine beetle
+infestation in the US Pacific Northwest, particularly in the late 2000s
+(Figure~\ref{fig:beetle-pred}).
 
 \section{Discussion}
 
@@ -658,7 +659,7 @@ We calculated the log predictive density (lpd) as:
 location $s$ and time $t$, $\widehat{y_{s,t}}$ indicates the predicted
 response value at location $s$ and time $t$, and $\theta$ represents estimated
 parameters. We display the distribution of these quantities across MCMC
-samples. 
+samples.
 
 The Bayesian LOO (leave-one-out) estimate of out-of-sample
 predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
