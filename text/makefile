@@ -11,4 +11,4 @@ continuous:
 	while true; do make --silent; sleep 1; done
 
 dropbox:
-	cp mvt-fields.pdf ~/Dropbox/
+	cp mvt-fields.pdf ~/Dropbox/Public/
