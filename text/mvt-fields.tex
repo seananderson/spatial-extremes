@@ -5,6 +5,8 @@
 \geometry{letterpaper}
 \usepackage{graphicx}
 \usepackage{amsmath}
+\usepackage{amsfonts}
+
 \usepackage{setspace}
 \usepackage{url}
 \usepackage{lineno}
@@ -14,17 +16,18 @@
 \modulolinenumbers[2]
 
 \usepackage{booktabs}
+\usepackage{bm}
 
 % Linux Libertine:
 \usepackage{textcomp}
-\usepackage[sb]{libertine}
-\usepackage[varqu,varl]{inconsolata}% sans serif typewriter
-\usepackage[libertine,bigdelims,vvarbb]{newtxmath} % bb from STIX
-\usepackage[cal=boondoxo]{mathalfa} % mathcal
-\useosf % osf for text, not math
-\usepackage[supstfm=libertinesups,%
-  supscaled=1.2,%
-  raised=-.13em]{superiors}
+% \usepackage[sb]{libertine}
+% \usepackage[varqu,varl]{inconsolata}% sans serif typewriter
+% \usepackage[libertine,bigdelims,vvarbb]{newtxmath} % bb from STIX
+% \usepackage[cal=boondoxo]{mathalfa} % mathcal
+% \useosf % osf for text, not math
+% \usepackage[supstfm=libertinesups,%
+  % supscaled=1.2,%
+  % raised=-.13em]{superiors}
 
 \textheight 22.0cm
 
@@ -396,12 +399,10 @@ in the US states of Oregon and Washington from 1994 to 2014.
 Because the maximum proportion affected was far from $1$, we
 can fit a model with a log link and lognormal observation distribution
 (as opposed to a logit link and a beta observation distribution).
-The log of the mean proportion affected at location $s$ and time $t$, $\mu_{s,t}$,
-is predicted by an initial intercept, $\beta_0$, a year-specific mean estimate, $\beta_t$,
+The log of the mean proportion affected at location $s$ and time $t$, $\mu_{s,t}$
+is predicted by a year-specific random walk defined by $\beta_t$,
 and the spatiotemporal process $\gamma_{s,t}$,
-with the spatial process modeled as autoregressive:
-% and centered at each time step:
-
+with the spatial process itself modeled as autoregressive:
 
 \begin{align}
   \log(\mu_{s,t}) &= \beta_0 + \beta_t + \gamma_{s,t},\\
@@ -422,6 +423,8 @@ with scale parameter $\sigma_{\mathrm{obs}}$:
   y_{s,t} &\sim \mathrm{LogNormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right).
  \end{align}
 
+See the Supporting Information for a definition of the posterior and joint
+probability distributions.
 We chose 25 knots to represent the spatial process
 (increasing the number of knots did not substantially affect the results).
 We fit the models with half-$t$(3, 0, 3) priors on all
@@ -642,6 +645,44 @@ The R package \textbf{rrfields} is available at TODO.
 \clearpage
 
 \section{Supporting Information}
+
+\subsection{Posterior and joint distributions}
+
+The beetle model:
+
+\begin{multline}
+  [\bm{\mu}, 
+  \bm{\gamma}, 
+  \bm{W}, 
+  \bm{\beta}, 
+  \phi, 
+  \eta,
+  \nu, 
+  \sigma^2_{\mathrm{obs}}, 
+  \sigma^2_{\beta}, 
+  \sigma^2
+  |
+  \bm{y}] 
+  \propto \\
+  \prod_{s=1}^{S} \prod_{t=1}^{T} 
+  [y_{s,t} | \mu_{s,t}, \sigma^2_{\mathrm{obs}}] \\
+  \times [\mu_{s,t} | \mu_{s,t-1}, \beta_t, \gamma_{s,t} ] \\
+  \times [\gamma_{s,t} | \gamma_{s,t-1}, \phi, W_{s,t}] \\
+  \times [\beta_t | \beta_{t-1}, \sigma^2_{\beta}] \\
+  \times [W_{s,t} | \nu, \sigma^2, \eta] \\
+  \times 
+  [\beta_{t=1}]
+  [\phi]
+  [\gamma_{s,t=1}]
+  [\eta]
+  [\nu]
+  [\sigma^2_{\mathrm{obs}}]
+  [\sigma^2_{\beta}]
+  [\sigma^2] 
+  \\
+\end{multline}
+
+% \end{equation}
 
 \subsection{Model comparison calculations}
 
