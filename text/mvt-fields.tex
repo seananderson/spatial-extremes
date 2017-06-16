@@ -471,20 +471,87 @@ infestation in the US Pacific Northwest, particularly in the late 2000s
 
 \section{Discussion}
 
-We introduced a spatiotemporal model that is robust to spatial extremes through
+We introduced a model to ecology that is robust to spatial extremes through
 time. Our model substitutes a MVT distribution for the usual MVN distribution
-used in Gaussian Markov random field models.
+used in Gaussian Markov random field models, and in doing so, allows for
+outlying spatial events to occur. Through simulation, we demonstrate that our
+model can be accurately fit to data,
 
-What ecological and environmental processes could lead to spatiotemporal
-extremes?
+The gist of the MVT random fields model, 
 
-We expect the MVT random fields model to be widely useful in the fields of
-ecology, environmental sciences, and fisheries. For example,
+The MVT random fields model is useful because it lets a model be misspecified
 
-Our associated R package, \textbf{rrfields}, is flexible and includes
-considerable additional features beyond those described thus far. For example,
+The strength of the MVT random fields model is that it lets the model 
 
-To be sure, there are limitations to the approach described in this paper.
+\begin{itemize}
+
+  \item Behaviour / movement, e.g. fish shoaling that is not explicitly
+    accounted for 
+
+  \item Environmental extremes or ecological interactions that are not accounted
+    for
+
+  \item Changes to sampling or observation process through time that are not
+    accounted for, e.g. different people conducting survey or different gear
+
+  \item In summary, it allows the model to be robust to sh*t happening
+
+\end{itemize}
+
+There are many ecological, environmental, and anthropogenic processes that could
+generate spatiotemporal extremes.  that could generate We expect the MVT random
+fields model to be widely useful in the fields of ecology, environmental
+sciences, and fisheries. For example,
+
+\begin{itemize}
+
+  \item Fisheries Thorson ECE REF, extreme highs or lows in recruitment, extreme
+    windfalls and catch, shoaling
+
+  \item Climate anomalies
+
+  \item Disturbances such as wildfires, oil spills, or disease outbreaks
+
+\end{itemize}
+
+Our associated R package, \textbf{rrfields}, is designed to be familiar for
+anyone who has fit GLMs in R, and includes considerable flexibility for features
+beyond those described thus far.
+
+\begin{itemize}
+
+  \item Spatial GLMs
+
+  \item Covariates numeric or factors
+
+  \item Includes unit tests with simulated data and fits to all major model
+    configurations
+
+  \item Includes a simulation function that can simulate data from any model
+    that the function can fit
+
+  \item Flexible evolution of the spatial process (static field, fields modeled
+    as AR1, random walk fields, exchangeable fields)
+
+  \item Other observation models and link functions
+
+\end{itemize}
+
+There are a number of limitations to the approach described in this paper.
+
+\begin{itemize}
+
+  \item Needs many times slices 
+
+  \item Not anisotropic yet
+
+  \item Probably better to include processes that render the spatial effects MVN
+
+  \item Must pick the number of knots 
+
+  \item Spatial process might not be well described by a random field 
+
+\end{itemize}
 
 An important area of future research is to include sparse matrix algorithms in
 spatial models of extreme events.
