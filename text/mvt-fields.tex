@@ -6,7 +6,6 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amsfonts}
-
 \usepackage{setspace}
 \usepackage{url}
 \usepackage{lineno}
@@ -14,41 +13,25 @@
 \usepackage{bm}
 \renewcommand\linenumberfont{\normalfont\tiny\sffamily\color{gray}}
 \modulolinenumbers[2]
-
 \usepackage{booktabs}
 \usepackage{bm}
-
-% Linux Libertine:
-\usepackage{textcomp}
-% \usepackage[sb]{libertine}
-% \usepackage[varqu,varl]{inconsolata}% sans serif typewriter
-% \usepackage[libertine,bigdelims,vvarbb]{newtxmath} % bb from STIX
-% \usepackage[cal=boondoxo]{mathalfa} % mathcal
-% \useosf % osf for text, not math
-% \usepackage[supstfm=libertinesups,%
-  % supscaled=1.2,%
-  % raised=-.13em]{superiors}
-
 \textheight 22.0cm
-
 
 \usepackage{pdflscape}
 \usepackage{makecell}
-% \renewcommand{\cellalign/theadalign}{cl}
-
 \usepackage{array}
 \newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
-
 \usepackage{parskip}
 % \setlength{\parindent}{0pt}
 % \setlength{\parskip}{1\bigskipamount plus \smallskipamount minus \smallskipamount}
 \usepackage{ragged2e}
-
 \usepackage[round,sectionbib]{natbib}
 \bibpunct{(}{)}{;}{a}{}{;}
 \bibliographystyle{mee}
 
-\title{Black swans in space: modelling spatiotemporal extremes in ecology}
+\title{
+  Black swans in space:
+  robust modelling of extreme spatiotemporal processes}
 \author{
 Sean C. Anderson$^1$ and
 Eric J. Ward$^2$
@@ -61,16 +44,8 @@ Eric J. Ward$^2$
 \RaggedRight
 \hyphenpenalty=500
 
-
 \begin{spacing}{1.3}
 % \begin{spacing}{1.9}
-% Point 1: set the context and purpose for the work;
-% Point 2: indicate the approach and methods used;
-% Point 3: outline the main results;
-% Point 4: identify the conclusions, the wider implications and the relevance to management or policy.
-% •	Key-words: Provide a maximum of 10 keywords or phrases.
-
-
 % \begin{flushleft}
 
 \begin{abstract}
@@ -104,6 +79,8 @@ and scientists in other disciplines interested in predicting extreme events.
 \end{abstract}
 
 \section{Introduction}
+
+% TODO: cite \citep{conn2015}
 
 Applications of statistical models that allow for joint inference about spatial
 and temporal dynamics have advanced rapidly in ecology over the last several
@@ -256,7 +233,7 @@ spatial patterns --- the degree of wiggliness implied by a value of $\eta$
 depends on the scale of the $\delta_{ij}$.
 
 The elements of the covariance matrix at the $m$ knot locations are therefore
-defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta}  \right)$ with the
+defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta} \right)$ with the
 parameter $\sigma$ scaling the amplitude of the spatial process deviations. Our
 package also allows for the exponential covariance function $H(\delta_{ij}) =
 \exp \left(-\frac{\delta_{ij} }{\eta} \right)$ and the Matern family and could be
@@ -494,55 +471,76 @@ infestation in the US Pacific Northwest, particularly in the late 2000s
 
 \section{Discussion}
 
-As the simulation results from our MVT versus MVN models indicate, the largest
-benefit of modeling random effects as MVT instead of MVN distributions is the
-improved precision of predictions, both for training and out of sample data.
-For example, the CV of predictions was XX percent smaller with the MVT model.
-When MVN models are applied to data that include spatial extremes, we found that
-the MVT model compensated by increasing the process variance. Because the MVT model
-converges to the MVN model for large df, and only includes one additional parameter,
-we recommend using models with MVT spatial fields even if anomalous events are not
-thought to be present a priori.
+We introduced a spatiotemporal model that is robust to spatial extremes through
+time. Our model substitutes a MVT distribution for the usual MVN distribution
+used in Gaussian Markov random field models.
 
-One of the biggest hurdles in identifying support for MVT spatial fields (small estimated
-df parameter) is using spatiotemporal data sets that have enough time slices to capture
-extreme events. [tie into sim results]. The ability to detect spatial anomalies in ecological
-processes may also be affected by the number or selection of knots, however our results
-show that spatial extremes can be identified even using a small numbers of knots. Like other
-state-space models, inference about spatial extremes may be corrupted by observation
-error (both the observation model, and magnitude). Our results indicate that spatial events
-can be identified with moderate to high observation error (coefficient of variation ~ 1).
+What ecological and environmental processes could lead to spatiotemporal
+extremes?
 
-[paragraph on bark beetles]
+We expect the MVT random fields model to be widely useful in the fields of
+ecology, environmental sciences, and fisheries. For example,
 
-[I don't know if this is really needed, but something like this could be expanded
+Our associated R package, \textbf{rrfields}, is flexible and includes
+considerable additional features beyond those described thus far. For example,
 
-As complex spatial models have become more user-friendly, we expect the rapid use
-of spatiotemporal models to be continued. Examples of possible applications beyond
-bark beetles include to models of fisheries (cite Thorson ECE paper), applications
-to climate anomalies (http://www.pnas.org/content/106/Supplement\_2/19723.short),
-or to other disturbances - wildfires, oil spills, and disease outbreaks.]
+To be sure, there are limitations to the approach described in this paper.
 
-There are a number of features included in the 'rrfields' package that may be
-useful to ecologists, but beyond the scope of this paper. Examples of features
-include the addition of covariates (numeric or factors), models for temporal
-processes (random effects), and flexible models for the evolution of the spatial
-process (a static field shared across time, fields modeled as an AR(1) process,
-or fields modeled as exchangeable). Like GLMs, we have also provided a range of
-commonly encountered discrete and continuous observation models to fit a wide
-range of data types.
+An important area of future research is to include sparse matrix algorithms in
+spatial models of extreme events.
 
-One approach not currently included in 'rrfields', but an important recommendation
-for future research is to include sparse matrix algorithms in spatial models of
-extreme events. Recent advances to spatial models with very large datasets has
-been the stochastic partial differential equation (SPDE)  approximation to
-Gaussian random fields proposed by \citet{lindgren2011}. These methods have
-been accessible via the integrated nested Laplace approximation (INLA)
-\citep{rue2009}, which allows for approximate Bayesian sampling of the posterior
-without Markov chain Monte Carlo (MCMC) sampling. Use of the SPDE-INLA approach has
-increased rapidly in ecology over the last five years \citep[e.g.][]{illian2013, ono2016},
-and is significantly faster than other approaches (in part, because of integration with
-TMB, cite VAST etc.).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% As the simulation results from our MVT versus MVN models indicate, the largest
+% benefit of modeling random effects as MVT instead of MVN distributions is the
+% improved precision of predictions, both for training and out of sample data.
+% For example, the CV of predictions was XX percent smaller with the MVT model.
+% When MVN models are applied to data that include spatial extremes, we found that
+% the MVT model compensated by increasing the process variance. Because the MVT model
+% converges to the MVN model for large df, and only includes one additional parameter,
+% we recommend using models with MVT spatial fields even if anomalous events are not
+% thought to be present a priori.
+%
+% One of the biggest hurdles in identifying support for MVT spatial fields (small estimated
+% df parameter) is using spatiotemporal data sets that have enough time slices to capture
+% extreme events. [tie into sim results]. The ability to detect spatial anomalies in ecological
+% processes may also be affected by the number or selection of knots, however our results
+% show that spatial extremes can be identified even using a small numbers of knots. Like other
+% state-space models, inference about spatial extremes may be corrupted by observation
+% error (both the observation model, and magnitude). Our results indicate that spatial events
+% can be identified with moderate to high observation error (coefficient of variation ~ 1).
+%
+% [paragraph on bark beetles]
+%
+% [I don't know if this is really needed, but something like this could be expanded
+%
+% As complex spatial models have become more user-friendly, we expect the rapid use
+% of spatiotemporal models to be continued. Examples of possible applications beyond
+% bark beetles include to models of fisheries (cite Thorson ECE paper), applications
+% to climate anomalies (http://www.pnas.org/content/106/Supplement\_2/19723.short),
+% or to other disturbances - wildfires, oil spills, and disease outbreaks.]
+%
+% There are a number of features included in the 'rrfields' package that may be
+% useful to ecologists, but beyond the scope of this paper. Examples of features
+% include the addition of covariates (numeric or factors), models for temporal
+% processes (random effects), and flexible models for the evolution of the spatial
+% process (a static field shared across time, fields modeled as an AR(1) process,
+% or fields modeled as exchangeable). Like GLMs, we have also provided a range of
+% commonly encountered discrete and continuous observation models to fit a wide
+% range of data types.
+%
+% One approach not currently included in 'rrfields', but an important recommendation
+% for future research is to include sparse matrix algorithms in spatial models of
+% extreme events. Recent advances to spatial models with very large datasets has
+% been the stochastic partial differential equation (SPDE)  approximation to
+% Gaussian random fields proposed by \citet{lindgren2011}. These methods have
+% been accessible via the integrated nested Laplace approximation (INLA)
+% \citep{rue2009}, which allows for approximate Bayesian sampling of the posterior
+% without Markov chain Monte Carlo (MCMC) sampling. Use of the SPDE-INLA approach has
+% increased rapidly in ecology over the last five years \citep[e.g.][]{illian2013, ono2016},
+% and is significantly faster than other approaches (in part, because of integration with
+% TMB, cite VAST etc.).
 
 \section{Acknowledgements}
 
@@ -651,26 +649,26 @@ The R package \textbf{rrfields} is available at TODO.
 The beetle model:
 
 \begin{multline}
-  [\bm{\mu}, 
-  \bm{\gamma}, 
-  \bm{W}, 
-  \bm{\beta}, 
-  \phi, 
+  [\bm{\mu},
+  \bm{\gamma},
+  \bm{W},
+  \bm{\beta},
+  \phi,
   \eta,
-  \nu, 
-  \sigma^2_{\mathrm{obs}}, 
-  \sigma^2_{\beta}, 
+  \nu,
+  \sigma^2_{\mathrm{obs}},
+  \sigma^2_{\beta},
   \sigma^2
   |
-  \bm{y}] 
+  \bm{y}]
   \propto \\
-  \prod_{s=1}^{S} \prod_{t=1}^{T} 
+  \prod_{s=1}^{S} \prod_{t=1}^{T}
   [y_{s,t} | \mu_{s,t}, \sigma^2_{\mathrm{obs}}] \\
   \times [\mu_{s,t} | \mu_{s,t-1}, \beta_t, \gamma_{s,t} ] \\
   \times [\gamma_{s,t} | \gamma_{s,t-1}, \phi, W_{s,t}] \\
   \times [\beta_t | \beta_{t-1}, \sigma^2_{\beta}] \\
   \times [W_{s,t} | \nu, \sigma^2, \eta] \\
-  \times 
+  \times
   [\beta_{t=1}]
   [\phi]
   [\gamma_{s,t=1}]
@@ -678,11 +676,9 @@ The beetle model:
   [\nu]
   [\sigma^2_{\mathrm{obs}}]
   [\sigma^2_{\beta}]
-  [\sigma^2] 
+  [\sigma^2].
   \\
 \end{multline}
-
-% \end{equation}
 
 \subsection{Model comparison calculations}
 
@@ -789,10 +785,8 @@ TODO
         \bottomrule
       \end{tabular}
     \end{scriptsize}
-
   \end{minipage}
   \end{table}
 \end{landscape}
 
 \end{document}
-
