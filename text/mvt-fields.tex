@@ -27,7 +27,7 @@
 \usepackage{ragged2e}
 \usepackage[round,sectionbib]{natbib}
 \bibpunct{(}{)}{;}{a}{}{;}
-\bibliographystyle{mee}
+\bibliographystyle{ecology3}
 
 \title{
   Black swans in space:
@@ -97,7 +97,7 @@ that most ecologists are already familiar with, such as generalized linear
 models (GLMs) or generalized additive models (GAMs). Spatial relationships can
 be included as predictors in models of the mean (such as in a 2-dimensional
 GAM) or can be included in models of the covariance (e.g.\ kriging). Recent
-extensions of these spatial covariance models include modeling spatial
+extensions of these spatial covariance models include modelling spatial
 deviations in GLMs or GAMs as multivariate random effects (Gaussian random
 fields). Examples of these methods in existing R packages include but are not
 limited to \textbf{spBayes} \citep{finley2007}, \textbf{spTimer}
@@ -110,11 +110,11 @@ may perform poorly when underlying data include anomalous or extreme events.
 When these models also include an observation model, for example, anomalous
 observations may be reconciled by increasing the variance of the observation
 model (rather than attributing these to extremes in the ecological process
-being modeled). Extreme events in temporal processes have been modeled using a
+being modelled). Extreme events in temporal processes have been modelled using a
 variety of methods in ecology, typically by including mixtures of normal and
 heavy-tailed distributions \citep[e.g.][]{everitt1996, ward2007, thorson2011}.
 More recently, the Student-$t$ distribution has been proposed as a
-solution to modeling process variation with extremes in population dynamics
+solution to modelling process variation with extremes in population dynamics
 \citep{anderson2017}.
 
 Several robust extensions of Gaussian random fields have been proposed to
@@ -370,7 +370,7 @@ and then aggregated this high-resolution grid
 into percent cover in a coarser grid reduced by a factor of 25.
 This maintained a reasonable resolution
 while limiting the data size for rapid model fitting.
-We then modeled the
+We then modelled the
 proportion of grid cells affected by outbreaks
 in the US states of Oregon and Washington from 1994 to 2014.
 Because the maximum proportion affected was far from $1$, we
@@ -379,7 +379,7 @@ can fit a model with a log link and lognormal observation distribution
 The log of the mean proportion affected at location $s$ and time $t$, $\mu_{s,t}$
 is predicted by a year-specific random walk defined by $\beta_t$,
 and the spatiotemporal process $\gamma_{s,t}$,
-with the spatial process itself modeled as autoregressive:
+with the spatial process itself modelled as autoregressive:
 
 \begin{align}
   \log(\mu_{s,t}) &= \beta_0 + \beta_t + \gamma_{s,t},\\
@@ -471,145 +471,125 @@ infestation in the US Pacific Northwest, particularly in the late 2000s
 
 \section{Discussion}
 
-We introduced a model to ecology that is robust to spatial extremes through
+We have introduced to ecology a model that is robust to spatial extremes through
 time. Our model substitutes a MVT distribution for the usual MVN distribution
 used in Gaussian Markov random field models, and in doing so, allows for
 outlying spatial events to occur. Through simulation, we demonstrate that our
-model can be accurately fit to data,
+model can be accurately fit to data, but reverts to the MVN version for data of
+insufficient quantity or with considerable observation error. We show that if
+the underlying true process contains spatiotemporal extremes, then fitting a MVN
+model reduces predictive accuracy and precision. Using data on mountain pine
+beetle outbreaks in the Pacific Northwest, we show that our MVT model generates
+more accurate and precise out-of-sample predictions. Because the MVT model
+converges to the MVN model if it is not needed and only requires estimating one
+additional parameter, we recommend trying to fit the MVT model even if anomalous
+events are not thought to be present \textit{a priori}.
 
-The gist of the MVT random fields model, 
+Many ecological, environmental, and anthropogenic factors could generate
+spatiotemporal extremes in ecological variables such as biomass or abundance.
+First, unmodelled movement or behaviour could generate spatiotemporal extremes.
+For example, the shoaling behavior of fish can change with changes to population
+density (e.g. cod in Atlantic Canada reference). Another possible cause could be
+spatial climate anomalies. For instance, heat waves \ldots seaweed example? Heat
+waves can also increase the likelihood of wildfires or disease outbreaks, which
+could generate spatial extremes through time. Finally, human-caused disasters,
+such as marine oil spills could cause extremes in spatial patterns through time.
+In essence, the MVT random fields model allows for unexpected and unmodelled
+events to occur and have less influence on parameter estimates and predictions.
 
-The MVT random fields model is useful because it lets a model be misspecified
-
-The strength of the MVT random fields model is that it lets the model 
-
-\begin{itemize}
-
-  \item Behaviour / movement, e.g. fish shoaling that is not explicitly
-    accounted for 
-
-  \item Environmental extremes or ecological interactions that are not accounted
-    for
-
-  \item Changes to sampling or observation process through time that are not
-    accounted for, e.g. different people conducting survey or different gear
-
-  \item In summary, it allows the model to be robust to sh*t happening
-
-\end{itemize}
-
-There are many ecological, environmental, and anthropogenic processes that could
-generate spatiotemporal extremes.  that could generate We expect the MVT random
-fields model to be widely useful in the fields of ecology, environmental
-sciences, and fisheries. For example,
-
-\begin{itemize}
-
-  \item Fisheries Thorson ECE REF, extreme highs or lows in recruitment, extreme
-    windfalls and catch, shoaling
-
-  \item Climate anomalies
-
-  \item Disturbances such as wildfires, oil spills, or disease outbreaks
-
-\end{itemize}
+Our model provided better out-of-sample predictive ability and more precise
+estimates of mountain pine beetle outbreak coverage compared to the same model
+with a Gaussian Markov random field. Our model is autoregressive in its annual
+mean estimate and in the evolution of the spatial pattern through time and does
+not include any ecological or environmental covariates. It is possible that
+including covariates such as temperature or elevation might render the remaining
+spatial random field as MVN. Importantly, our model is a descriptive
+spatiotemporal model, rather than dynamic \citep{cressie2011}. A dynamic model
+would include mechanisms governing the spatial evolution of the pine beetle
+outbreaks, and these mechanisms could generate the spatiotemporal extremes we
+observe with our descriptive model. Alternatively, incorporating spatiotemporal
+extremes into a dynamic model of pine beetle outbreaks might improve its
+predictive capacity.
 
 Our associated R package, \textbf{rrfields}, is designed to be familiar for
-anyone who has fit GLMs in R, and includes considerable flexibility for features
-beyond those described thus far.
+anyone who has fit GLMs in R, and includes flexibility for many features beyond
+those described thus far. For example, \textbf{rrfields} can be used to fit
+spatial GLMs for data without a temporal component (Appendix XX). The package
+can fit observation models beyond those included in this paper, such as Poisson
+or binomial, and can include numeric or factor covariates. In addition to fixed,
+independent, and random walk temporal processes, the package can fit
+exchangeable time effects constrained by a Gaussian distribution (i.e. ``random
+effects''), and allows for flexibility in how the spatial process evolves
+(static field, fields modelled as AR1, fields modelled as a random walk, and
+independent exchangeable fields). \textbf{rrfields} includes familiar utility
+functions (e.g.\ \texttt{predict()}) and plotting functions for model checking.
+Finally, the package includes a simulation function that can simulate data from
+any model that the package can fit, and a series of unit tests that simulate and
+fit all major model configurations.
 
-\begin{itemize}
+To be sure, there are a number of limitations to the approach we have described.
+Our approach shares many of its limitations with most other spatiotemporal
+modelling approaches that involve dimension reduction. Most prominently, the
+modeller must choose an appropriate number of knots. However, as long as a
+sufficient number of knots are chosen, coefficient estimates and projections
+should converge on the same answer and multiple versions of a model can be fit
+to check this assumption. Fundamentally, the spatial process might not be well
+described by a MVT or MVN random field and be better described by some other
+form \citep[e.g.][]{conn2015}. Additionally, whereas the MVT random fields model
+is more robust than the MVN version in the face of spatiotemporal extremes,
+better predictions and inference might be obtained by explicitly modelling the
+processes that rendered the spatial effects extreme. Finally, the MVT random
+fields model requires a sufficient number of observations and sufficiently low
+sampling error to detect extremeness (a low degrees of freedom parameter).
+However, when extremeness is present but cannot be detected, the MVT model
+reverts to the MVN random fields model and little is lost except estimating one
+additional parameter.
 
-  \item Spatial GLMs
-
-  \item Covariates numeric or factors
-
-  \item Includes unit tests with simulated data and fits to all major model
-    configurations
-
-  \item Includes a simulation function that can simulate data from any model
-    that the function can fit
-
-  \item Flexible evolution of the spatial process (static field, fields modeled
-    as AR1, random walk fields, exchangeable fields)
-
-  \item Other observation models and link functions
-
-\end{itemize}
-
-There are a number of limitations to the approach described in this paper.
-
-\begin{itemize}
-
-  \item Needs many times slices 
-
-  \item Not anisotropic yet
-
-  \item Probably better to include processes that render the spatial effects MVN
-
-  \item Must pick the number of knots 
-
-  \item Spatial process might not be well described by a random field 
-
-\end{itemize}
-
-An important area of future research is to include sparse matrix algorithms in
-spatial models of extreme events.
-
+Our model uses a predictive process approach to achieve considerable
+computational efficiency over modelling a full covariance matrix describing all
+observed data points. However, an important area for future research is to
+include sparse matrix algorithms in spatiotemporal models of extreme events.
+Recent advances to spatial models with very large datasets has been the
+stochastic partial differential equation (SPDE) approximation to Gaussian random
+fields proposed by \citet{lindgren2011}. These methods have been accessible via
+the integrated nested Laplace approximation (INLA) \citep{rue2009}, which allows
+for approximate Bayesian sampling of the posterior without MCMC sampling. Use of
+the SPDE-INLA approach has increased rapidly in ecology over the last five years
+\citep[e.g.][]{illian2013, ono2016}, and is significantly faster than other
+approaches (in part, because of integration with TMB, cite VAST etc.).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% As the simulation results from our MVT versus MVN models indicate, the largest
-% benefit of modeling random effects as MVT instead of MVN distributions is the
-% improved precision of predictions, both for training and out of sample data.
-% For example, the CV of predictions was XX percent smaller with the MVT model.
-% When MVN models are applied to data that include spatial extremes, we found that
-% the MVT model compensated by increasing the process variance. Because the MVT model
-% converges to the MVN model for large df, and only includes one additional parameter,
-% we recommend using models with MVT spatial fields even if anomalous events are not
-% thought to be present a priori.
+% One of the biggest hurdles in identifying support for MVT spatial fields
+% (small estimated df parameter) is using spatiotemporal data sets that have
+% enough time slices to capture extreme events. [tie into sim results]. The
+% ability to detect spatial anomalies in ecological processes may also be
+% affected by the number or selection of knots, however our results show that
+% spatial extremes can be identified even using a small numbers of knots. Like
+% other state-space models, inference about spatial extremes may be corrupted by
+% observation error (both the observation model, and magnitude). Our results
+% indicate that spatial events can be identified with moderate to high
+% observation error (coefficient of variation ~ 1).
 %
-% One of the biggest hurdles in identifying support for MVT spatial fields (small estimated
-% df parameter) is using spatiotemporal data sets that have enough time slices to capture
-% extreme events. [tie into sim results]. The ability to detect spatial anomalies in ecological
-% processes may also be affected by the number or selection of knots, however our results
-% show that spatial extremes can be identified even using a small numbers of knots. Like other
-% state-space models, inference about spatial extremes may be corrupted by observation
-% error (both the observation model, and magnitude). Our results indicate that spatial events
-% can be identified with moderate to high observation error (coefficient of variation ~ 1).
-%
-% [paragraph on bark beetles]
-%
-% [I don't know if this is really needed, but something like this could be expanded
-%
-% As complex spatial models have become more user-friendly, we expect the rapid use
-% of spatiotemporal models to be continued. Examples of possible applications beyond
-% bark beetles include to models of fisheries (cite Thorson ECE paper), applications
-% to climate anomalies (http://www.pnas.org/content/106/Supplement\_2/19723.short),
-% or to other disturbances - wildfires, oil spills, and disease outbreaks.]
+% As complex spatial models have become more user-friendly, we expect the rapid
+% use of spatiotemporal models to be continued. Examples of possible
+% applications beyond bark beetles include to models of fisheries (cite Thorson
+% ECE paper), applications to climate anomalies
+% (http://www.pnas.org/content/106/Supplement\_2/19723.short), or to other
+% disturbances - wildfires, oil spills, and disease outbreaks.]
 %
 % There are a number of features included in the 'rrfields' package that may be
 % useful to ecologists, but beyond the scope of this paper. Examples of features
 % include the addition of covariates (numeric or factors), models for temporal
 % processes (random effects), and flexible models for the evolution of the spatial
-% process (a static field shared across time, fields modeled as an AR(1) process,
-% or fields modeled as exchangeable). Like GLMs, we have also provided a range of
+% process (a static field shared across time, fields modelled as an AR(1) process,
+% or fields modelled as exchangeable). Like GLMs, we have also provided a range of
 % commonly encountered discrete and continuous observation models to fit a wide
 % range of data types.
-%
-% One approach not currently included in 'rrfields', but an important recommendation
-% for future research is to include sparse matrix algorithms in spatial models of
-% extreme events. Recent advances to spatial models with very large datasets has
-% been the stochastic partial differential equation (SPDE)  approximation to
-% Gaussian random fields proposed by \citet{lindgren2011}. These methods have
-% been accessible via the integrated nested Laplace approximation (INLA)
-% \citep{rue2009}, which allows for approximate Bayesian sampling of the posterior
-% without Markov chain Monte Carlo (MCMC) sampling. Use of the SPDE-INLA approach has
-% increased rapidly in ecology over the last five years \citep[e.g.][]{illian2013, ono2016},
-% and is significantly faster than other approaches (in part, because of integration with
-% TMB, cite VAST etc.).
 
 \section{Acknowledgements}
+
+Smith, DFO?, beetle data, Trevor, Jim, Brian, \ldots
 
 \section{Data Accessibility}
 % : To enable readers to locate archived data, authors should list the database and the respective accession numbers or DOIs for all data from the manuscript
@@ -694,9 +674,9 @@ The R package \textbf{rrfields} is available at TODO.
 \begin{figure}[htb]
   \begin{center}
     \includegraphics[width=0.65\textwidth]{../figs/beetles-mvt-predictions.pdf}
-    \caption{Modeled severity of mountain pine beetle outbreaks in Washington and
+    \caption{Modelled severity of mountain pine beetle outbreaks in Washington and
       Oregon State in the United States from 1999 to 2014.
-      Shown are medians of the modeled parameter $\mu_{s,t}$ from Equation \ref{eq:beetle-mu}
+      Shown are medians of the modelled parameter $\mu_{s,t}$ from Equation \ref{eq:beetle-mu}
       --- a spatiotemporal MVT random fields model.
     }
     \label{fig:beetle-pred}
