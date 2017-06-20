@@ -1,3 +1,7 @@
+# This code creates a figure for both simulations
+# The top row is recapturing nu
+# And the bottom row is the model mismatch
+
 # Recapture row:
 
 library("beanplot")

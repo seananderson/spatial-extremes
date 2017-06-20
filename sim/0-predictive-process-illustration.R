@@ -8,8 +8,6 @@ x <- sim_rrfield(df = 99, n_data_points = 30, seed = NULL,
   n_draws = 1, n_knots = 8, gp_scale = 0.5, gp_sigma = 1,
   sd_obs = 0.01, obs_error = "normal")
 
-# names(x)
-
 initialize_plot <- function(title = "", cex = 0.7) {
   plot(x$dat$lon, x$dat$lat, type = "n", ann = FALSE, axes = FALSE)
   box(col = "grey50")

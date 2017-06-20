@@ -2,7 +2,8 @@ library(dplyr)
 library(ggplot2)
 source("simulationTesting/sim_mvt_rf.R")
 library(ggsidekick)
-# source("simulationTesting/theme_gg.R")
+library(rrfields)
+
 g <- expand.grid(lon = seq(1, 10, 0.5),
   lat = seq(1, 10, 0.5))
 
@@ -10,23 +11,15 @@ exp_cor <- function(delta_ij, phi) {
   exp(-phi * delta_ij)
 }
 
-
-library(rrfields)
-
 draws <- lapply(c(2, 1e9),
   function(x) {
-    # n_data_points <- 400
-    # g <- data.frame(lon = runif(n_data_points, 0, 10),
-      # lat = runif(n_data_points, 0, 10)))
     g <- expand.grid(lon = seq(1, 10, length.out = 25),
       lat = seq(1, 10, length.out = 25))
     draws <- 3
-    # s <- sim_mvt_rf(df = x, grid = g, n_pts = nrow(g), seed = 29,
-      # n_draws = draws, gp_scale = 0.2, sigma_t = 0.3, n_knots = 30)
-    s2 <- rrfields::sim_rrfield(df = x, n_draws = draws,
+    s <- rrfields::sim_rrfield(df = x, n_draws = draws,
       gp_scale = 1.6, gp_sigma = 0.3, n_knots = 30, seed = 9,
       g = g, n_data_points = nrow(g))
-    out <- reshape2::melt(s2$proj)
+    out <- reshape2::melt(s$proj)
     names(out) <- c("i", "pt", "re")
     out <- arrange(out, i, pt)
     out$nu <- x
@@ -48,7 +41,6 @@ p <- draws %>%
   ggplot(aes(x = lon, y = lat, z = re, fill = re)) +
   facet_grid(nu_lab~i) +
   geom_raster() +
-  # scale_fill_gradient2(low = "#01665e", mid = "#f5f5f5", high = "#8c510a") +
   viridis::scale_fill_viridis(option = "C") +
   theme_sleek() +
   theme(axis.line=element_blank(),
@@ -64,15 +56,6 @@ p <- draws %>%
     panel.grid.minor=element_blank(),
     plot.background=element_blank()) +
   theme(panel.spacing = unit(-0.15, "lines"))
-# cairo_pdf("figs/nu-rf-illustration-small.pdf", width = 4.5, height = 3)
-# print(p)
-# dev.off()
+
 ggsave("figs/nu-rf-illustration-small.pdf", width = 4.5, height = 3)
 
-# for irregular spacing interpolation:
-# ds <- akima::interp(x = lon, y = lat, z = v))
-# with(fld, persp(x, y, z))
-
-# df <- reshape2::melt(fld$z, na.rm = TRUE)
-# df$lon <- fld$x[df$x]
-# df$lat <- fld$y[df$y]
