@@ -476,11 +476,12 @@ with scale parameter $\sigma_{\mathrm{obs}}$:
 See the Supporting Information for a formal description
 of the posterior and joint
 probability distributions.
-We chose 25 knots to represent the spatial process
+We chose 20 knots to represent the spatial process
+% TODO: make sure knots are correct 
 (increasing the number of knots did not substantially affect the results).
 We fit the models with half-$t$(3, 0, 3) priors on all
 scale parameters,
-a normal(0, 10) prior on $\beta_0$,
+a normal(0, 5) prior on $\beta_0$,
 % a MVN(0, TODO) prior on $\gamma_{s,t=1}$,
 and a normal(0, 0.5)[-1, 1] prior on $\phi$.
 
@@ -591,9 +592,9 @@ those described thus far. For example, \textbf{rrfields} can be used to fit
 spatial GLMs for data without a temporal component (Appendix XX). The package
 can fit observation models beyond those included in this paper, such as Poisson,
 negative binomial, or binomial, and can include numeric or factor covariates.
-In addition to fixed, independent, and random walk temporal processes, the
-package can fit exchangeable time effects constrained by a Gaussian distribution
-(i.e. ``random effects'').
+% In addition to fixed, independent, and random walk temporal processes, the
+% package can fit exchangeable time effects constrained by a Gaussian distribution
+% (i.e. ``random effects'').
 % , and allows for flexibility in how the spatial process evolves (static field,
 % fields modelled as AR1, fields modelled as a random walk, and independent
 % exchangeable fields).
