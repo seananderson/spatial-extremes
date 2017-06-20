@@ -32,10 +32,6 @@ mps <- ggplot2::map_data("state")
 mpc$group <- mpc$group + max(mps$group)
 mp <- rbind(mpc,mps)
 
-# ggplot(mp, aes(long,lat, group=group)) + 
-#   geom_polygon(fill = NA, colour = "grey50") +
-#   coord_equal(xlim = c(-150, -80), ylim = c(20, 70))
-
 mp2 <- mp
 coordinates(mp2) <- c("long", "lat")
 proj <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"
@@ -44,16 +40,10 @@ proj4string(mp2)
 
 mp2 <- spTransform(mp2, CRS(proj))
 proj4string(mp2)
-
-# mp2 <- fortify(as.data.frame(mp2))
-# ggplot(mp2, aes(long,lat, group=group)) + 
-#   geom_polygon(fill = NA, colour = "grey50") +
-#   coord_equal(xlim = range(d$x), ylim = range(d$y))
 ```
 
 ```{r preparation, cache=FALSE, eval=TRUE}
 id <- "mountain-pine-beetle-pnw-raster"
-# id <- "mountain-pine-beetle-northern-raster"
 nbin <- 500
 
 d <- readRDS(paste0("examples/beetles/", 
@@ -92,9 +82,6 @@ ggplot(d, aes(x, y, fill = cover)) + geom_tile() +
   scale_fill_viridis(option = "D") +
   coord_fixed()
 
-# if (id == "mountain-pine-beetle-northern-raster")
-# d <- dplyr::filter(d, x < -10) # almost no observations east of here 
-
 d <- mutate(d, station = paste(x, y), row_number = seq_len(nrow(d)))
 set.seed(1)
 d <- group_by(d, year) %>% 
@@ -122,18 +109,18 @@ if (!file.exists(model_file)) {
     time = "year", lon = "x", lat = "y",
     station = "station",
     nknots = 15,
-    obs_error = "lognormal",
+    family = lognormal(link = "log"),
     prior_gp_sigma = half_t(3, 0, 3),
     prior_gp_scale = half_t(3, 0, 3),
     prior_intercept = student_t(1e9, 0, 10),
     prior_beta = student_t(1e9, 0, 4),
     prior_rw_sigma = half_t(3, 0, 3),
     prior_sigma = half_t(3, 0, 3),
-    prior_ar = half_t(1e9, 0, 0.3),
+    prior_ar = half_t(1e9, 0, 0.5),
     estimate_ar = TRUE,
     estimate_df = TRUE,
     year_re = TRUE,
-    chains = 4, iter = 800, thin = 1,
+    chains = 3, iter = 1000, thin = 1,
     control = list(adapt_delta = 0.95),
     save_log_lik = TRUE)
   save(mvt, file = model_file)
@@ -142,6 +129,7 @@ if (!file.exists(model_file)) {
 }
 # print(mvt)
 # shinystan::launch_shinystan(mvt$model)
+
 ```
 
 Now the multivariate normal model. 
@@ -155,17 +143,18 @@ if (!file.exists(model_file)) {
     time = "year", lon = "x", lat = "y",
     station = "station",
     nknots = 15,
-    obs_error = "lognormal",
+    family = lognormal(link = "log"),
     prior_gp_sigma = half_t(3, 0, 3),
     prior_gp_scale = half_t(3, 0, 3),
     prior_intercept = student_t(1e9, 0, 10),
     prior_rw_sigma = half_t(3, 0, 3),
     prior_sigma = half_t(3, 0, 3),
-    prior_ar = half_t(1e9, 0, 0.3),
+    prior_ar = half_t(1e9, 0, 0.5),
     estimate_ar = TRUE,
-    estimate_df = TRUE,
-    fixed_df_value = 1e9,
-    chains = 4, iter = 800, thin = 1,
+    estimate_df = FALSE,
+    year_re = TRUE,
+    fixed_df_value = 2000,
+    chains = 3, iter = 1000, thin = 1,
     control = list(adapt_delta = 0.95),
     save_log_lik = TRUE)
   save(mvn, file = model_file)
@@ -176,10 +165,21 @@ if (!file.exists(model_file)) {
 # shinystan::launch_shinystan(mvn$model)
 ```
 
-Plot the predictions and check the model. 
+Let's make sure both models converged:
+
+```{r}
+bt <- broom::tidyMCMC(mvt$model, ess = TRUE, rhat = TRUE)
+bn <- broom::tidyMCMC(mvn$model, ess = TRUE, rhat = TRUE)
+assertthat::assert_that(min(bt$ess) > 100)
+assertthat::assert_that(max(bt$rhat) < 1.05)
+assertthat::assert_that(min(bn$ess) > 100)
+assertthat::assert_that(max(bn$rhat) < 1.05)
+```
+
+Plot the predictions and check the model. Although functions for most of these plots are contained in the package, we will extract the data and make the plots ourselves so they can be more customized.
 
 ```{r plots, cache=FALSE, eval=TRUE}
-# Let's make these plots ourselves so they can be more customized:
+
 pred <- predict(mvt, interval = "confidence", conf_level = 0.95, 
   newdata = d)
 pred <- pred %>% mutate(x = d$x, y = d$y, observed = d$cover, 
@@ -209,13 +209,6 @@ ggplot(pred, aes(estimate, residual)) +
   geom_hline(yintercept = 0, lty = 2) + 
   geom_smooth(method = "loess", se = FALSE, colour = "red")
 
-# ggplot(pred, aes(log(observed), estimate)) +
-#   geom_point(alpha = 0.2) +
-#   geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
-#   coord_fixed() +
-#   facet_wrap(~year) +
-#   geom_abline(intercept = 0, slope = 1, colour = "red")
-
 ggplot(pred, aes(log(observed), estimate)) +
   geom_point(alpha = 0.2) +
   geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
@@ -236,7 +229,6 @@ g <- ggplot(dplyr::filter(pred_mvn),
   geom_tile() + facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
   coord_fixed()
-  
 print(g)
 
 g <- ggplot(pred_mvn, aes(x, y, fill = residual)) + 
@@ -329,8 +321,6 @@ mse <- dplyr::filter(combined) %>%
   group_by(model) %>%
   summarize(mse = round(mean(residual^2), 2))
 print(mse)
-
-# ggplot(filter(combined, hold_out), aes((residual), color = model)) + geom_freqpoly(position = "identity") + facet_wrap(~year)
 ```
 
 Let's look at the observed and predicted values with confidence intervals for 10 of the holdout data points. In the simulations we've shown that the predictions in years with moderately large spikes can get inflated if we use the MVN model and the confidence intervals inflate to obtain the same correct coverage. 
@@ -397,33 +387,18 @@ dplyr::filter(b, term %in% pars) %>%
   geom_pointrange(position = position_dodge(width = 0.2)) +
   coord_flip()
 
-# bayesplot::mcmc_areas(as.matrix(mvt$model), pars = pars)
-# bayesplot::mcmc_areas(as.matrix(mvn$model), pars = pars)
 bayesplot::mcmc_areas(as.matrix(mvt$model), pars = "df[1]")
-```
-
-```{r}
-# data_medians <- group_by(d, year) %>%
-#   summarize(m = median(cover)) %>%
-#   mutate(index = 1:n())
-# 
-# filter(bt, grepl("ar\\[", term))
-# bs <- filter(bt, grepl("yearEffects", term))
-# bs$index <- 1:nrow(bs)
-# ggplot(bs, aes(index, exp(estimate), ymin = exp(conf.low), ymax = exp(conf.high))) +
-#   geom_ribbon() +
-#   geom_point(data = data_medians, aes(x = index, y = m), inherit.aes = FALSE)
 ```
 
 Let's look at the coverage of the credible intervals between the 2 models:
 
 ```{r}
-pred_mvt <- predict(mvt, interval = "prediction", conf_level = 0.9,
+pred_mvt <- predict(mvt, interval = "prediction", conf_level = 0.95,
   newdata = d, type = "response")
 pred_mvt <- pred_mvt %>% mutate(x = d$x, y = d$y, observed = d$cover, 
   year = d$year, hold_out = d$hold_out)
 
-pred_mvn <- predict(mvn, interval = "prediction", conf_level = 0.9,
+pred_mvn <- predict(mvn, interval = "prediction", conf_level = 0.95,
   newdata = d, type = "response")
 pred_mvn <- pred_mvn %>% mutate(x = d$x, y = d$y, observed = d$cover, 
   year = d$year, hold_out = d$hold_out)
@@ -431,24 +406,28 @@ pred_mvn <- pred_mvn %>% mutate(x = d$x, y = d$y, observed = d$cover,
 combined <- bind_rows(
   mutate(pred_mvt, model = "mvt"), 
   mutate(pred_mvn, model = "mvn"))
+```
 
+Coverage for all the data:
 
+```{r}
 coverage <- dplyr::filter(combined) %>%
   group_by(model, year) %>%
   mutate(contained = observed < conf_high & observed > conf_low) %>%
   ungroup() %>% 
   group_by(model) %>% 
-  summarize(coverage = mean(contained))
+  summarize(coverage = mean(contained)) %>% 
+  print()
+```
 
-coverage
+Coverage for just the held-out data:
 
+```{r}
 coverage <- dplyr::filter(combined, hold_out) %>%
   group_by(model, year) %>%
   mutate(contained = observed < conf_high & observed > conf_low) %>%
   ungroup() %>% 
   group_by(model) %>% 
-  summarize(coverage = mean(contained))
-
-coverage
-
+  summarize(coverage = mean(contained)) %>% 
+  print()
 ```
