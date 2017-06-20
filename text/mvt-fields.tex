@@ -252,7 +252,7 @@ The symbol $\gamma$ represents the spatiotemporal process,
 which we describe below.
 The variance of the observation component of
 our model is a function of the mean via a
-probability distribution such as the Gaussian, Poisson, or Gamma.
+probability distribution such as the Gaussian, Poisson, or gamma.
 
 %A random field is a term used to describe ``random effects'' drawn from a
 %multivariate probability distribution representing deviations in a
@@ -340,7 +340,7 @@ informative priors on parameters to impose our existing knowledge of reasonable
 values and to aid computation --- particularly of difficult to estimate
 parameters such as the degrees of freedom parameter in the MVT. In the case of
 the degrees of freedom parameter, $\nu$, we bound the lower value to $2$ for
-computational stability and use a Gamma(2, 0.1) prior (i.e., shape = 2, rate = 0.1),
+computational stability and use a gamma(2, 0.1) prior (i.e., shape = 2, rate = 0.1),
 which has a mean of $20$ and a median of $\sim 17$ \citep{juarez2010}.
 If the data are not informative about heavy
 tails, our estimate of $\nu$ should approximately match the prior.
@@ -361,7 +361,7 @@ one of three values: 2.5, 5, or 20, representing very heavy tails, moderately he
 tails, and effectively normal tails. A final step in our data
 simulation was to corrupt the ``true'' data by including measurement or
 observation error. We assumed observations were generated from a gamma
-distribution with a log link, $Y_{it}\sim \mathrm{Gamma}\left(a,\frac
+distribution with a log link, $Y_{it}\sim \mathrm{gamma}\left(a,\frac
   {a}{\mathbb{E}(Y_{it})} \right)$, where the gamma shape parameter $a$ can be
 reparameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
 tested CVs of 0.1, 0.6, and 1.2 representing minimal, moderate, and
@@ -371,7 +371,7 @@ our simulation model of data $y_{s,t}$ simplifies to
 
 \begin{align}
   \log(\mu_{s,t}) &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right),\\
-  y_{s,t} &\sim \mathrm{Gamma} \left( \frac{1}{\mathrm{CV}^2},
+  y_{s,t} &\sim \mathrm{gamma} \left( \frac{1}{\mathrm{CV}^2},
   \frac{1}{\mathrm{CV}^2 \cdot \mu_{s,t} } \right).
 \end{align}
 
@@ -895,6 +895,11 @@ TODO
     \includegraphics[width=0.90\textwidth]{../figs/sim-recapture.pdf}
     \caption{
       Full factorial results from the simulation shown in Fig.~\ref{fig:recapture}.
+      Individual dots show the median estimates from individual simulation runs.
+      Polygons indicate probability density of the median estimates of
+      individual simulation runs.
+      The colour scale indicates the true degree of heavy tailedness from
+      yellow (effectively normal) to red (very heavy tailed).
     }
     \label{fig:recapture-factorial}
   \end{center}
