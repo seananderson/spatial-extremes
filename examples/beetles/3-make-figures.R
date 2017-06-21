@@ -6,6 +6,8 @@ library(viridis)
 library(assertthat)
 library(ggsidekick) # devtools::install_github("seananderson/ggsidekick")
 
+# rm(list = ls())
+
 d <- readRDS("examples/beetles/mountain-pine-beetle-data.rds")
 axis_colour <- "grey45"
 text_colour <- "grey45"
@@ -176,8 +178,8 @@ for(j in seq_along(h$breaks)) {
   rect(h$breaks[j], 0, h$breaks[j+1], h$density[j], border = "white",
     col = bar_colour, lwd = 1)
 }
-text(-24, 0.08, "MVN", col = "#f1691390", pos = 4)
-text(-12, 0.11, "MVT", col = bar_colour_dark, pos = 4)
+text(-18, 0.09, "MVN", col = "#f1691390", pos = 4)
+text(0, 0.09, "MVT", col = bar_colour_dark, pos = 4)
 axis(1, col = axis_colour, col.axis = axis_colour)
 axis(2, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
@@ -185,19 +187,19 @@ add_label(label = "d)")
 
 # --------------------------
 # Look at the ratio of the credible intervals
-if (!exists("pred")) {
+# if (!exists("pred")) {
   pred <- predict(mvt, interval = "confidence", conf_level = 0.95,
     newdata = d, type = "link")
   pred <- data.frame(pred, d)
   pred <- pred %>% mutate(residual = log(cover) - estimate)
-}
+# }
 
-if (!exists("pred_mvn")) {
+# if (!exists("pred_mvn")) {
   pred_mvn <- predict(mvn, interval = "confidence", conf_level = 0.95,
     newdata = d, type = "link")
   pred_mvn <- data.frame(pred_mvn, d)
   pred_mvn <- pred_mvn %>% mutate(residual = log(cover) - estimate)
-}
+# }
 
 combined <- bind_rows(
   mutate(pred, model = "mvt"),
@@ -218,7 +220,7 @@ cis <- mutate(combined, conf_width = exp(conf_high) - exp(conf_low)) %>%
 h <- hist(cis$conf_width_ratio, probability = TRUE,
   breaks = seq(0, max(cis$conf_width_ratio)*1.001, length.out = 20), plot = FALSE,
   warn.unused = FALSE)
-plot(0,0, xlim = c(0, max(cis$conf_width_ratio)*1.03),
+plot(0,0, xlim = c(0, max(cis$conf_width_ratio)*1.05),
   ylim = c(0, max(h$density) * 1.02), type = "n", axes = FALSE,
   xlab = "", ylab = "")
 mtext("Ratio of credible intervals", side = 1, line = 1.5, cex = 0.75, col = text_colour)
@@ -232,8 +234,8 @@ abline(v = 1, lty = 2, col = "grey30")
 axis(1, col = axis_colour, col.axis = axis_colour)
 axis(2, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
-text(0, 0.85, "MVN\nmore\nprecise", col = "#f1691390", pos = 4)
-text(1.7, 0.85, "MVT\nmore\nprecise", col = bar_colour_dark, pos = 4)
+text(0, 2, "MVN\nmore\nprecise", col = "#f1691390", pos = 4)
+text(1.4, 2, "MVT\nmore\nprecise", col = bar_colour_dark, pos = 4)
 add_label(label = "e)")
 dev.off()
 

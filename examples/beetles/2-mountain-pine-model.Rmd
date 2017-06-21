@@ -121,7 +121,8 @@ if (!file.exists(model_file)) {
     estimate_df = TRUE,
     year_re = TRUE,
     chains = 3, iter = 1000, thin = 1,
-    control = list(adapt_delta = 0.95),
+    # chains = 4, iter = 2000, thin = 1,
+    control = list(adapt_delta = 0.98),
     save_log_lik = TRUE)
   save(mvt, file = model_file)
 } else {
@@ -155,7 +156,8 @@ if (!file.exists(model_file)) {
     year_re = TRUE,
     fixed_df_value = 2000,
     chains = 3, iter = 1000, thin = 1,
-    control = list(adapt_delta = 0.95),
+    # chains = 4, iter = 2000, thin = 1,
+    control = list(adapt_delta = 0.98),
     save_log_lik = TRUE)
   save(mvn, file = model_file)
 } else {
@@ -179,7 +181,6 @@ assertthat::assert_that(max(bn$rhat) < 1.05)
 Plot the predictions and check the model. Although functions for most of these plots are contained in the package, we will extract the data and make the plots ourselves so they can be more customized.
 
 ```{r plots, cache=FALSE, eval=TRUE}
-
 pred <- predict(mvt, interval = "confidence", conf_level = 0.95, 
   newdata = d)
 pred <- pred %>% mutate(x = d$x, y = d$y, observed = d$cover, 
