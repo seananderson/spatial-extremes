@@ -475,9 +475,9 @@ the leave-one-out-information-criterion (Supporting Information).
 
 \section{Results}
 
-Under most scenarios we were able to recapture the value of $\nu$ with
-reasonable accuracy and without bias (Figure~\ref{fig:recapture}a--c). The
-number of time steps had the largest effect on the ability to detect low values
+Under most scenarios we were able to recapture true values of $\nu$ with
+reasonable accuracy and low bias (Figure~\ref{fig:recapture}a--c). The
+number of time steps had the largest effect on detecting low values
 of $\nu$. For example, the median absolute proportional error (MAPE) between
 $\nu$ and $\hat{\nu}$ (median of the posterior) was only XX with 25 time steps,
 minimal observation error (CV = 0.1), and $\nu = 2.5$
@@ -488,7 +488,7 @@ the estimation of $\nu$ until relatively high levels of observation error
 (i.e. CV = 1.2; Figure~\ref{fig:recapture}c).
 
 When the true underlying data were generated with spatiotemporal extremes (MVT,
-$\nu = 2$), fitting a Gaussian (MVN) random fields ignoring these extremes
+$\nu = 2$), fitting a Gaussian (MVN) random fields without extremes
 reduced out-of-sample predictive accuracy and precision
 (Figure~\ref{fig:recapture}d--f). The misspecified model tended to overestimate
 $\sigma$ (which controls the magnitude of the random field deviations) to
@@ -499,18 +499,16 @@ TODO: something summarizing the credible interval widths here? The leave-one-out
 information criterion (LOOIC) correctly chose the MVT model in XX\% of the
 simulations.
 
-The MVT random fields model generated more accurate and precise out-of-sample
-predictions of mountain pine beetle coverage (Figure~\ref{fig:map-etc}). The
-degrees of freedom parameter, $\nu$, was estimated at a value indicating
-considerably heavy tails in the autoregressive spatiotemporal process (median
-$\nu = XX$, 95\% CI = XX--XX, Figure~\ref{fig:map-etc}c). The log predictive
-density for held-out data was higher for the MVT model compared to the MVN
-(Figure~\ref{fig:map-etc}d). The LOOIC was XX units lower for the MVT model
-compared to the MVN (SE = XX). Finally, the 95\% credible intervals were on
-average XX times wider for the MVN model compared to the MVT model
-(Figure~\ref{fig:map-etc}e). Spatiotemporal predictions from the MVT model
-demonstrate evolving hotspots of pine beetle infestation in the US Pacific
-Northwest, with particularly strong hotspots in 2009--2010
+For the pine beetle case study, the MVT random fields model generated more 
+accurate and precise out-of-sample predictions (Figure~\ref{fig:map-etc}). The
+parameter $\nu$ was estimated at a value indicating
+heavy tails in the spatiotemporal process (median
+$\nu = XX$, 95\% CI = XX--XX, Figure~\ref{fig:map-etc}c). Advantages of the MVT
+model over the MVN included smaller log predictive density for held-out data 
+(Figure~\ref{fig:map-etc}d), smaller values of LOOIC (SE = XX), and narrower
+95\% credible intervals (on average the MVT were XX larger). Predictions from 
+the MVT model demonstrate evolving hotspots of pine beetle infestation in the 
+US Pacific Northwest, with particularly strong hotspots in 2009--2010
 (Figure~\ref{fig:beetle-pred}).
 
 \section{Discussion}
