@@ -117,7 +117,7 @@ in time, such as population crashes,
 or in space, such as rapid range contractions.
 Here, we introduce a statistical model that extends current
 methods for joint inference about temporal and spatial dynamics
-(spatiotemporal modelling with Gaussian Markov random fields)
+(spatiotemporal modelling with Gaussian random fields)
 to allow for and detect extremes
 that occur simultaneously in time and space.
 Specifically, our model is a
@@ -168,14 +168,14 @@ models (GLMs) or generalized additive models (GAMs). Spatial relationships can
 be included as predictors in models of the mean (such as in a 2-dimensional
 GAM) or can be included in models of the covariance (e.g.\ kriging). Recent
 extensions of these spatial covariance models include modelling spatial
-deviations in GLMs or GAMs as multivariate random effects (Gaussian random
-fields). Examples of these methods in existing R packages include but are not
+deviations in GLMs or GAMs as mixed effects (Gaussian random
+fields, GRFs). Examples of these methods in existing R packages include but are not
 limited to \textbf{spBayes} \citep{finley2007}, \textbf{spTimer}
 \citep{bakar2015}, \textbf{INLA} \citep{rue2009}, \textbf{RandomFields}
 \citep{schlather2016}, and \textbf{spate} \citep{sigrist2015}
 (Table~\ref{tab:packages}).
 
-A limitation of spatial models that utilize Gaussian random fields is that they
+A limitation of spatial models that utilize GRFs is that they
 may perform poorly when underlying data include anomalous or extreme events.
 When models describing the spatial process also include an observation model,
 for example, anomalous observations may be reconciled by increasing the variance
@@ -187,7 +187,7 @@ More recently, the Student-$t$ distribution has been proposed as a
 solution to modelling process variation with extremes in population dynamics
 \citep{anderson2017}.
 
-Several extensions of Gaussian random fields have been proposed to better capture
+Several extensions of GRFs have been proposed to better capture
 extreme spatial events, including max-stable or extreme value theory
 \citep{davison2012, davison2012a}, where quantities of interest include probabilities
 of exceeding some threshold \citep{davis2008}. Other extensions of spatiotemporal
@@ -209,7 +209,7 @@ spatial extremes, using data on mountain pine beetle (\textit{Dendroctonus
 
 We seek to allow for large deviations in an ecological spatial pattern over
 time by extending a spatiotemporal predictive process model to use a MVT
-distribution instead of the usual Gaussian MVN. Below we describe the form of
+distribution instead of the MVN distribution. Below we describe the form of
 our model as implemented in \textbf{rrfields}, describe two simulation tests
 exploring model performance, and finally describe the application of our model
 to a data set of mountain pine beetle outbreaks.
@@ -219,47 +219,70 @@ A complete reproducible version of this analysis is available at
 \subsection{The MVT predictive process model}
 
 \citet{latimer2009} provide an overview of predictive process models for
-ecologists. For large datasets that include more than hundreds of locations,
-estimation of spatial effects at the locations of the data may be computationally
-prohibitive. One solution to this dimensionality problem is to estimate the random
-field as correlated random effects at a smaller subset of locations or $m$ 'knots'
-\citep[e.g.][]{latimer2009, shelton2014}, where $m < n$, the number of data points.
+ecologists. For large datasets (hundreds of locations), the dimensionality of the random 
+effects may be computationally prohibitive. One solution is to estimate the random
+field as correlated random effects at a subset of locations or $m$ 'knots'
+\citep[e.g.][]{latimer2009, shelton2014}, where $m < n$, the number of data points. The 
+$m$ knots describing a random field can be estimated via a clustering algorithm, 
+such as the partitioning around medoids
+algorithm \citep[the \texttt{pam} function in the R package
+\textbf{cluster};][]{reynolds2006}. 
 Instead of estimating an unconstrained $m \times m$ covariance matrix, a covariance
-function is specified \emph{a priori} to estimate the covariance between
-locations (e.g. exponential, Gaussian, Matern). Given the estimated random
-effects at the locations of these knots, and known distance matrix between the knots
+function is specified \emph{a priori} to model covariance as a function of distance. 
+Our package allows the isotropic Gaussian, exponential, and Matern covariance functions, 
+however anisotropic functions could be included. Given the random
+effects estimated at the knot locations, and known distance matrix between the knots
 and observed data, the knot random effects can be projected to the locations of the
-observations \citep[][Figure~\ref{fig:didactic}]{latimer2009, finley2009}.
+observations \citep[][Figure~\ref{fig:didactic}]{latimer2009, finley2009}. 
 
-Here, we summarize the important elements of these models and highlight how
-our new MVT model differs from the usual MVN version. Both approaches are
+As an example, the commonly used squared exponential (Gaussian) covariance function
+models the correlation between points $i$ and $j$ as $H(\delta_{ij}) = \exp
+\left(-\frac{\delta_{ij}^2}{2 \eta} \right)$, where $\delta_{ij}$ is the
+distance between points $i$ and $j$ and $\eta$ controls how steeply
+correlation declines with distance. For a given set of $\delta_{ij}$, 
+large values of $\eta$ correspond to smooth spatial patterns and small values 
+correspondence to wiggly spatial patterns --- the degree of wiggliness implied by 
+a value of $\eta$ depends on the scale of the $\delta_{ij}$. The elements of the 
+covariance matrix $\Sigma$ at the $m$ knot locations are then
+defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta} \right)$ with the
+parameter $\sigma$ scaling the amplitude of the spatial process deviations. 
+Following \citet{latimer2009}, we can calculate the
+covariance matrix between the locations of the data and the knots,
+$\Sigma_{\left(W, W^* \right)}$.
+% Each element of the covariance matrix $\Sigma^*$ is thus dependent on
+% three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
+% $j$ squared, (2) the scale parameter $\phi$, which determines how steeply the
+% correlation declines with increasing distance, and (3) the variance $\sigma^2$.
+locations $W_t^*$ by drawing from a multivariate distribution (MVN, MVT) with covariance
+$\Sigma^*$ and project these to the data locations using
+$\Sigma_{\left( W,W^{*} \right)}$ \citep{latimer2009}:
+$W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*$.
+
+Here, we summarize the important features of these models and highlight how
+our new MVT model differs from the MVN version. Both models are
 essentially GLMMs with a spatiotemporal element described by random field.
 The model describes the expected value of the response, $\mu
 \equiv \mathbb{E}(y)$, at a set of locations in space $s$ and time $t$ as
-
+% maybe make these inline? 
 \begin{equation}
   g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},
 \end{equation}
 
-\noindent where $g$ represents a link function (e.g., log, logit, identity),
-$\bm{X}_{s,t}$ represents a vector of predictors, and $\bm{\beta}$ represents a
-vector of estimated coefficients.
+\noindent where $g$ represents a link function,
+$\bm{X}_{s,t}$ represents predictors, and $\bm{\beta}$ is estimated coefficients. 
 The symbol $\gamma$ represents the spatiotemporal process,
-which we describe below.
-The variance of the observation component of
+described below. The variance of the observation component of
 our model is a function of the mean via a
 probability distribution such as the Gaussian, Poisson, or gamma.
 
 %A random field is a term used to describe ``random effects'' drawn from a
 %multivariate probability distribution representing deviations in a
 %two-dimensional space (REF).
-Most commonly, spatial random effects are represented as Gaussian random
-fields using a MVN distribution with some covariance matrix. Modifying this
-framework to the more flexible MVT distribution involves including one extra
+Modifying the MVN spatiotemporal model
+to the more flexible MVT distribution involves one extra
 degrees of freedom parameter $\nu$. When $\nu$ is small (say $\nu < 10$)
-the distribution has considerably heavier tails than the MVN --- compared to the
-MVN, extreme events are more likely (Fig.~\ref{fig:nu}). As $\nu$ approaches infinity,
-the distribution approaches the MVN. For most purposes, the MVT and MVN are
+the distribution has heavier tails than the MVN --- meaning, extreme events 
+are more likely (Fig.~\ref{fig:nu}). For most purposes, the MVT and MVN are
 indistinguishable for moderate values of $\nu$ (say $\nu > 20$) similarly to the
 univariate t-distribution compared with the univariate normal distribution
 \citep[e.g.][]{anderson2017}.
@@ -279,61 +302,20 @@ dependent on the spatial pattern at time $t-1$ to a degree defined by $\phi$,
 % time --- potentially letting ``hotspots'' remain hotspots through time while
 % keeping the means of the spatial process $\gamma_{s,t}$ stationary and centred
 % on zero.
-The location of the $m$ knots describing a random field can be
-estimated via a clustering algorithm, such as the partitioning around medoids
-algorithm \citep[the \texttt{pam} function in the R package
-\textbf{cluster};][]{reynolds2006}. This algorithm is a robust version of the
-common k-means algorithm and results in selecting knot locations that are
-proportional to spatial sampling intensity.
-
-For demonstration, we use a squared exponential covariance function to model
-the covariance between knot locations. This covariance function, $H$, (also known as
-the Gaussian covariance function) is one of the most commonly adopted choices of
-covariance functions and models the correlation
-between points $i$ and $j$ as $H(\delta_{ij}) = \exp
-\left(-\frac{\delta_{ij}^2}{2 \eta} \right)$, where $\delta_{ij}$ describes the
-distance between points $i$ and $j$ and $\eta$ describes how steeply
-correlation declines with increasing distance or the wiggliness of the
-spatial process. For a given set of $\delta_{ij}$, large values of $\eta$
-correspond to smooth spatial patterns and small values correspondence to wiggly
-spatial patterns --- the degree of wiggliness implied by a value of $\eta$
-depends on the scale of the $\delta_{ij}$.
-
-The elements of the covariance matrix at the $m$ knot locations are therefore
-defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta} \right)$ with the
-parameter $\sigma$ scaling the amplitude of the spatial process deviations. Our
-package also allows for the exponential covariance function $H(\delta_{ij}) =
-\exp \left(-\frac{\delta_{ij} }{\eta} \right)$ and the Matern family and could be
-extended to include anisotropic functions in which covariance is not uniform
-in all directions. Following \citet{latimer2009}, we can calculate the
-covariance matrix between the locations of the data and the knots,
-$\Sigma_{\left(W, W^* \right)}$.
-% Each element of the covariance matrix $\Sigma^*$ is thus dependent on
-% three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
-% $j$ squared, (2) the scale parameter $\phi$, which determines how steeply the
-% correlation declines with increasing distance, and (3) the variance $\sigma^2$.
-Given $\Sigma^*$, we can generate random effects at knot
-locations by drawing from a MVT distribution for each time step $t$,
-$W_t^*\sim \mathrm{MVT}\left( \nu, 0, \Sigma^{*} \right)$.
-These random effects at the knots are then projected to the data locations using
-$\Sigma_{\left( W,W^{*} \right)}$ \citep{latimer2009}:
-$W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*$.
 
 Our package fits these models in a Bayesian framework. We sample
 from the posterior distribution using the No-U-Turn Sampler, which is an
-extension of Hamiltonian Markov Chain Monte Carlo, implemented in the
-statistical software Stan \citep{standevelopmentteam2016a, carpenter2017}
-and the R package \textbf{rstan} \citep{standevelopmentteam2016}. Although slower
-than an equivalent maximum likelihood approach, this Bayesian approach has a
-number of advantages. First, it lets us fully and accurately quantify
-uncertainty around all parameter estimates and predictions. This makes it
-simple to calculate the probability of specific events happening (e.g., the
-probability of abundance falling below some threshold at a given point in space
-and time). Given the nature of extreme events, this is likely to be a desired
-result from such a model. Second, the Bayesian framework lets us place weakly
-informative priors on parameters to impose our existing knowledge of reasonable
-values and to aid computation --- particularly of difficult to estimate
-parameters such as the degrees of freedom parameter in the MVT. In the case of
+extension of Hamiltonian Markov Chain Monte Carlo, implemented in Stan 
+\citep{standevelopmentteam2016a, carpenter2017}
+and the R package \textbf{rstan} \citep{standevelopmentteam2016}. Though slower
+than ML estimation, this Bayesian approach has a
+number of advantages. First, it lets us fully quantify
+uncertainty around all parameter estimates and derived quantities (predictions, 
+probabilities of exceeding thresholds or extremes). Second, the Bayesian framework 
+lets us place weakly informative priors on parameters to impose our existing 
+knowledge of reasonable values and to aid computation --- particularly for
+difficult to estimate
+parameters. In the case of
 the degrees of freedom parameter, $\nu$, we bound the lower value to $2$ for
 computational stability and use a gamma(2, 0.1) prior (i.e., shape = 2, rate = 0.1),
 which has a mean of $20$ and a median of $\sim 17$ \citep{juarez2010}.
@@ -351,7 +333,7 @@ $\eta = 1$ (the wiggliness or spatial correlation decay parameter), and
 with spatial data locations drawn uniformly from 0 to 10 on both spatial axes
 (thereby affecting $\delta_{ij}$, the spatial distances).
 We selected 15 knots to represent the spatial pattern as described above.
-The degrees of freedom parameter $\nu$ was set to 2.5 (very heavy tails), 5 (moderately
+The degrees of freedom parameter $\nu$ was set to 2.5 (heavy tails), 5 (moderately
 heavy tails), or 20 (effectively normal tails). A final step in our data
 simulation was to corrupt the ``true'' data by including
 observation error. Observations were generated from a gamma
