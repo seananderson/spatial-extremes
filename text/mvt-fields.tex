@@ -245,7 +245,7 @@ correspondence to wiggly spatial patterns --- the degree of wiggliness implied b
 a value of $\eta$ depends on the scale of the $\delta_{ij}$. The elements of the 
 covariance matrix $\Sigma$ at the $m$ knot locations are then
 defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta} \right)$ with the
-parameter $\sigma$ scaling the amplitude of the spatial process deviations. 
+parameter $\sigma$ scaling the amplitude of the spatial deviations. 
 Following \citet{latimer2009}, we can calculate the
 covariance matrix between the locations of the data and the knots,
 $\Sigma_{\left(W, W^* \right)}$.
@@ -255,20 +255,20 @@ $\Sigma_{\left(W, W^* \right)}$.
 % correlation declines with increasing distance, and (3) the variance $\sigma^2$.
 locations $W_t^*$ by drawing from a multivariate distribution (MVN, MVT) with covariance
 $\Sigma^*$ and project these to the data locations using
-$\Sigma_{\left( W,W^{*} \right)}$ \citep{latimer2009}:
+$\Sigma_{\left( W,W^{*} \right)}$:
 $W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*$.
 
 Here, we summarize the important features of these models and highlight how
 our new MVT model differs from the MVN version. Both models are
 essentially GLMMs with a spatiotemporal element described by random field.
-The model describes the expected value of the response, $\mu
-\equiv \mathbb{E}(y)$, at a set of locations in space $s$ and time $t$ as
+The expected value of the response, $\mu
+\equiv \mathbb{E}(y)$, at a set of locations in space $s$ and time $t$ is
 % maybe make these inline? 
 \begin{equation}
   g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},
 \end{equation}
 
-\noindent where $g$ represents a link function,
+\noindent where $g$ is a link function,
 $\bm{X}_{s,t}$ represents predictors, and $\bm{\beta}$ is estimated coefficients. 
 The symbol $\gamma$ represents the spatiotemporal process,
 described below. The variance of the observation component of
@@ -324,24 +324,21 @@ tails, our estimate of $\nu$ should approximately match the prior.
 
 \subsection{Testing the recovery of extremeness}
 
-We used simulation testing to evaluate how well we could recover whether
-heavy tails were present in the spatial process under various conditions.
-Our simulation included 50 data points collected at the same survey locations each year
-for 5, 15, or 25 years. The spatial process was simulated as independent each
-year ($\gamma_{s,t} = W_{s,t}$) with $\sigma^2 = 1$ (the spatial variance),
-$\eta = 1$ (the wiggliness or spatial correlation decay parameter), and
-with spatial data locations drawn uniformly from 0 to 10 on both spatial axes
-(thereby affecting $\delta_{ij}$, the spatial distances).
-We selected 15 knots to represent the spatial pattern as described above.
-The degrees of freedom parameter $\nu$ was set to 2.5 (heavy tails), 5 (moderately
+We used simulation testing to evaluate how well we could recover
+heavy spatial tails under various conditions.
+Our simulations included 50 data points (15 knots) collected at the same 
+locations each year for 5, 15, or 25 years. The spatial process was simulated 
+as independent each year ($\gamma_{s,t} = W_{s,t}$) with $\sigma^2 = 1$ 
+(the spatial variance),
+$\eta = 1$ (the wiggliness or spatial correlation parameter), and
+with spatial data locations drawn uniformly from 0 to 10.
+The MVT df parameter $\nu$ was set to 2.5 (heavy tails), 5 (moderately
 heavy tails), or 20 (effectively normal tails). A final step in our data
-simulation was to corrupt the ``true'' data by including
-observation error. Observations were generated from a gamma
+simulation was to corrupt the ``true'' process with observation error. We used a gamma 
 distribution with a log link, $Y_{it}\sim \mathrm{gamma}\left(a,\frac
-  {a}{\mathbb{E}(Y_{it})} \right)$, where the gamma shape parameter $a$ can be
+  {a}{\mathbb{E}(Y_{it})} \right)$, where the shape parameter $a$ can be
 reparameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
-tested CVs of 0.1, 0.6, and 1.2 representing minimal, moderate, and
-considerable measurement error. The underlying linear predictor was
+tested CVs of 0.1, 0.6, and 1.2. The underlying linear predictor was
 $\bm{X_{s,t}} \bm{\beta}$ set to zero to focus on the spatial process. Therefore,
 our simulation model of data $y_{s,t}$ simplifies to
 
@@ -351,6 +348,7 @@ our simulation model of data $y_{s,t}$ simplifies to
   \frac{1}{\mathrm{CV}^2 \cdot \mu_{s,t} } \right).
 \end{align}
 
+% this paragraph might be cut to the SI? Or most of it? 
 We attempted to recapture $\nu$ by fitting a model that matched the process
 generating the simulated data. We placed weakly informative priors on $\sigma$,
 $\eta$, and CV of half-$t$(3, 0, 3) (i.e., the positive half of a Student-$t$
@@ -364,12 +362,10 @@ across all parameters.
 
 \subsection{Diagnosing the advantage of allowing for extremes}
 
-To evaluate the consequences of assuming a MVN spatial process when the
-true spatial process has heavy tails drawn from a MVT, we generated simulated
-data sets from a MVT random field and fit models assuming a
-MVN random field or the
-correct MVT random field.
-We then compared the performance of these models. Specifically, we
+To evaluate the consequences of assuming a spatial processes are generated from MVN
+distributions when heavy tails are present, we generated simulated
+data sets from a MVT random field and compared the fit of models assuming a
+MVN random field to ones that correctly included the MVT random field. Specifically, we
 simulated data from the following model:
 
 \begin{align}
@@ -378,9 +374,9 @@ simulated data from the following model:
 \end{align}
 
 \noindent with $\sigma = 0.3$, $\eta = 1.2$, and 100 spatial data points drawn uniformly
-from locations ranging between 0 and 10 along both axes. Again, the locations
+from locations ranging between 0 and 10. Again, the locations
 of the data, and the 15 knots, were held constant through time to enable faster
-computations (this is not a general restriction of the model).
+computations (this is not a general restriction of the model or our package).
 We set the degrees of freedom parameter $\nu$ to 2 (very heavy tails) and used a
 Gaussian observation model with standard deviation, $\sigma_{\mathrm{obs}}$, of
 0.8. We chose a Gaussian observation
@@ -389,9 +385,8 @@ functional form to the previous simulation. We fit our estimation model as
 described above and with a half-$t$(3,0,3) prior on $\sigma_{\mathrm{obs}}$.
 
 To evaluate out-of-sample predictive accuracy we withheld
-10 randomly selected data points
-per year (10\% of the data) from the model fitting.
-We then compared between the MVT and MVN models:
+10\% of the data randomly (10 points) from the model fitting and then compared 
+the MVT and MVN models:
 the root mean squared error
 between the $\log(\mu^{\mathrm{withheld}}_{s,t})$
 posterior medians and the true $\log\left(\mu^{\mathrm{withheld}}_{s,t}\right)$,
