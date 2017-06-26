@@ -175,7 +175,7 @@ limited to \textbf{spBayes} \citep{finley2007}, \textbf{spTimer}
 \citep{schlather2016}, and \textbf{spate} \citep{sigrist2015}
 (Table~\ref{tab:packages}).
 
-A limitation of spatial models that utilize GRFs is that they
+A limitation of spatial models that use GRFs is that they
 may perform poorly when underlying data include anomalous or extreme events.
 When models describing the spatial process also include an observation model,
 for example, anomalous observations may be reconciled by increasing the variance
@@ -307,10 +307,10 @@ Our package fits these models in a Bayesian framework. We sample
 from the posterior distribution using the No-U-Turn Sampler, which is an
 extension of Hamiltonian Markov Chain Monte Carlo, implemented in Stan
 \citep{standevelopmentteam2016a, carpenter2017}
-and the R package \textbf{rstan} \citep{standevelopmentteam2016}. Though slower
-than ML estimation, this Bayesian approach has a
+and the R package \textbf{rstan} \citep{standevelopmentteam2016}.
+This Bayesian approach has a
 number of advantages. First, it lets us fully quantify
-uncertainty around all parameter estimates and derived quantities (predictions,
+uncertainty around all parameter estimates and derived quantities (e.g.\ predictions,
 probabilities of exceeding thresholds or extremes). Second, the Bayesian framework
 lets us place weakly informative priors on parameters to impose our existing
 knowledge of reasonable values and to aid computation --- particularly for
@@ -348,9 +348,11 @@ our simulation model of data $y_{s,t}$ simplifies to
   \frac{1}{\mathrm{CV}^2 \cdot \mu_{s,t} } \right).
 \end{align}
 
-% this paragraph might be cut to the SI? Or most of it?
+
 We attempted to recapture $\nu$ by fitting a model that matched the process
-generating the simulated data. We placed weakly informative priors on $\sigma$,
+generating the simulated data.
+% TODO: cut the rest of this paragraph to supporting information
+We placed weakly informative priors on $\sigma$,
 $\eta$, and CV of half-$t$(3, 0, 3) (i.e., the positive half of a Student-$t$
 distribution with a degrees of freedom 3, centrality parameter 0, and scale
 parameter 3). We initially sampled from each model with 500 iterations across
@@ -362,8 +364,8 @@ across all parameters.
 
 \subsection{Diagnosing the advantage of allowing for extremes}
 
-To evaluate the consequences of assuming a spatial processes are generated from MVN
-distributions when heavy tails are present, we generated simulated
+To evaluate the consequences of assuming spatial processes are generated from an MVN
+distribution when heavy tails are present, we generated simulated
 data sets from a MVT random field and compared the fit of models assuming a
 MVN random field to ones that correctly included the MVT random field. Specifically, we
 simulated data from the following model:
@@ -385,7 +387,8 @@ functional form to the previous simulation. We fit our estimation model as
 described above and with a half-$t$(3,0,3) prior on $\sigma_{\mathrm{obs}}$.
 
 To evaluate out-of-sample predictive accuracy we withheld
-10\% of the data randomly (10 points) from the model fitting and then compared
+10\% of the data randomly (10 points per year)
+from the model fitting and then compared
 the MVT and MVN models:
 the root mean squared error
 between the $\log(\mu^{\mathrm{withheld}}_{s,t})$
