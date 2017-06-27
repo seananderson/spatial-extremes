@@ -16,6 +16,7 @@
 \usepackage{booktabs}
 \usepackage{bm}
 \textheight 22.0cm
+\usepackage{mathptmx}
 
 % Linux Libertine:
 % \usepackage{textcomp}
@@ -89,7 +90,7 @@ $^2$Conservation Biology Division, Northwest Fisheries Science Center, National
 Marine Fisheries Service, National Oceanographic and Atmospheric Administration,
 2725 Montlake Blvd E, Seattle, WA 98112, USA
 
-$^{\ast}$Present address:
+$^{\ast}$Corresponding author. Present address:
 Aquatic Resources, Research and Assessment Division,
 Fisheries and Oceans Canada,
 Pacific Biological Station,
@@ -106,46 +107,42 @@ Nanaimo, BC, V6T 6N7, Canada
 
 \begin{abstract}
 
-Understanding biological responses
-to environmental perturbations in time and space
-is critical for conservation planning.
-With projected trends in climate forcing,
-for example, conservation biology will have to focus not just on mean changes,
-but also on variability and extremes.
 In ecological systems, extremes can happen
 in time, such as population crashes,
 or in space, such as rapid range contractions.
-Here, we introduce a statistical model that extends current
-methods for joint inference about temporal and spatial dynamics
+However, current methods for
+joint inference about temporal and spatial dynamics
 (spatiotemporal modelling with Gaussian random fields)
-to allow for and detect extremes
-that occur simultaneously in time and space.
-Specifically, our model is a
-Bayesian predictive-process model
+may perform poorly when
+underlying processes include extreme events.
+Here we introduce a model that allows for extremes
+to occur simultaneously in time and space.
+Our model is a Bayesian predictive-process model
 that uses a multivariate-t distribution to describe spatial random effects.
-The model is easily implemented with
-our flexible new R package \textbf{rrfields},
-which uses an interface that should be familiar
-to anyone who has worked with regression in R.
-We illustrate applications of our
-model and R package simulated and real-world data.
+The approach is easily implemented with
+our flexible R package \textbf{rrfields}.
 First, using simulated data,
 we demonstrate the ability to recapture spatiotemporal extremes,
 and explore the consequences of fitting models that ignore such extremes.
-Second, apply our models to predict
+Second, we predict
 tree mortality from mountain pine beetle (\emph{Dendroctonus ponderosae})
 outbreaks in the US Pacific Northwest over the last 16 years.
-We show that our model provides
-more accurate and certain predictions of these ecological processes
+We show that our approach provides
+more accurate and certain predictions
 compared to traditional spatiotemporal models
 that do not allow for extremes.
+% TODO: tighten up these last  sentences:
 Jointly modelling ecological processes in time and space
-represents an important step forward to
-creating realistic models of anomalies,
-and allows us to improve predictions that feed into conservation decisions.
-Distributing this tool as an R package
-should make these models accessible to a wide range of conservation biologists
-and scientists in other disciplines interested in predicting extreme events.
+while allowing for outlying events
+represents an important step forward in ecological modelling
+particularly given projected trends in climate forcing and an increasing
+need to focus on variability and extremes in ecological processes.
+Our R package will make these models
+accessible to a wide range of ecologists
+and scientists in other disciplines interested in
+allowing for extreme events and
+in random fields spatial or spatiotemporal modelling in general.
+
 \end{abstract}
 
 \section{Introduction}
