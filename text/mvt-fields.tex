@@ -429,8 +429,8 @@ with the spatial process itself modelled as autoregressive:
   \log(\mu_{s,t}) &= \beta_0 + \beta_t + \gamma_{s,t},\\
   % \gamma_{s,t} &= \phi \left(\gamma_{s,t-1} -
   % \mathbb{E}[\gamma_{t-1}]\right) + W_{s,t},\\ \label{eq:beetle-mu}
-  \gamma_{s,t} &= \phi \gamma_{s,t-1} + W_{s,t},\\ \label{eq:beetle-mu}
-  W_{s,t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right).
+  \gamma_{s^{*},t} &= \phi \gamma_{s^{*},t-1} + W_{s^{*},t},\\ \label{eq:beetle-mu}
+  W_{s^{*},t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s^{*},t)}\right).
 \end{align}
 
 \noindent Furthermore, we model the annual
@@ -736,7 +736,9 @@ The R package \textbf{rrfields} is available at TODO.
 \section{Supporting Information}
 
 \subsection{Posterior and joint distributions}
-
+% EW: I deleted a couple lines below that were redundant. But if you prefer, we could 
+% write the equation out in terms of the probabiltiy of the gamma terms -- instead of the 
+% W{s,t} -- they're the same, so no preference on my end. 
 Below we use the notation $[a|b]$ to describe the conditional distribution of
 $a$ given $b$. We can write the joint posterior distribution for the parameters
 in the model of mountain pine beetle outbreaks as:
@@ -755,27 +757,28 @@ in the model of mountain pine beetle outbreaks as:
   |
   \bm{y}]
   \propto \\
-  \prod_{s=1}^{S} \prod_{t=1}^{T}
-  [y_{s,t} | \mu_{s,t}, \sigma^2_{\mathrm{obs}}] \\
-  \times [\mu_{s,t} | \mu_{s,t-1}, \beta_t, \gamma_{s,t} ] \\
-  \times [\gamma_{s,t} | \gamma_{s,t-1}, \phi, W_{s,t}] \\
-  \times [\beta_t | \beta_{t-1}, \sigma^2_{\beta}] \\
-  \times [W_{s,t} | \nu, \sigma^2, \eta] \\
+  \prod_{i=1}^{N}
+  [y_{s(i),t(i)} | \mu_{s(i),t(i)}, \sigma^2_{\mathrm{obs}}] \\
+  \times \prod_{t=1}^{T}[\beta_t | \beta_{t-1}, \sigma^2_{\beta}] \\
+  \times \prod_{t=2}^{T}[W_{s^{*},t} | \nu, \sigma^2, \eta] \\
   \times
-  [\beta_{t=1}]
-  [\phi]
-  [\gamma_{s,t=1}]
-  [\eta]
-  [\nu]
-  [\sigma^2_{\mathrm{obs}}]
-  [\sigma^2_{\beta}]
-  [\sigma^2],
+  \pi[\beta_{t=1}]
+  \pi[\phi]
+  \pi[W_{s^{*},t=1}]
+  \pi[\eta]
+  \pi[\nu]
+  \pi[\sigma^2_{\mathrm{obs}}]
+  \pi[\sigma^2_{\beta}]
+  \pi[\sigma^2],
   \\
 \end{multline}
 
-\noindent where the coefficients are defined in the main Methods section. The
-joint probability is calculated over points in space $s$ 1 through $S$, and
-points in time $t$ 1 through $T$.
+\noindent where the coefficients are defined in the main Methods section. Importantly,
+we use parameters with the superscript $\gamma_{s^{*},t}$ to describe the random effects at the 
+locations of the unobserved knots, and parameters without the asterisk $\gamma_{s,t}$ to describe the 
+projected random effects at the locations of observed data (projection equation in main text). The
+joint probability is calculated over points in space $s$, and time $t$ and missing observations,
+or replicate observations may be present. 
 
 \subsection{Model comparison calculations}
 
