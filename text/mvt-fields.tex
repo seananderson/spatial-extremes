@@ -16,7 +16,7 @@
 \usepackage{booktabs}
 \usepackage{bm}
 \textheight 22.0cm
-\usepackage{mathptmx}
+% \usepackage{mathptmx}
 
 % Linux Libertine:
 % \usepackage{textcomp}
@@ -743,8 +743,9 @@ $a$ given $b$. We can write the joint posterior distribution for the parameters
 in the model of mountain pine beetle outbreaks as:
 
 \begin{multline}
-  [\bm{W},
+  [
   \bm{\beta},
+  \bm{\gamma},
   \phi,
   \eta,
   \nu,
@@ -755,27 +756,29 @@ in the model of mountain pine beetle outbreaks as:
   \bm{y}]
   \propto \\
   \prod_{i=1}^{N}
-  [y_{s(i),t(i)} | \beta_{t(i)}, W_{s^{*},t(i)}, \sigma^2_{\mathrm{obs}}] \\
-  \times \prod_{t=1}^{T}[\beta_t | \beta_{t-1}, \sigma^2_{\beta}] \\
-  \times \prod_{t=2}^{T}[W_{s^{*},t} | \nu, \sigma^2, \eta] \\
+  [y_{s(i),t(i)} | \beta_{t(i)}, \gamma_{s^*,t(i)}, \sigma^2_{\mathrm{obs}}] \\
+  \times \prod_{t=1}^{T}[\beta_t | \beta_{t-1}, \sigma^2_{\beta}]
+  [\gamma_{s^*,t} | \gamma_{s^*,t-1}, \phi, \eta, \nu, \sigma^2] \\
   \times
-  \pi[\beta_{t=1}]
-  \pi[\phi]
-  \pi[W_{s^{*},t=1}]
-  \pi[\eta]
-  \pi[\nu]
-  \pi[\sigma^2_{\mathrm{obs}}]
-  \pi[\sigma^2_{\beta}]
-  \pi[\sigma^2],
+  [\beta_{t=1}]
+  [\gamma_{s^*,t=1}]
+  [\phi]
+  [\eta]
+  [\nu]
+  [\sigma^2_{\mathrm{obs}}]
+  [\sigma^2_{\beta}]
+  [\sigma^2],
   \\
 \end{multline}
 
-\noindent where the coefficients are defined in the main Methods section. Importantly,
-we use parameters with the superscript $\gamma_{s^{*},t}$ to describe the random effects at the
-locations of the unobserved knots, and parameters without the asterisk $\gamma_{s,t}$ to describe the
-projected random effects at the locations of observed data (projection equation in main text). The
-joint probability is calculated over points in space $s$, and time $t$ and missing observations,
-or replicate observations may be present.
+\noindent where the coefficients are defined in the main Methods section.
+Importantly, we use parameters with the superscript $\gamma_{s^{*},t}$ to
+describe the random effects at the locations of the unobserved knots, and
+parameters without the asterisk $\gamma_{s,t}$ to describe the projected random
+effects at the locations of observed data (projection equation in main text).
+The joint probability is calculated over points in space $s$, and time $t$ for
+all rows of data $N$. Missing observations or replicate observations forgiven
+points in space and time may be present.
 
 \subsection{Model comparison calculations}
 
