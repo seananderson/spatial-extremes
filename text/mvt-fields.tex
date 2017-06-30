@@ -744,9 +744,7 @@ $a$ given $b$. We can write the joint posterior distribution for the parameters
 in the model of mountain pine beetle outbreaks as:
 
 \begin{multline}
-  [\bm{\mu},
-  \bm{\gamma},
-  \bm{W},
+  [\bm{W},
   \bm{\beta},
   \phi,
   \eta,
@@ -758,7 +756,7 @@ in the model of mountain pine beetle outbreaks as:
   \bm{y}]
   \propto \\
   \prod_{i=1}^{N}
-  [y_{s(i),t(i)} | \mu_{s(i),t(i)}, \sigma^2_{\mathrm{obs}}] \\
+  [y_{s(i),t(i)} | \beta_{t(i)}, W_{s^{*},t(i)}, \sigma^2_{\mathrm{obs}}] \\
   \times \prod_{t=1}^{T}[\beta_t | \beta_{t-1}, \sigma^2_{\beta}] \\
   \times \prod_{t=2}^{T}[W_{s^{*},t} | \nu, \sigma^2, \eta] \\
   \times
