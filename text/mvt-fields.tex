@@ -193,17 +193,16 @@ Examples of these methods in existing R packages include but are not limited to
 \textbf{INLA} \citep{rue2009}, and
 \textbf{spate} \citep{sigrist2015} (see~Table~\ref{tab:packages}).
 
-A limitation of spatial models that use GRFs is that they
-may perform poorly when underlying data include anomalous or extreme events.
-When models describing the spatial process also include an observation model,
-for example, anomalous observations may be reconciled by increasing the variance
-of the observation model (rather than attributing these to extremes in the
-ecological process). Extremes in temporal processes have been modelled using a
-variety of methods in ecology, typically by including mixtures of normal and
-heavy-tailed distributions \citep[e.g.][]{everitt1996, ward2007, thorson2011}.
-More recently, the Student-$t$ distribution has been proposed as a
-solution to modelling process variation with extremes in population dynamics
-\citep{anderson2017}.
+A limitation of spatial models that use GRFs is that they may perform poorly
+when the underlying data include anomalous or extreme events. When models
+describing the spatial process also include an observation model, for example,
+anomalous observations may be reconciled by increasing the variance of the
+observation model (rather than attributing these to extremes in the ecological
+process). Extremes in temporal processes have been modelled using a variety of
+methods in ecology, typically by including mixtures of normal and heavy-tailed
+distributions \citep[e.g.][]{everitt1996, ward2007, thorson2011}. More recently,
+the Student-$t$ distribution has been proposed as a solution to modelling
+process variation with extremes in population dynamics \citep{anderson2017}.
 
 Several extensions of GRFs have been proposed to better capture
 extreme spatial events, including max-stable or extreme value theory
@@ -213,45 +212,45 @@ models to describing extremes include the use of multivariate-$t$ (MVT) spatial
 random fields \citep{roislien2007}. Focusing on the latter, to our knowledge these
 methods have not been applied in the ecology, fisheries, or environmental sciences.
 
-In this paper we introduce the use of robust spatial predictive models using
-the MVT distribution, and provide a user-friendly implementation in our new
-R package \textbf{rrfields} (robust random fields). Using simulation testing
-to compare the multivariate normal (MVN) to MVT spatial processes, we
-illustrate that the MVT leads to better prediction (greater accuracy, more
-precision) when the underlying special process is heavy-tailed. We then
-illustrate the application of this approach to real-world data that includes
-spatial extremes, using data on mountain pine beetle (\textit{Dendroctonus
-  ponderosae}) outbreaks in the Pacific Northwest of the United States.
+In this paper we introduce the use of robust spatial predictive models using the
+MVT distribution, and provide a user-friendly implementation in our new R
+package \textbf{glmmfields}. Using simulation testing to compare the
+multivariate normal (MVN) to MVT spatial processes, we illustrate that the MVT
+leads to better prediction (greater accuracy, more precision) when the
+underlying special process is heavy-tailed. We then illustrate the application
+of this approach to real-world data that includes spatial extremes using data
+on mountain pine beetle (\textit{Dendroctonus ponderosae}) outbreaks in the
+Pacific Northwest of the United States.
 
 \section{Methods}
 
 We seek to allow for large deviations in an ecological spatial pattern over
 time by extending a spatiotemporal predictive process model to use a MVT
 distribution instead of the MVN distribution. Below we describe the form of
-our model as implemented in \textbf{rrfields}, describe two simulation tests
+our model as implemented in \textbf{glmmfields}, describe two simulation tests
 exploring model performance, and finally describe the application of our model
 to a data set of mountain pine beetle outbreaks.
-A complete reproducible version of this analysis is available at
+A reproducible version of this analysis is available at
 \url{https://github.com/seananderson/spatial-extremes} DOI: TODO.
 
-\subsection{The MVT predictive process model}
+\subsection{Predictive process models}
 
 \citet{latimer2009} provide an overview of predictive process models for
-ecologists. For large datasets (hundreds of locations), the dimensionality of the random
-effects may be computationally prohibitive. One solution is to estimate the random
-field as correlated random effects at a subset of locations or $m$ 'knots'
-\citep[e.g.][]{latimer2009, shelton2014}, where $m < n$, the number of data points. The
-$m$ knots describing a random field can be estimated via a clustering algorithm,
-such as the partitioning around medoids
-algorithm \citep[the \texttt{pam} function in the R package
-\textbf{cluster};][]{reynolds2006}.
-Instead of estimating an unconstrained $m \times m$ covariance matrix, a covariance
-function is specified \emph{a priori} to model covariance as a function of distance.
-Our package allows the isotropic Gaussian, exponential, and Matern covariance functions,
-however anisotropic functions could be included. Given the random
-effects estimated at the knot locations, and known distance matrix between the knots
-and observed data, the knot random effects can be projected to the locations of the
-observations \citep[][Figure~\ref{fig:didactic}]{latimer2009, finley2009}.
+ecologists. For large datasets (hundreds of locations or more), the
+dimensionality of the random effects may be computationally prohibitive. One
+solution is to estimate the random field as correlated random effects at a
+subset of locations or $m$ `knots' \citep[e.g.][]{latimer2009, shelton2014},
+where $m < n$, the number of data points. The location of the $m$ knots
+describing a random field can be chosen via a clustering algorithm, such as the
+partitioning around medoids algorithm \citep[e.g.\ the \texttt{pam} function in
+the R package \textbf{cluster};][]{reynolds2006}. Instead of estimating an
+unconstrained $m \times m$ covariance matrix, a covariance function is specified
+\emph{a priori} to model covariance as a function of distance. Our package
+allows the isotropic Gaussian, exponential, and Matern covariance functions;
+however, anisotropic functions could be included. Given the random effects
+estimated at the knot locations, and the known distance matrix between the knots
+and observed data, the knot random effects can be projected to the locations of
+the observations \citep[][Figure~\ref{fig:didactic}]{latimer2009, finley2009}.
 
 As an example, the commonly used squared exponential (Gaussian) covariance function
 models the correlation between points $i$ and $j$ as $H(\delta_{ij}) = \exp
@@ -265,42 +264,35 @@ covariance matrix $\Sigma$ at the $m$ knot locations are then
 defined as $\Sigma_{ij}^*=\sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta} \right)$ with the
 parameter $\sigma$ scaling the amplitude of the spatial deviations.
 Following \citet{latimer2009}, we can calculate the
-covariance matrix between the locations of the data and the knots,
-$\Sigma_{\left(W, W^* \right)}$.
-% Each element of the covariance matrix $\Sigma^*$ is thus dependent on
-% three quantities: (1) $\delta_{ij}$ the known distance between points $i$ and
-% $j$ squared, (2) the scale parameter $\phi$, which determines how steeply the
-% correlation declines with increasing distance, and (3) the variance $\sigma^2$.
-locations $W_t^*$ by drawing from a multivariate distribution (MVN, MVT) with covariance
-$\Sigma^*$ and project these to the data locations using
-$\Sigma_{\left( W,W^{*} \right)}$:
+covariance matrix between the data locations and the knots,
+$\Sigma_{\left(W, W^* \right)}$. Given $\Sigma^*$, we can generate random
+effects at knot locations $W_t^*$ by drawing from a multivariate distribution
+(MVN or MVT) with covariance $\Sigma^*$ and project these to the data locations
+using $\Sigma_{\left( W,W^{*} \right)}$:
 $W=\Sigma_{\left(W,W^* \right)}^{'} \Sigma^{*-1}W^*$.
 
-Here, we summarize the important features of these models and highlight how
-our new MVT model differs from the MVN version. Both models are
-essentially GLMMs with a spatiotemporal element described by random field.
-The expected value of the response, $\mu
-\equiv \mathbb{E}(y)$, at a set of locations in space $s$ and time $t$ is
-$g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},$
-where $g$ is a link function,
-$\bm{X}_{s,t}$ represents predictors, and $\bm{\beta}$ is estimated coefficients.
-The symbol $\gamma$ represents the spatiotemporal process,
-described below. The variance of the observation component of
-our model is a function of the mean via a
-probability distribution such as the Gaussian, Poisson, or gamma.
+% Here, we summarize the important features of these models and highlight how
+% our new MVT model differs from the MVN version.
 
-%A random field is a term used to describe ``random effects'' drawn from a
-%multivariate probability distribution representing deviations in a
-%two-dimensional space (REF).
-Modifying the MVN spatiotemporal model
-to the more flexible MVT distribution involves one extra
-degrees of freedom parameter $\nu$. When $\nu$ is small (say $\nu < 10$)
-the distribution has heavier tails than the MVN --- meaning, extreme events
-are more likely (Fig.~\ref{fig:nu}). For most purposes, the MVT and MVN are
-indistinguishable for moderate values of $\nu$ (say $\nu > 20$) similarly to the
-univariate t-distribution compared with the univariate normal distribution
-\citep[e.g.][]{anderson2017}.
+\subsection{MVT random fields}
 
+Our model is essentially a GLMM with a spatiotemporal element described by a MVN
+or MVT random field. The expected value of the response, $\mu \equiv
+\mathbb{E}(y)$, at a set of locations in space $s$ and time $t$ is $g(\mu_{s,t})
+= \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},$ where $g$ is a link function,
+$\bm{X}_{s,t}$ represents predictors, and $\bm{\beta}$ is estimated
+coefficients. The symbol $\gamma$ represents the spatiotemporal process,
+described below. The variance of the observation component of our model is a
+function of the mean via a probability distribution such as the Gaussian,
+Poisson, or gamma.
+
+Modifying the MVN spatiotemporal model to the more flexible MVT distribution
+requires estimating the degrees of freedom parameter $\nu$. When $\nu$ is small
+(say $\nu < 10$) the distribution has heavier tails than the MVN --- meaning,
+extreme events are more likely (Fig.~\ref{fig:nu}). For most purposes, the MVT
+and MVN are indistinguishable for moderate values of $\nu$ (say $\nu > 20$)
+similarly to the univariate $t$-distribution compared with the univariate normal
+distribution \citep[e.g.][]{anderson2017}.
 If $W_{s,t}$ defines a random field, then the spatiotemporal element,
 $\gamma_{s,t}$, can be made temporally constant (one field shared across time,
 $\gamma_{s,t} = W_{s}$), independent at each time step ($\gamma_{s,t} =
@@ -317,26 +309,22 @@ dependent on the spatial pattern at time $t-1$ to a degree defined by $\phi$,
 % keeping the means of the spatial process $\gamma_{s,t}$ stationary and centred
 % on zero.
 
-Our package fits these models in a Bayesian framework. We sample
-from the posterior distribution using the No-U-Turn Sampler, which is an
-extension of Hamiltonian Markov Chain Monte Carlo, implemented in Stan
-\citep{standevelopmentteam2016a, carpenter2017}
-and the R package \textbf{rstan} \citep{standevelopmentteam2016}.
-This Bayesian approach has a
-number of advantages. First, it lets us fully quantify
-uncertainty around all parameter estimates and derived quantities (e.g.\ predictions,
-probabilities of exceeding thresholds or extremes). Second, the Bayesian framework
-lets us place weakly informative priors on parameters to impose our existing
-knowledge of reasonable values and to aid computation --- particularly for
-difficult to estimate
-parameters. In the case of
-the degrees of freedom parameter, $\nu$, we bound the lower value to $2$ for
-computational stability and use a gamma(2, 0.1) prior (i.e., shape = 2, rate = 0.1),
-which has a mean of $20$ and a median of $\sim 17$ \citep{juarez2010}.
-If the data are not informative about heavy
-tails, our estimate of $\nu$ should approximately match the prior.
+Our package fits these models in a Bayesian framework. We sample from the
+posterior distribution using the No-U-Turn Sampler, which is an extension of
+Hamiltonian Markov Chain Monte Carlo (MCMC), implemented in Stan
+\citep{standevelopmentteam2016a, carpenter2017} and the R package \textbf{rstan}
+\citep{standevelopmentteam2016}. This Bayesian approach has a number of
+advantages. First, it lets us fully quantify uncertainty around all parameter
+estimates and derived quantities (e.g.\ predictions, probabilities of exceeding
+thresholds or extremes). Second, the Bayesian framework lets us place weakly
+informative priors on parameters to impose our existing knowledge of reasonable
+values and to aid computation. In the case of the degrees of freedom parameter,
+$\nu$, we bound the lower value to $2$ for computational stability and use a
+gamma(2, 0.1) prior (i.e., shape = 2, rate = 0.1), which has a mean of $20$ and
+a median of $\sim 17$ \citep{juarez2010}. If the data are not informative about
+heavy tails, our estimate of $\nu$ should approximately match the prior.
 
-\subsection{Testing the recovery of extremeness}
+\subsection{Testing the recovery of spatial extremeness}
 \label{sec:testing-recovery}
 
 We used simulation testing to evaluate how well we could recover
@@ -345,17 +333,17 @@ Our simulations included 50 data points (15 knots) collected at the same
 locations each year for 5, 15, or 25 years. The spatial process was simulated
 as independent each year ($\gamma_{s,t} = W_{s,t}$) with $\sigma^2 = 1$
 (the spatial variance),
-$\eta = 1$ (the wiggliness or spatial correlation parameter), and
+$\eta = 1$ (the spatial correlation parameter), and
 with spatial data locations drawn uniformly from 0 to 10.
-The MVT df parameter $\nu$ was set to 2.5 (heavy tails), 5 (moderately
+The MVT $\nu$ parameter was set to 2.5 (heavy tails), 5 (moderately
 heavy tails), or 20 (effectively normal tails). A final step in our data
-simulation was to corrupt the ``true'' process with observation error. We used a gamma
+simulation was to corrupt the `true' process with observation error. We used a gamma
 distribution with a log link, $Y_{it}\sim \mathrm{gamma}\left(a,\frac
   {a}{\mathbb{E}(Y_{it})} \right)$, where the shape parameter $a$ can be
-re-parameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
-tested CVs of 0.1, 0.6, and 1.2. The underlying linear predictor was
-$\bm{X_{s,t}} \bm{\beta}$ set to zero to focus on the spatial process. Therefore,
-our simulation model of data $y_{s,t}$ simplifies to
+re-parameterized into the coefficient of variation (CV),
+$a=\frac{1}{\mathrm{CV}^2}$. We tested CVs of 0.1, 0.6, and 1.2. The underlying
+linear predictor $\bm{X_{s,t}} \bm{\beta}$ was set to zero to focus on the
+spatial process. Therefore, our simulation model of data $y_{s,t}$ simplifies to
 \begin{align}
   \log(\mu_{s,t}) &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right),\\
   y_{s,t} &\sim \mathrm{gamma} \left( \frac{1}{\mathrm{CV}_\mathrm{obs}^2},
@@ -363,41 +351,34 @@ our simulation model of data $y_{s,t}$ simplifies to
 \end{align}
 
 We attempted to recapture $\nu$ by fitting a model that matched the process
-generating the simulated data.
-% TODO: cut the rest of this paragraph to supporting information
-We placed weakly informative priors on $\sigma$,
+generating the simulated data. We placed weakly informative priors on $\sigma$,
 $\eta$, and CV of half-$t$(3, 0, 3) (i.e., the positive half of a Student-$t$
 distribution with a degrees of freedom 3, centrality parameter 0, and scale
-parameter 3). We initially sampled from each model with 500 iterations across
-four chains discarding the first half of the iterations as warm-up. If the
-samples had not converged after this initial run, we resampled from the model
-with 2000 iterations across four chains. We measured convergence as a minimum
-effective sample size of $\ge 100$ and a maximum $\hat{R}$ of $\le 1.05$)
-across all parameters.
+parameter 3). We provide a full description of the posterior and joint
+probability distributions along with details of the MCMC sampling for this and
+all other models in the Supporting Information.
 
 \subsection{Diagnosing the advantage of allowing for extremes}
 \label{sec:diagnosing}
 
-To evaluate the consequences of assuming spatial processes are generated from an MVN
-distribution when heavy tails are present, we generated simulated
-data sets from a MVT random field and compared the fit of models assuming a
-MVN random field to ones that correctly included the MVT random field. Specifically, we
-simulated data from the following model:
-\begin{align}
-  \mu_{s,t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right),\\
-  y_{s,t} &\sim \mathrm{Normal} \left(\mu_{s,t}, \sigma_{\mathrm{obs}} \right),
-\end{align}
-
-\noindent with $\sigma = 0.3$, $\eta = 1.2$, and 100 spatial data points drawn uniformly
-from locations ranging between 0 and 10. Again, the locations
-of the data, and the 15 knots, were held constant through time to enable faster
-computations (this is not a general restriction of the model or our package).
-We set the degrees of freedom parameter $\nu$ to 2 (very heavy tails) and used a
+To evaluate the consequences of assuming spatial processes are generated from an
+MVN distribution when heavy tails are present, we generated simulated data sets
+from a MVT random field and compared the fit of models assuming a MVN random
+field to ones that correctly included the MVT random field. Specifically, we
+simulated data from the model: 
+$\mu_{s,t} \sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right)$, 
+$y_{s,t} \sim \mathrm{normal} \left(\mu_{s,t},
+  \sigma_{\mathrm{obs}} \right)$,
+with $\sigma = 0.3$, $\eta = 1.2$, and 100 spatial data points drawn
+uniformly from locations ranging between 0 and 10. Again, the locations of the
+data, and the 15 knots, were held constant through time to enable faster
+computations (this is not a general restriction of the model or our package). We
+set the degrees of freedom parameter $\nu$ to 2 (very heavy tails) and used a
 Gaussian observation model with standard deviation, $\sigma_{\mathrm{obs}}$, of
-0.8. We chose a Gaussian observation
-model and identity link for simplicity and to demonstrate an alternative
-functional form to the previous simulation. We fit our estimation model as
-described above and with a half-$t$(3,0,3) prior on $\sigma_{\mathrm{obs}}$.
+0.8. We chose a Gaussian observation model and identity link for simplicity and
+to demonstrate an alternative functional form to the previous simulation. We
+fit our estimation model as described above and with a half-$t$(3,0,3) prior
+on $\sigma_{\mathrm{obs}}$.
 
 To evaluate out-of-sample predictive accuracy we withheld
 10\% of the data randomly (10 points per year)
@@ -451,24 +432,17 @@ with the spatial process itself modelled as autoregressive:
 mean estimates, $\beta_t$, as following a random walk
 constrained by a normal distribution with standard deviation $\sigma_{\beta}$,
 and the data, $y_{s,t}$, as generated by a lognormal observation model
-with scale parameter $\sigma_{\mathrm{obs}}$:
-\begin{align}
-\beta_t &\sim \mathrm{normal}\left( \beta_{t-1}, \sigma_{\beta} \right),\\
-y_{s,t} &\sim \mathrm{lognormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right).
-\end{align}
+with scale parameter $\sigma_{\mathrm{obs}}$: 
+$\beta_t \sim \mathrm{normal}\left( \beta_{t-1}, \sigma_{\beta} \right)$,
+$y_{s,t} \sim \mathrm{lognormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right)$.
 
-See the Supporting Information for a formal description
-of the posterior and joint
-probability distributions.
 We chose 20 knots to represent the spatial process
 % TODO: make sure knots are correct
 (increasing the number of knots did not substantially affect the results).
 We fit the models with half-$t$(3, 0, 3) priors on all
 scale parameters,
 a normal(0, 5) prior on $\beta_0$,
-% a MVN(0, TODO) prior on $\gamma_{s,t=1}$,
 and a normal(0, 0.5)[-1, 1] prior on $\phi$.
-
 We compared the above MVT
 model to a Gaussian random field model.
 % in which
@@ -564,9 +538,9 @@ observe with our descriptive model. Alternatively, incorporating spatiotemporal
 extremes into a dynamic model of pine beetle outbreaks might improve its
 predictive capacity.
 
-Our associated R package, \textbf{rrfields}, is designed to be familiar for
+Our associated R package, \textbf{glmmfields}, is designed to be familiar for
 anyone who has fit GLMs in R, and includes flexibility for many features beyond
-those described thus far. For example, \textbf{rrfields} can be used to fit
+those described thus far. For example, \textbf{glmmfields} can be used to fit
 spatial GLMs for data without a temporal component (Appendix XX). The package
 can fit observation models beyond those included in this paper, such as Poisson,
 negative binomial, or binomial, and can include numeric or factor covariates.
@@ -576,7 +550,7 @@ negative binomial, or binomial, and can include numeric or factor covariates.
 % , and allows for flexibility in how the spatial process evolves (static field,
 % fields modelled as AR1, fields modelled as a random walk, and independent
 % exchangeable fields).
-\textbf{rrfields} includes familiar R utility functions (e.g.\
+\textbf{glmmfields} includes familiar R utility functions (e.g.\
 \texttt{predict()}) and plotting functions for model checking. Finally, the
 package includes a simulation function that can simulate data from any model
 that the package can fit, and a series of unit tests that simulate and fit all
@@ -633,7 +607,7 @@ through time.
 % (http://www.pnas.org/content/106/Supplement\_2/19723.short), or to other
 % disturbances - wildfires, oil spills, and disease outbreaks.]
 %
-% There are a number of features included in the 'rrfields' package that may be
+% There are a number of features included in the 'glmmfields' package that may be
 % useful to ecologists, but beyond the scope of this paper. Examples of features
 % include the addition of covariates (numeric or factors), models for temporal
 % processes (random effects), and flexible models for the evolution of the spatial
@@ -652,7 +626,7 @@ Smith, beetle data, Trevor, Jim, Brian, DFO? \ldots
 All code and data associated with this paper are available at
 \url{https://github.com/seananderson/XX} and are archived at
 \url{https://zenodo.org/XX}.
-The R package \textbf{rrfields} is available at TODO.
+The R package \textbf{glmmfields} is available at TODO.
 
 \bibliography{spatial-extremes}
 
@@ -840,6 +814,20 @@ for the model of mountain pine beetle outbreaks can be written as:
   [\sigma^2].
 \end{multline}
 
+\subsection{MCMC sampling details}
+
+For the models fit to the simulated datasets, we initially sampled from each
+model with 500 iterations across four chains discarding the first half of the
+iterations as warm-up. If the samples had not converged after this initial run,
+we re-sampled from the model with 2000 iterations across four chains. We
+measured convergence as a minimum effective sample size of $\ge 100$ and a
+maximum $\hat{R}$ of $\le 1.05$) across all parameters.
+
+For the models fit to the mountain pine beetle data, we sampled TODO iterations,
+discarding the first half as warm-up. Again, we assessed chain convergence as a
+minimum effective sample size of $\ge 100$ and a maximum $\hat{R}$ of $\le
+1.05$) across all parameters.                    
+
 \subsection{Model comparison}
 
 We compared MVN and MVT models via log predictive density, $\Delta$ LOOIC
@@ -959,7 +947,7 @@ assuming MVN random fields.
         spBayes  & No             & Yes     & Yes     & MCMC                        & No         & Gaussian, binomial, Poisson                                       & No       & Exponential, Gaussian, Matern family, spherical   & No                    & Yes       & \url{https://CRAN.R-project.org/package=spBayes} \\
         INLA     & No             & Yes     & Yes     & Approximate posterior/SPDE  & Yes        & Many                                                              & Yes      & Exponential, Gaussian, Matern family, many others & Yes                   & Yes       & \url{http://www.r-inla.org/}                                     \\
         VAST     & No             & No      & No      & Maximum likelihood/SPDE     & Yes        & Gaussian, lognormal, gamma, binomial, Poisson, negative binomial  & Yes      & Matern family                                     & Yes                   & No        & \url{https://github.com/James-Thorson/VAST}                      \\
-        rrfields & Yes            & Yes     & No      & MCMC/NUTS                   & Yes        & Gaussian, lognormal, gamma, binomial, Poisson, negative binomial  & No       & Exponential, Gaussian, Matern family              & Yes                   & Yes       & \url{https://github.com/seananderson/rrfields}                  \\
+        glmmfields & Yes            & Yes     & No      & MCMC/NUTS                   & Yes        & Gaussian, lognormal, gamma, binomial, Poisson, negative binomial  & No       & Exponential, Gaussian, Matern family              & Yes                   & Yes       & \url{https://github.com/seananderson/glmmfields}                  \\
         \bottomrule
       \end{tabular}
     \end{scriptsize}
