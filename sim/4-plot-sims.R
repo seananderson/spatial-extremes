@@ -204,7 +204,7 @@ plot(0,0, xlim = range(loo$delta_loo), ylim = c(0, 15), type = "n",
   xlab = "", axes = FALSE,
   ylab = "Count")
 mtext(expression(Delta~LOOIC), side = 1, line = margin_line, cex = axis_lab_cex, col = margin_color)
-mtext("(MVN - MVT)", side = 1, line = margin_line+1, cex = axis_lab_cex, col = margin_color)
+mtext("(MVT - MVN)", side = 1, line = margin_line+1, cex = axis_lab_cex, col = margin_color)
 h <- hist(loo$delta_loo, probability = TRUE,
   breaks = seq(range(loo$delta_loo)[1],
     range(loo$delta_loo)[2], length.out = 12), plot = FALSE,
