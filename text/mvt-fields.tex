@@ -51,14 +51,15 @@
 }
 
 % remove numbers in front of sections:
-\makeatletter
-\renewcommand\@seccntformat[1]{}
-\makeatother
+% \makeatletter
+% \renewcommand\@seccntformat[1]{}
+% \makeatother
 
 \newcommand{\R}[1]{\label{#1}\linelabel{#1}}
 \newcommand{\lr}[1]{line~\lineref{#1}}
 
-\usepackage{pdflscape}
+% \usepackage{pdflscape}
+\usepackage{lscape}
 \usepackage{makecell}
 \usepackage{array}
 \newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
@@ -71,9 +72,20 @@
 \bibpunct{(}{)}{;}{a}{}{;}
 \bibliographystyle{ecology}
 
+\usepackage{titlesec}
+\titlespacing*{\section}
+{0pt}{1.5ex plus 1ex minus .2ex}{1.0ex plus .2ex}
+\titlespacing*{\subsection}
+{0pt}{1.5ex plus 1ex minus .2ex}{1.0ex plus .2ex}
+
+% \setlength{\abovedisplayskip}{-30pt}
+% \setlength{\belowdisplayskip}{-30pt}
+% \setlength{\abovedisplayshortskip}{-30pt}
+% \setlength{\belowdisplayshortskip}{-30pt}
+
 \title{
   Black swans in space:
-  robust modelling of extreme spatiotemporal processes}
+  robust modelling of spatiotemporal processes with extremes}
 \author{
 Sean C. Anderson$^{1\ast}$ and
 Eric J. Ward$^2$
@@ -109,6 +121,9 @@ Nanaimo, BC, V6T 6N7, Canada
 
 \begin{abstract}
 
+% Projected trends in climate forcing
+% suggest a need to increasingly focus on
+% variability and extremes in ecological processes.
 In ecological systems, extremes can happen
 in time, such as population crashes,
 or in space, such as rapid range contractions.
@@ -119,10 +134,10 @@ may perform poorly when
 underlying processes include extreme events.
 Here we introduce a model that allows for extremes
 to occur simultaneously in time and space.
-Our model is a Bayesian predictive-process model
+Our model is a Bayesian predictive-process GLM (generalized linear model)
 that uses a multivariate-t distribution to describe spatial random effects.
 The approach is easily implemented with
-our flexible R package \textbf{rrfields}.
+our flexible R package \textbf{glmmfields}
 First, using simulated data,
 we demonstrate the ability to recapture spatiotemporal extremes,
 and explore the consequences of fitting models that ignore such extremes.
@@ -133,17 +148,25 @@ We show that our approach provides
 more accurate and precise predictions
 compared to traditional spatiotemporal models
 when extremes are present.
-Projected trends in climate forcing
-suggest a need to increasingly focus on
-variability and extremes in ecological processes.
 Our R package makes these models
 accessible to a wide range of ecologists
 and scientists in other disciplines interested in
-allowing for spatiotemporal extreme events
-or in simply fitting Bayesian random field
-spatial models without extremes.
-
+allowing for spatiotemporal extreme events.
+Additionally, our package
+implements simpler Bayesian spatial or
+spatiotemporal GLMs without extremes.
 \end{abstract}
+
+% glmmrf
+% glmrf
+% glmmfields
+% glmfields
+%
+% rrfields
+% rtfields
+% mvtfields
+%
+% cygnus
 
 \section{Introduction}
 
@@ -151,26 +174,24 @@ spatial models without extremes.
 
 Applications of statistical models that allow for joint inference about spatial
 and temporal dynamics have advanced rapidly in ecology over the last several
-decades \citep[e.g.][]{bascompte1995, latimer2009}. Spatiotemporal models have
-also been widely used in other disciplines, including applications to weather,
-remote sensing, human disease dynamics, and crime \citep{cressie2011}. When
-ecological data are spatially structured, explicitly accounting for spatial
-autocorrelation improves model predictions and inference about parameters of
-interest --- including recommendations used in management or conservation
-planning (REF).
+decades \citep[e.g.][]{bascompte1995, latimer2009, conn2015}. Spatiotemporal
+models have also been widely used in other disciplines, including applications
+to weather, remote sensing, human disease dynamics, and crime
+\citep{cressie2011}. When ecological data are spatially structured, explicitly
+accounting for spatial autocorrelation improves model predictions and inference
+about parameters of interest (TODO REFS).
 
 Including spatial components in statistical models involves extending models
 that most ecologists are already familiar with, such as generalized linear
 models (GLMs) or generalized additive models (GAMs). Spatial relationships can
-be included as predictors in models of the mean (such as in a 2-dimensional
-GAM) or can be included in models of the covariance (e.g.\ kriging). Recent
+be included as predictors in models of the mean (such as in a 2-dimensional GAM)
+or can be included in models of the covariance (e.g.\ kriging). Recent
 extensions of these spatial covariance models include modelling spatial
-deviations in GLMs or GAMs as mixed effects (Gaussian random
-fields, GRFs). Examples of these methods in existing R packages include but are not
-limited to \textbf{spBayes} \citep{finley2007}, \textbf{spTimer}
-\citep{bakar2015}, \textbf{INLA} \citep{rue2009}, \textbf{RandomFields}
-\citep{schlather2016}, and \textbf{spate} \citep{sigrist2015}
-(Table~\ref{tab:packages}).
+deviations in GLMs or GAMs as random effects (Gaussian random fields, GRFs).
+Examples of these methods in existing R packages include but are not limited to
+\textbf{spBayes} \citep{finley2007},
+\textbf{INLA} \citep{rue2009}, and
+\textbf{spate} \citep{sigrist2015} (see~Table~\ref{tab:packages}).
 
 A limitation of spatial models that use GRFs is that they
 may perform poorly when underlying data include anomalous or extreme events.
@@ -260,12 +281,8 @@ our new MVT model differs from the MVN version. Both models are
 essentially GLMMs with a spatiotemporal element described by random field.
 The expected value of the response, $\mu
 \equiv \mathbb{E}(y)$, at a set of locations in space $s$ and time $t$ is
-% maybe make these inline?
-\begin{equation}
-  g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},
-\end{equation}
-
-\noindent where $g$ is a link function,
+$g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} + \gamma_{s,t},$
+where $g$ is a link function,
 $\bm{X}_{s,t}$ represents predictors, and $\bm{\beta}$ is estimated coefficients.
 The symbol $\gamma$ represents the spatiotemporal process,
 described below. The variance of the observation component of
@@ -339,13 +356,11 @@ re-parameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
 tested CVs of 0.1, 0.6, and 1.2. The underlying linear predictor was
 $\bm{X_{s,t}} \bm{\beta}$ set to zero to focus on the spatial process. Therefore,
 our simulation model of data $y_{s,t}$ simplifies to
-
 \begin{align}
   \log(\mu_{s,t}) &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right),\\
   y_{s,t} &\sim \mathrm{gamma} \left( \frac{1}{\mathrm{CV}_\mathrm{obs}^2},
   \frac{1}{\mathrm{CV}_\mathrm{obs}^2 \cdot \mu_{s,t} } \right).
 \end{align}
-
 
 We attempted to recapture $\nu$ by fitting a model that matched the process
 generating the simulated data.
@@ -368,7 +383,6 @@ distribution when heavy tails are present, we generated simulated
 data sets from a MVT random field and compared the fit of models assuming a
 MVN random field to ones that correctly included the MVT random field. Specifically, we
 simulated data from the following model:
-
 \begin{align}
   \mu_{s,t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right),\\
   y_{s,t} &\sim \mathrm{Normal} \left(\mu_{s,t}, \sigma_{\mathrm{obs}} \right),
@@ -426,13 +440,11 @@ The log of the mean proportion affected at location $s$ and time $t$, $\mu_{s,t}
 is predicted by a year-specific random walk defined by $\beta_t$,
 and the spatiotemporal process $\gamma_{s,t}$,
 with the spatial process itself modelled as autoregressive:
-
 \begin{align}
-  \log(\mu_{s,t}) &= \beta_0 + \beta_t + \gamma_{s,t},\\
+  \log(\mu_{s,t}) &= \beta_0 + \beta_t + \gamma_{s,t},\\ \label{eq:beetle-mu}
   % \gamma_{s,t} &= \phi \left(\gamma_{s,t-1} -
   % \mathbb{E}[\gamma_{t-1}]\right) + W_{s,t},\\ \label{eq:beetle-mu}
-  \gamma_{s^{*},t} &= \phi \gamma_{s^{*},t-1} + W_{s^{*},t},\\ \label{eq:beetle-mu}
-  W_{s^{*},t} &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s^{*},t)}\right).
+  \gamma_{s^{*},t} &= \mathrm{MVT}\left(\nu, \phi \gamma_{s^{*},t-1}, \Sigma_{W(s^{*},t)}\right).
 \end{align}
 
 \noindent Furthermore, we model the annual
@@ -440,11 +452,10 @@ mean estimates, $\beta_t$, as following a random walk
 constrained by a normal distribution with standard deviation $\sigma_{\beta}$,
 and the data, $y_{s,t}$, as generated by a lognormal observation model
 with scale parameter $\sigma_{\mathrm{obs}}$:
-
- \begin{align}
- \beta_t &\sim \mathrm{normal}\left( \beta_{t-1}, \sigma_{\beta} \right),\\
-  y_{s,t} &\sim \mathrm{lognormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right).
- \end{align}
+\begin{align}
+\beta_t &\sim \mathrm{normal}\left( \beta_{t-1}, \sigma_{\beta} \right),\\
+y_{s,t} &\sim \mathrm{lognormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right).
+\end{align}
 
 See the Supporting Information for a formal description
 of the posterior and joint
@@ -654,10 +665,12 @@ The R package \textbf{rrfields} is available at TODO.
     \includegraphics[width=0.55\textwidth]{../figs/nu-rf-illustration-small.pdf}
     \caption{An illustration of three draws from a MVN random field (top row)
       vs.\ three draws from a MVT random field with heavy tails
-      (degrees of freedom, $\nu$, of 2; bottom row). Random seeds are held constant
-      between the rows
-      to illustrate the effect. Draws represent slices of time with independent spatial
-      processes at each time slice. Note the considerably more extreme values in
+      (degrees of freedom, $\nu$, of 2; bottom row).
+      Draws represent slices of time with independent spatial
+      processes at each time slice.
+      Random seeds are held constant between the rows
+      to illustrate the difference.
+      Note the considerably more extreme values in
       the second draw for the MVT spatial process.}
     \label{fig:nu}
   \end{center}
