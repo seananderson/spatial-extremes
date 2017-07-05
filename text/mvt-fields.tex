@@ -17,6 +17,7 @@
 \usepackage{bm}
 \textheight 22.0cm
 % \usepackage{mathptmx}
+\usepackage{nameref}
 
 % Linux Libertine:
 % \usepackage{textcomp}
@@ -319,6 +320,7 @@ If the data are not informative about heavy
 tails, our estimate of $\nu$ should approximately match the prior.
 
 \subsection{Testing the recovery of extremeness}
+\label{sec:testing-recovery}
 
 We used simulation testing to evaluate how well we could recover
 heavy spatial tails under various conditions.
@@ -333,15 +335,15 @@ heavy tails), or 20 (effectively normal tails). A final step in our data
 simulation was to corrupt the ``true'' process with observation error. We used a gamma
 distribution with a log link, $Y_{it}\sim \mathrm{gamma}\left(a,\frac
   {a}{\mathbb{E}(Y_{it})} \right)$, where the shape parameter $a$ can be
-reparameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
+re-parameterized into the coefficient of variation (CV), $a=\frac{1}{CV^2}$. We
 tested CVs of 0.1, 0.6, and 1.2. The underlying linear predictor was
 $\bm{X_{s,t}} \bm{\beta}$ set to zero to focus on the spatial process. Therefore,
 our simulation model of data $y_{s,t}$ simplifies to
 
 \begin{align}
   \log(\mu_{s,t}) &\sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right),\\
-  y_{s,t} &\sim \mathrm{gamma} \left( \frac{1}{\mathrm{CV}^2},
-  \frac{1}{\mathrm{CV}^2 \cdot \mu_{s,t} } \right).
+  y_{s,t} &\sim \mathrm{gamma} \left( \frac{1}{\mathrm{CV}_\mathrm{obs}^2},
+  \frac{1}{\mathrm{CV}_\mathrm{obs}^2 \cdot \mu_{s,t} } \right).
 \end{align}
 
 
@@ -359,6 +361,7 @@ effective sample size of $\ge 100$ and a maximum $\hat{R}$ of $\le 1.05$)
 across all parameters.
 
 \subsection{Diagnosing the advantage of allowing for extremes}
+\label{sec:diagnosing}
 
 To evaluate the consequences of assuming spatial processes are generated from an MVN
 distribution when heavy tails are present, we generated simulated
@@ -735,12 +738,65 @@ The R package \textbf{rrfields} is available at TODO.
 \section{Supporting Information}
 
 \subsection{Posterior and joint distributions}
-% EW: I deleted a couple lines below that were redundant. But if you prefer, we could
-% write the equation out in terms of the probabiltiy of the gamma terms -- instead of the
-% W{s,t} -- they're the same, so no preference on my end.
-Below we use the notation $[a|b]$ to describe the conditional distribution of
-$a$ given $b$. We can write the joint posterior distribution for the parameters
-in the model of mountain pine beetle outbreaks as:
+
+In this section, for clarity, we use the notation $[a|b]$ to describe the
+conditional distribution of $a$ given $b$. The joint posterior distribution for
+the model in the section \textit{\nameref{sec:testing-recovery}} can be written
+as:
+
+\begin{multline}
+  [
+  \bm{\gamma},
+  \eta,
+  \nu,
+  \mathrm{CV}_\mathrm{obs},
+  \sigma^2
+  |
+  \bm{y}]
+  \propto
+  [y_{s,t} | \gamma_{s^*,t}, \mathrm{CV}_\mathrm{obs}]
+  [\gamma_{s^*,t} | \eta, \nu, \sigma^2]
+  [\eta]
+  [\nu]
+  [\mathrm{CV}_\mathrm{obs}]
+  [\sigma^2],
+  \\
+\end{multline}
+
+\noindent where the parameters are defined in the main Methods section.
+Importantly, we use parameters with an asterisk ($\gamma_{s^{*},t}$) to describe
+the random effects at the locations of the unobserved knots, and parameters
+without the asterisk ($\gamma_{s,t}$) to describe the projected random effects
+at the locations of observed data (projection equation in main text). The joint
+probability is calculated over points in space $s$, and time $t$. Missing
+observations or replicate observations for given points in space and time may be
+present.
+
+The joint posterior distribution for the model in the section
+\textit{\nameref{sec:diagnosing}} can be written as:
+
+\begin{multline}
+  [
+  \bm{\gamma},
+  \eta,
+  \nu,
+  \sigma^2_{\mathrm{obs}},
+  \sigma^2
+  |
+  \bm{y}]
+  \propto
+  [y_{s,t} | \gamma_{s^*,t}, \sigma^2_{\mathrm{obs}}]
+  [\gamma_{s^*,t} | \eta, \nu, \sigma^2]
+  [\eta]
+  [\nu]
+  [\sigma^2_{\mathrm{obs}}]
+  [\sigma^2],
+  \\
+\end{multline}
+
+\noindent
+and the joint posterior distribution
+for the model of mountain pine beetle outbreaks can be written as:
 
 \begin{multline}
   [
@@ -755,9 +811,10 @@ in the model of mountain pine beetle outbreaks as:
   |
   \bm{y}]
   \propto \\
-  \prod_{i=1}^{N}
-  [y_{s(i),t(i)} | \beta_{t(i)}, \gamma_{s^*,t(i)}, \sigma^2_{\mathrm{obs}}] \\
-  \times \prod_{t=1}^{T}[\beta_t | \beta_{t-1}, \sigma^2_{\beta}]
+  [y_{s,t} | \beta_{t}, \gamma_{s^*,t}, \sigma^2_{\mathrm{obs}}] \\
+  \times
+  [\beta_t | \beta_{t-1}, \sigma^2_{\beta}] \\
+  \times
   [\gamma_{s^*,t} | \gamma_{s^*,t-1}, \phi, \eta, \nu, \sigma^2] \\
   \times
   [\beta_{t=1}]
@@ -767,26 +824,14 @@ in the model of mountain pine beetle outbreaks as:
   [\nu]
   [\sigma^2_{\mathrm{obs}}]
   [\sigma^2_{\beta}]
-  [\sigma^2],
-  \\
+  [\sigma^2].
 \end{multline}
 
-\noindent where the coefficients are defined in the main Methods section.
-Importantly, we use parameters with the superscript $\gamma_{s^{*},t}$ to
-describe the random effects at the locations of the unobserved knots, and
-parameters without the asterisk $\gamma_{s,t}$ to describe the projected random
-effects at the locations of observed data (projection equation in main text).
-The joint probability is calculated over points in space $s$, and time $t$ for
-all rows of data $N$. Missing observations or replicate observations forgiven
-points in space and time may be present.
+\subsection{Model comparison}
 
-\subsection{Model comparison calculations}
-
-We compared MVN and MVT models via RMSE (root mean squared error), $\Delta$
-LOOIC (leave-one-out information criteria), credible interval width,
-and log predictive density. Here, we describe these calculations:
-
-We calculated the log predictive density (lpd) as:
+We compared MVN and MVT models via log predictive density, $\Delta$ LOOIC
+(leave-one-out information criteria), RMSE (root mean squared error), and
+credible interval width. We calculated the log predictive density (lpd) as:
 
 \begin{equation}
   \mathrm{lpd} = \sum^{S}_{s=1}{ \sum^{T}_{t=1}{ \log  p(\mu_{s,t} | \widehat{y_{s,t}}, \theta)}},
@@ -810,23 +855,34 @@ predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
   p(y_i | y_{i-1}) = \int p(y_i | \theta) p (\theta | y_{-i}) d \theta ,
 \end{equation}
 
-\noindent is the predictive density given the data without the $i$th data
-point \citep{vehtari2016}. For computational efficiency, the LOO R package
-calculates LOO using an approach called Pareto smoothed importance sampling
-\citep{vehtari2016}.
+\noindent is the predictive density given the data without the $i$th data point
+\citep{vehtari2016}. For computational efficiency, the LOO R package calculates
+LOO using an approach called Pareto smoothed importance sampling
+\citep{vehtari2016}. We calculated $\Delta$ LOOIC as
+$\mathrm{LOOIC}_\mathrm{MVT} - \mathrm{LOOIC}_\mathrm{MVN}$.
 
 We calculated the root mean squared error (RMSE) as:
 
 \begin{equation}
-  \sqrt{ \sum^{T}_{t=1}{ \sum^{S}_{s=1}{ (\mu_{s,t} - \widehat{ \mu_{s,t} })^2 } } }
+  \sqrt{ \sum^{T}_{t=1}{ \sum^{S}_{s=1}{ (\mu_{s,t} - \widehat{ \mu_{s,t} })^2 } } },
 \end{equation}
 
-\noindent where $\widehat{\mu_{s,t}}$ represents the median of the posterior
-of $\mu_{s,t}$.
+\noindent where $\widehat{\mu_{s,t}}$ represents the median of the posterior of
+$\mu_{s,t}$. And finally, we calculated the ratio of the credible interval
+widths as:
 
-We calculated the ratio of the credible interval widths as:
+\begin{equation}
+\frac{
+\mathrm{CI}_\mathrm{MVN}^\mathrm{upper} - \mathrm{CI}_\mathrm{MVN}^\mathrm{lower}
+}{
+\mathrm{CI}_\mathrm{MVT}^\mathrm{upper} -
+\mathrm{CI}_\mathrm{MVT}^\mathrm{lower}
+},
+\end{equation}
 
-TODO
+\noindent where $\mathrm{CI}_\mathrm{MVN}^\mathrm{upper}$, for example,
+represents the upper 95\% quantile-based credible interval for the model
+assuming MVN random fields.
 
 \clearpage
 
