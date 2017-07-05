@@ -1,4 +1,6 @@
-# Matter, S. F., N. Keyghobadi, and J. Roland. 2014. Ten years of abundance data within a spatial population network of the alpine butterfly, Parnassius smintheus. Ecology 95:2985–2985.
+# Matter, S. F., N. Keyghobadi, and J. Roland. 2014. Ten years of abundance
+# data within a spatial population network of the alpine butterfly, Parnassius
+# smintheus. Ecology 95:2985–2985.
 
 # see also:
 # Caplins, S. A., K. J. Gilbert, C. Ciotir, J. Roland, S. F. Matter, and N. Keyghobadi. 2014. Landscape structure and the genetic effects of a population collapse. Proceedings of the Royal Society B: Biological Sciences 281:20141798–20141798.
@@ -29,13 +31,22 @@ ggplot(d, aes(lon, lat, colour = log(n+1))) + geom_point(size = 2) +
 d$lon_scaled <- d$lon * 100
 d$lat_scaled <- d$lat * 100
 
+d$n_trans <- log(d$n + 1)
 library(rrfields)
-m <- rrfield(n ~ 1, data = d, time = "year", lon = "lon_scaled", lat = "lat_scaled",
-  nknots = 13, obs_error = "nb2", station = "meadow",
-  estimate_df = TRUE, estimate_ar = FALSE, algorithm = "sampling",
-  chains = 4, iter = 2000,
-  prior_intercept = student_t(3, 0, 10), prior_gp_sigma = half_t(1000, 0, 1),
-  control = list(adapt_delta = 0.95), cores = 4)
+m <- rrfield(n_trans ~ 1, data = d, time = "year", lon = "lon_scaled", lat = "lat_scaled",
+  nknots = 12, station = "meadow",
+  estimate_df = TRUE,
+  chains = 4, iter = 1000,
+    prior_gp_sigma = half_t(3, 0, 3),
+    prior_gp_scale = half_t(3, 0, 3),
+    prior_intercept = student_t(1e9, 0, 10),
+    prior_beta = student_t(1e9, 0, 4),
+    prior_rw_sigma = half_t(3, 0, 3),
+    prior_sigma = half_t(3, 0, 3),
+    prior_ar = half_t(1e9, 0, 0.5),
+    estimate_ar = TRUE,
+    year_re = TRUE,
+  control = list(adapt_delta = 0.99), cores = 2)
 m
 
 # mark-recapture data
