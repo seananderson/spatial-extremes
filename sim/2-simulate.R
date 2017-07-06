@@ -87,9 +87,9 @@ arguments_apply <- dplyr::select(arguments,-count)
 nrow(arguments_apply)
 
 out <- plyr::mdply(arguments_apply, sim_fit)
-saveRDS(out, file = "simulationTesting/mvt-norm-sim-testing2.rds")
+saveRDS(out, file = "sim/mvt-norm-sim-testing2.rds")
 
-out <- readRDS("simulationTesting/mvt-norm-sim-testing2.rds")
+out <- readRDS("sim/mvt-norm-sim-testing2.rds")
 
 assert_that(max(out$rhat) < 1.05)
 nrow(filter(out, rhat >= 1.05))

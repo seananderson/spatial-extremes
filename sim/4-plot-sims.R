@@ -25,7 +25,7 @@ add_label <- function(xfrac = 0, yfrac = 0.07, label = "", pos = 4, ...) {
   text(x, y, label, pos = pos, ...)
 }
 
-out <- readRDS("simulationTesting/mvt-norm-sim-testing2.rds")
+out <- readRDS("sim/mvt-norm-sim-testing2.rds")
 
 out_summary <- data.frame(out) %>%
   filter(rhat < 1.05, ess > 100) %>%
@@ -90,9 +90,9 @@ gp_sigma <- 0.3
 sigma <- 0.8
 df <- 2
 gp_scale <- 1.2
-rmse <- readRDS("simulationTesting/match-mismatch-rmse.rds")
-loo <- readRDS("simulationTesting/match-mismatch-loo.rds")
-load("simulationTesting/match-mismatch-example.rda")
+rmse <- readRDS("sim/match-mismatch-rmse.rds")
+loo <- readRDS("sim/match-mismatch-loo.rds")
+load("sim/match-mismatch-example.rda")
 rmse <- mutate(rmse, perc_better=(rmse_wrong-rmse)/rmse*100)
 # Plot example parameter estimates:
 

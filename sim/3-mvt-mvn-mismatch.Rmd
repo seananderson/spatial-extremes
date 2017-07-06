@@ -88,18 +88,18 @@ Now let's run our function a number of times:
 ```{r}
 set.seed(1)
 i <<- 0
-# system("rm simulationTesting/match-mismatch.rds")
-if (!file.exists("simulationTesting/match-mismatch.rds")) {
+# system("rm sim/match-mismatch.rds")
+if (!file.exists("sim/match-mismatch.rds")) {
   output <- plyr::rlply(.n = 40, simulate_and_fit)
-  saveRDS(output, "simulationTesting/match-mismatch.rds")
+  saveRDS(output, "sim/match-mismatch.rds")
 } else {
-  output <- readRDS("simulationTesting/match-mismatch.rds")
+  output <- readRDS("sim/match-mismatch.rds")
 }
 ```
 
 ```{r}
-# system("rm simulationTesting/match-mismatch-rmse.rds")
-if (!file.exists("simulationTesting/match-mismatch-rmse.rds")) {
+# system("rm sim/match-mismatch-rmse.rds")
+if (!file.exists("sim/match-mismatch-rmse.rds")) {
   rmse <- plyr::ldply(output, function(x) {
     p <- predict(x$m, interval = "confidence", type = "response",
       newdata = x$s$dat)
@@ -130,9 +130,9 @@ if (!file.exists("simulationTesting/match-mismatch-rmse.rds")) {
       mutate(i = i) %>%
       mutate(perc_better = (rmse_wrong - rmse) / rmse * 100)
   })
-  saveRDS(rmse, file = "simulationTesting/match-mismatch-rmse.rds")
+  saveRDS(rmse, file = "sim/match-mismatch-rmse.rds")
 } else {
-  rmse <- readRDS("simulationTesting/match-mismatch-rmse.rds")
+  rmse <- readRDS("sim/match-mismatch-rmse.rds")
 }
 # rmse
 # ggplot(rmse, aes(perc_better)) + geom_histogram(binwidth = 2)
@@ -148,8 +148,8 @@ loo <- plyr::ldply(output, function(x) {
   data.frame(loo_t = loo_t$looic, loo_n = loo_n$looic, i = x$i)
 })
 loo <- loo %>% mutate(delta_loo = loo_t - loo_n)
-saveRDS(loo, file = "simulationTesting/match-mismatch-loo.rds")
-loo <- readRDS("simulationTesting/match-mismatch-loo.rds")
+saveRDS(loo, file = "sim/match-mismatch-loo.rds")
+loo <- readRDS("sim/match-mismatch-loo.rds")
 hist(loo$delta_loo)
 mean(loo$delta_loo)
 ```
@@ -165,5 +165,5 @@ n_draws <- 20
 o <- simulate_and_fit()
 e1 <- rstan::extract(o$m$model)
 e2 <- rstan::extract(o$m_wrong$model)
-save(e1, e2, file = "simulationTesting/match-mismatch-example.rda")
+save(e1, e2, file = "sim/match-mismatch-example.rda")
 ```
