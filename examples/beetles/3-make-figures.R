@@ -217,6 +217,8 @@ cis <- mutate(combined, conf_width = exp(conf_high) - exp(conf_low)) %>%
     hold_out = unique(hold_out)
   ) %>%
   ungroup()
+
+saveRDS(cis, file = "examples/beetles/beetle-cis.rds")
 h <- hist(cis$conf_width_ratio, probability = TRUE,
   breaks = seq(0, max(cis$conf_width_ratio)*1.001, length.out = 20), plot = FALSE,
   warn.unused = FALSE)

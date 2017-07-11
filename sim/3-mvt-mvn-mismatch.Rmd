@@ -114,7 +114,9 @@ if (!file.exists("sim/match-mismatch-rmse.rds")) {
     d <- data.frame(x$dat, p)
     d_wrong <- data.frame(x$dat, p_wrong)
     d_combined <- data.frame(d,
-      select(d_wrong, estimate) %>% rename(est_wrong = estimate))
+      select(d_wrong, estimate, conf_high, conf_low) %>%
+      rename(est_wrong = estimate,
+        conf_high_wrong = conf_high, conf_low_wrong = conf_low))
 
     assertthat::assert_that(identical(proj[,1:2], d_combined[,1:2]))
     d2 <- data.frame(d_combined, proj = proj$proj)
@@ -123,12 +125,18 @@ if (!file.exists("sim/match-mismatch-rmse.rds")) {
       filter(withhold) %>%
       mutate(
         sq_error = (estimate - proj)^2,
-        sq_error_wrong = (est_wrong - proj)^2) %>%
+        sq_error_wrong = (est_wrong - proj)^2,
+        conf_width = conf_high - conf_low,
+        conf_width_wrong = conf_high_wrong - conf_low_wrong) %>%
       summarize(
         rmse = sqrt(mean(sq_error)),
-        rmse_wrong = sqrt(mean(sq_error_wrong))) %>%
+        rmse_wrong = sqrt(mean(sq_error_wrong)),
+        median_conf_width = median(conf_width),
+        median_conf_width_wrong = median(conf_width_wrong)) %>%
       mutate(i = i) %>%
-      mutate(perc_better = (rmse_wrong - rmse) / rmse * 100)
+      mutate(perc_better = (rmse_wrong - rmse) / rmse * 100) %>%
+      mutate(perc_better_ci =
+        (median_conf_width_wrong - median_conf_width) / median_conf_width * 100)
   })
   saveRDS(rmse, file = "sim/match-mismatch-rmse.rds")
 } else {
