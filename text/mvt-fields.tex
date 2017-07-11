@@ -468,17 +468,18 @@ substantially affect the estimation of $\nu$ until relatively high levels of
 observation error (i.e.\ CV = 1.2; Figure~\ref{fig:recapture}c).
 
 When the true underlying data were generated with spatiotemporal extremes (MVT,
-$\nu = 2$), fitting a Gaussian (MVN) random fields without extremes reduced
-out-of-sample predictive accuracy and precision
+$\nu = 2$), fitting a model with Gaussian (MVN) random fields without extremes
+reduced out-of-sample predictive accuracy and precision
 (Figure~\ref{fig:recapture}d--f). The misspecified model tended to overestimate
 $\sigma$ (which controls the magnitude of the random field deviations) to
 account for effectively fixing $\nu = \infty$ (e.g.\
 Figure~\ref{fig:recapture}d). The out-of-sample RMSE was slightly higher for the
 misspecified MVN model compared to a correctly specified MVT model (median RMSE
-= \rmseWrong\ vs.\ \rmseRight; Figure~\ref{fig:recapture}e). The MVN model
-prediction credible intervals were on average \meanMedianCIWiderSim \% larger
-than the MVT model credible intervals. The leave-one-out information criterion
-(LOOIC) correctly chose the MVT model in \looCorrectSim \% of the simulations.
+= \rmseWrong\ vs.\ \rmseRight; Figure~\ref{fig:recapture}e). The out-of-sample
+MVN model prediction credible intervals were on average \meanMedianCIWiderSim \%
+larger than the MVT model credible intervals. The leave-one-out information
+criterion (LOOIC) correctly chose the MVT model in \looCorrectSim \% of the
+simulations.
 
 For the pine beetle case study, the MVT random fields model generated more
 accurate and precise out-of-sample predictions (Figure~\ref{fig:map-etc}). The
@@ -500,28 +501,41 @@ We have introduced a spatial process model that models spatial random fields
 through time with a MVT rather than MVN distribution. Through simulation, we
 demonstrate that this new model can be accurately fit to data. With short time
 series or considerable observation error, this model reverts to the usual MVN
-model. Our simulations show that if
-the underlying true process contains spatiotemporal extremes, our MVT model has
-superior predictive accuracy and precision. Using a case study on mountain pine beetle
-outbreaks in the Pacific
+model. Our simulations show that if the underlying true process contains
+spatiotemporal extremes, our MVT model has superior predictive accuracy and
+precision. Using a case study on mountain pine beetle outbreaks in the Pacific
 Northwest, we show that our MVT model generates more accurate and precise
 out-of-sample predictions compared to a MVN model. Because the MVT model
-converges to the MVN model and only requires estimating one
-additional parameter, we recommend fitting the MVT model even if anomalous
-events are not thought to be present \textit{a priori}.
+converges to the MVN model and only requires estimating one additional
+parameter, we recommend fitting the MVT model even if anomalous events are not
+thought to be present \textit{a priori}.
 
-[TODO: Incorporate references] Many ecological, environmental, and anthropogenic
-factors could generate spatiotemporal extremes in responses. First, unmodelled
-movement or behaviour could generate spatiotemporal
-extremes. For example, the shoaling behavior of fish can change with changes to
-population density (e.g. cod in Atlantic Canada REF). Another possible
-cause could be spatial climate anomalies. For instance, heat waves \ldots
-seaweed example? Heat waves can also increase the likelihood of wildfires or
-disease outbreaks, which could generate spatial extremes through time. Finally,
-human-caused disasters, such as marine oil spills could cause extremes in
-spatial patterns through time. In essence, the MVT random fields model allows
-for unexpected and unmodelled events to occur and have less influence on
-parameter estimates and predictions.
+Many ecological, environmental, and anthropogenic factors could generate
+spatiotemporal extremes. First, unmodelled movement or behaviour could generate
+spatiotemporal extremes. For example, the shoaling behaviour of fish can
+increase with decreases in population density \citep[e.g.][]{rose1999}. Another
+possible cause could be spatial climate anomalies. For instance, a series of
+abnormally warm winters around 1990 led to a sudden northward shift in juvenile
+cod and low abundance in the southern North Sea since \citep{rindorf2006}.
+Another example is the sudden range contraction of a brown alga seaweed in
+southern Australia after several weeks of extreme warm water temperatures
+\citep{smale2013}. Heat waves can also increase the likelihood of wildfires or
+disease outbreaks (such as pine beetle outbreaks, REF), which could generate
+spatial extremes through time. Finally, human-caused disasters, such as marine
+oil spills could cause extremes in spatial patterns through time. In essence,
+the MVT random fields model allows for unexpected and unmodelled events to occur
+and have less influence on parameter estimates and predictions.
+
+% For example, several weeks of extreme warm water temperatures caused a sudden
+% 100 km range contraction for a brown alga seaweed species off Southern Australia
+%     in 2011 [@smale2013]. In the North sea, a series of abnormally warm winters
+%     around 1990 led to a sudden northward shift in juvenile cod and low
+%     abundance in the southern North Sea since [@rindorf2006]. I think both those
+%     examples for the discussion work well. I was also thinking about climate -
+%     disease interactions as another mechanism. Something like this:
+%     http://ajph.aphapublications.org/doi/abs/10.2105/AJPH.91.8.1194 (it's human
+%     health, but that's probably ok -- there's other examples for animals)
+
 
 For our case study of pine beetle outbreak coverage, the MVT model provided
 better out-of-sample predictive ability and better precision compared to the same model
