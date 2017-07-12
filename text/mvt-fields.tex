@@ -120,7 +120,7 @@ Nanaimo, BC, V6T 6N7, Canada
 \hyphenpenalty=500
 
 % \begin{spacing}{1.4}
-\begin{spacing}{1.7}
+\begin{spacing}{1.9}
 % \begin{flushleft}
 \linenumbers
 
@@ -452,9 +452,9 @@ error did not substantially affect the estimation of $\nu$ until relatively high
 levels of observation error (i.e.\ CV = 1.2, Fig.~\ref{fig:recapture}c).
 
 When the true underlying data were generated with spatiotemporal extremes (MVT,
-$\nu = 2$), fitting a model with MVN random fields without extremes
+$\nu = 2$), fitting a model without extremes
 reduced out-of-sample predictive accuracy and precision
-(Fig.~\ref{fig:recapture}d--f). The misspecified model tended to overestimate
+(Fig.~\ref{fig:recapture}d--f). The MVN model tended to overestimate
 $\sigma$ (which controls the magnitude of the random field deviations) to
 account for effectively fixing $\nu = \infty$ (e.g.\
 Fig.~\ref{fig:recapture}d). The out-of-sample RMSE was slightly higher for the
@@ -465,9 +465,9 @@ larger than the MVT model CIs. The leave-one-out information
 criterion (LOOIC) correctly chose the MVT model in \looCorrectSim \% of the
 simulations.
 
-For the pine beetle case study, the MVT random fields model generated more
+For the pine beetle case study, the spatial model with extremes generated more
 accurate and precise out-of-sample predictions (Fig.~\ref{fig:map-etc}). The
-parameter $\nu$ was estimated at a value indicating heavy tails in the
+estimates of $\nu$ indicated heavy tails in the
 spatiotemporal process (median $\nu = \nuBeetleMedian$, 95\% CI =
 $\nuBeetleLower$ -- $\nuBeetleUpper$, Fig.~\ref{fig:map-etc}c). Advantages of
 the MVT model over the MVN included greater log predictive density for held-out
@@ -481,23 +481,21 @@ infestation in the US Pacific Northwest, with particularly strong hotspots in
 
 \section{Discussion}
 
-We have introduced a spatial process model that represents spatial random fields
+We have introduced a spatial process model that models random fields
 through time with a MVT rather than MVN distribution. Through simulation, we
-demonstrate that this new model can be accurately fit to data, although with
-short time series, or considerable observation error, the model reverts to the
-usual MVN model. Our simulations show that if the underlying true process
-contains spatiotemporal extremes, our MVT model has superior predictive accuracy
+demonstrate the advantages of this new model; when spatiotemporal extremes exist in 
+simulated data, our MVT model has superior predictive accuracy
 and precision. Using a case study on mountain pine beetle outbreaks in the
-Pacific Northwest, we show that our MVT model generates more accurate and
+Pacific Northwest, we show that our MVT model produces more accurate and
 precise out-of-sample predictions compared to a MVN model. Because the MVT model
 converges to the MVN model and only requires estimating one additional
 parameter, we recommend fitting the MVT model even if anomalous events are not
 thought to be present \textit{a priori}.
 
-Many ecological, environmental, and anthropogenic factors could generate
+Many ecological, environmental, and anthropogenic processes could generate
 spatiotemporal extremes. For example, unmodelled animal movement such as
 changes to the shoaling behaviour of fish with population density declines
-\citep[][]{rose1999} could generate apparent spatiotemporal extremes.
+\citep[][]{rose1999} could generate apparent extremes.
 Another possible cause could be spatial climate anomalies. For
 instance, a series of abnormally warm winters around 1990 led to a sudden
 northward shift in juvenile cod and low abundance in the southern North Sea
@@ -505,7 +503,7 @@ since \citep{rindorf2006}. In southern Australia, several weeks of extreme warm
 water temperatures led to the sudden range contraction of a brown alga seaweed
 \citep{smale2013}. Heat waves can also increase the likelihood of wildfires or
 disease outbreaks (e.g. REF), which could generate spatial extremes through
-time. Additionally, human-caused disasters, such as marine oil spills could cause
+time. Human-caused disasters, such as marine oil spills could cause
 extremes in spatial patterns through time. In essence, the MVT random fields
 model allows for unexpected and unmodelled events to occur and have less
 influence on parameter estimates and predictions.
@@ -523,7 +521,7 @@ influence on parameter estimates and predictions.
 
 For our case study of pine beetle outbreak coverage, the MVT model provided
 better out-of-sample predictive ability and greater precision compared to the
-same model with a MVN random field. We did not link covariates to the mean
+same model with a MVN random field. Covariates were not linked to the mean
 response, but it is possible that their inclusion could help explain the spatial
 anomalies. Importantly, our model is descriptive rather than dynamic
 \citep{cressie2011}. A dynamic model would include mechanisms governing the
@@ -550,12 +548,12 @@ package includes a simulation function that can simulate data from any model
 the package can fit, and a series of unit tests that simulate and fit all
 major model configurations.
 
-There are a number of limitations to the approach we have described. First,
-spatial predictive models require the selection of knots; selecting too few may
-not allow the spatial field to be characterized accurately, biasing
-parameter estimates. The spatial process might not be well described by a MVT or
+There are some limitations to the approach we have described. First,
+spatial predictive models require the selection of knots; too few may
+not characterize the spatial field accurately, biasing
+parameter estimates. The spatial process may also be poorly described by a MVT or
 MVN random field and be better described by some other form
-\citep[e.g.\ see][]{conn2015}. While the MVT random fields model is more robust than
+\citep[e.g.\ see][]{conn2015}. While the MVT spatial model is more robust than
 the MVN model, better predictions and inference might be obtained by explicitly
 modelling the processes that generated the extremes. Also, the MVT random
 fields model requires a sufficient number of observations and sufficiently low
@@ -563,10 +561,10 @@ sampling error to detect spatial extremes (though when extremes cannot be
 detected, the model converges to the MVN model).
 
 Our MVT spatial model uses a predictive approach to achieve considerable
-efficiency over modelling a full covariance matrix describing all observed data
-points. However, an important topic for research is to include sparse matrix
-algorithms in spatiotemporal models of extreme events. A recent advance to
-spatial models with very large datasets has been the stochastic partial
+efficiency over modelling a full covariance matrix describing all observed locations. 
+However, an important topic for research is to include sparse matrix
+algorithms in spatiotemporal models of extremes. A recent advance to
+spatial models with large datasets has been the stochastic partial
 differential equation (SPDE) approximation to GRFs proposed by
 \citet{lindgren2011}. These methods are accessible via the integrated nested
 Laplace approximation \citep[INLA,][]{rue2009}, which allows for approximate
@@ -575,7 +573,7 @@ has increased rapidly in ecology over the last five years
 \citep[e.g.][]{illian2013, ono2016}, and is significantly faster than other
 approaches, in part because of integration with Template Model Builder through
 software such as VAST \citep{thorson2017}. Regardless, the MVT random field
-model introduced here is already reasonably efficient, accessible to a wide
+model introduced here is already efficient, accessible to a wide
 range of ecologists and environmental scientists through the included R package,
 and allows us to improve predictions for ecological processes with extreme
 spatial anomalies through time.
