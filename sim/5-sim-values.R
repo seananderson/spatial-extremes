@@ -32,7 +32,7 @@ write_tex(round(median(rmse$rmse_wrong), 2), "rmseWrong")
 write_tex(round(median(rmse$rmse), 2), "rmseRight")
 
 # rmse
-write_tex(round(mean(rmse$perc_better_ci), 0), "meanMedianCIWiderSim")
+write_tex(round(median(rmse$perc_better_ci), 0), "medianMedianCIWiderSim")
 
 write_tex(round(100 - sum(!loo$delta_loo < 0)/nrow(loo) * 100, 0), "looCorrectSim")
 
@@ -40,8 +40,8 @@ write_tex(round(100 - sum(!loo$delta_loo < 0)/nrow(loo) * 100, 0), "looCorrectSi
 
 load("examples/beetles/mountain-pine-beetle-pnw-raster-mvn-lognormal-500x500.rda")
 load("examples/beetles/mountain-pine-beetle-pnw-raster-mvt-lognormal-500x500.rda")
-et <- extract(mvt$model)
-en <- extract(mvn$model)
+et <- rstan::extract(mvt$model)
+en <- rstan::extract(mvn$model)
 write_tex(sprintf("%0.1f", round(median(et$df), 1)), "nuBeetleMedian")
 write_tex(sprintf("%0.1f", round(quantile(et$df, probs = 0.025)[[1]], 1)), "nuBeetleLower")
 write_tex(sprintf("%0.1f", round(quantile(et$df, probs = 0.975)[[1]], 1)), "nuBeetleUpper")
@@ -49,6 +49,7 @@ write_tex(sprintf("%0.1f", round(quantile(et$df, probs = 0.975)[[1]], 1)), "nuBe
 # library(loo)
 # loo(extract_log_lik(mvn$model))
 cis <- readRDS("examples/beetles/beetle-cis.rds")
-write_tex(round((median(cis$conf_width_ratio) - 1) * 100, 0), "percLargerCIsBeetles")
+write_tex(round((mean(cis$conf_width_ratio) - 1) * 100, 0), "meanPercLargerCIsBeetles")
+write_tex(round((1 - median(1/cis$conf_width_ratio)) * 100, 0), "medianPercSmallerCIsBeetles")
 
 close(zz)
