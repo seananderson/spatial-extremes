@@ -120,7 +120,7 @@ Nanaimo, BC, V6T 6N7, Canada
 \hyphenpenalty=500
 
 % \begin{spacing}{1.4}
-\begin{spacing}{1.9}
+\begin{spacing}{1.7}
 % \begin{flushleft}
 \linenumbers
 
@@ -146,7 +146,7 @@ Our model is a Bayesian predictive-process GLMM
 (generalized linear mixed-effects model)
 that uses a multivariate-t distribution to describe spatial random effects.
 The approach is easily implemented with
-our flexible R package \textbf{glmmfields}
+our flexible R package \textbf{glmmfields}.
 First, using simulated data,
 we demonstrate the ability to recapture spatiotemporal extremes,
 and explore the consequences of fitting models that ignore such extremes.
@@ -188,7 +188,7 @@ models have also been widely used in other disciplines, including applications
 to weather, remote sensing, human disease dynamics, and crime
 \citep{cressie2011}. When ecological data are spatially structured, explicitly
 accounting for spatial autocorrelation can improve model predictions and
-inference about parameters of interest (TODO REFS).
+inference about parameters of interest \citep[e.g.][]{thorson2015}.
 
 Including spatial components in statistical models involves extending models
 that most ecologists are already familiar with, such as generalized linear
@@ -235,7 +235,7 @@ Pacific Northwest of the United States.
 
 We seek to allow for large deviations in an ecological spatial pattern over
 time by extending a spatiotemporal predictive process model to use a MVT
-distribution instead of the MVN distribution. Below we describe the form of
+distribution instead of a MVN distribution. Below we describe the form of
 our model as implemented in \textbf{glmmfields}, describe two simulation tests
 exploring model performance, and finally describe the application of our model
 to a data set of mountain pine beetle outbreaks.
@@ -397,7 +397,7 @@ between the $\log(\hat{\mu}^{\mathrm{withheld}}_{s,t})$
 posterior medians and the true $\log\left(\mu^{\mathrm{withheld}}_{s,t}\right)$,
 the width of the 95\% credible intervals (CIs) on $\hat{\mu}^{\mathrm{withheld}}_{s,t}$,
 and the difference in the leave-one-out information criteria
-\citep[LOOIC;][]{vehtari2016},
+\citep[LOOIC;][]{vehtari2017},
 a Bayesian information criteria that approximates
 leave-one-out predictive performance.
 
@@ -871,9 +871,9 @@ predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
 \end{equation}
 
 \noindent is the predictive density given the data without the $i$th data point
-\citep{vehtari2016}. For computational efficiency, the LOO R package calculates
+\citep{vehtari2017}. For computational efficiency, the LOO R package calculates
 LOOIC using an approach called Pareto smoothed importance sampling
-\citep{vehtari2016}. We calculated $\Delta$LOOIC as
+\citep{vehtari2017}. We calculated $\Delta$LOOIC as
 $\mathrm{LOOIC}_\mathrm{MVT} - \mathrm{LOOIC}_\mathrm{MVN}$.
 
 We calculated the root mean squared error (RMSE) of predictions as:
