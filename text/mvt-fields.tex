@@ -135,7 +135,7 @@ Nanaimo, BC, V6T 6N7, Canada
 In ecological systems, extremes can happen
 in time, such as population crashes,
 or in space, such as rapid range contractions.
-Current methods for
+However, current methods for
 joint inference about temporal and spatial dynamics
 (e.g.\ spatiotemporal modelling with Gaussian random fields)
 may perform poorly when
@@ -176,12 +176,10 @@ fitting spatiotemporal GLMMs, with and without extremes.
 
 \section{Introduction}
 
-% TODO: cite \citep{conn2015}
-
 Applications of statistical models that allow for joint inference about spatial
 and temporal dynamics have advanced rapidly in ecology over the last several
 decades \citep[e.g.][]{bascompte1995, latimer2009, conn2015}. Spatiotemporal
-models have been widely used in other disciplines, including applications
+models have also been widely used in other disciplines, including applications
 to weather, remote sensing, human disease dynamics, and crime
 \citep{cressie2011}. When ecological data are spatially structured, explicitly
 accounting for spatial autocorrelation can improve model predictions and
@@ -221,8 +219,8 @@ methods have not been applied in ecology, fisheries, or environmental sciences.
 In this paper we introduce the use of robust spatial predictive models using the
 MVT distribution, and provide a user-friendly implementation in our new R
 package \textbf{glmmfields}. Using simulation testing, we illustrate that the MVT
-model leads to better prediction (greater accuracy, more precision) when spatial 
-process includes heavy-tails. As an application to real world data, we apply
+model leads to better prediction (greater accuracy, more precision) when the spatial
+process includes heavy-tails. As an application to real-world data, we apply
 this model to data
 on mountain pine beetle (\textit{Dendroctonus ponderosae}) outbreaks in the
 Pacific Northwest of the United States.
@@ -239,7 +237,7 @@ to a data set of mountain pine beetle outbreaks.
 \subsection{Predictive process models}
 
 \citet{latimer2009} provide an overview of predictive process models for
-ecologists. For large datasets, 
+ecologists. For large datasets,
 estimating spatial random effects at many locations may be computationally prohibitive. One
 solution is to estimate a spatial field as correlated random effects at a
 subset of locations or $m$ `knots' \citep[e.g.][]{latimer2009, shelton2014},
@@ -247,7 +245,7 @@ where $m < n$, the number of data points. The location of the $m$ knots
 describing a random field can be chosen via a clustering algorithm, such as the
 partitioning around medoids algorithm \citep{reynolds2006}.
 % \citep[e.g.\ the \texttt{pam} function in the R package
-% \textbf{cluster};][]{reynolds2006}. 
+% \textbf{cluster};][]{reynolds2006}.
 Instead of estimating an unconstrained $m \times m$ covariance matrix, a
 covariance function is specified \emph{a priori} to model covariance as a
 function of distance. Our \textbf{glmmfields} package allows for the isotropic squared exponential
@@ -255,7 +253,7 @@ function of distance. Our \textbf{glmmfields} package allows for the isotropic s
 functions could be included. Given estimated random effects at the knot
 locations, the known distance matrix between the knots and observed data,
 the knot random effects can be projected to the locations of the observations
-\citep[][Fig.~\ref{fig:didactic}]{latimer2009, finley2009, roislien2007}.
+\citep[][Fig.~\ref{fig:didactic}]{roislien2007, latimer2009, finley2009}.
 
 As an example, the squared exponential covariance function models the
 correlation between points $i$ and $j$ as $H(\delta_{ij}) = \exp
@@ -264,8 +262,8 @@ distance between points $i$ and $j$ and $\eta$ controls how steeply correlation
 declines with distance. For a given set of $\delta_{ij}$, large values of $\eta$
 correspond to smooth spatial patterns and small values correspondence to wiggly
 spatial patterns.
-% --- the degree of wiggliness implied by a value of $\eta$ 
-% depends on the scale of the $\delta_{ij}$. 
+% --- the degree of wiggliness implied by a value of $\eta$
+% depends on the scale of the $\delta_{ij}$.
 The elements of the covariance matrix
 $\Sigma$ at the $m$ knot locations are then defined as $\Sigma_{ij}^*=\sigma^2
 \left( \frac{-\delta_{ij}^2}{2 \eta} \right)$ with the parameter $\sigma$
@@ -293,7 +291,7 @@ function of the mean via a probability distribution such as the Gaussian,
 Poisson, or gamma.
 
 Modifying the MVN spatiotemporal model to the more flexible MVT distribution
-requires estimating the df parameter $\nu$. When $\nu$ is small
+requires estimating the degrees of freedom parameter $\nu$. When $\nu$ is small
 (say $\nu < 10$) the distribution has heavier tails than the MVN
 --- meaning, extreme events are more likely (Fig.~\ref{fig:nu}). For most
 purposes, the MVT and MVN are indistinguishable for moderate values of $\nu$
@@ -326,21 +324,22 @@ informative priors on parameters to impose our existing knowledge of reasonable
 values and to aid computation. In the case of the degrees of freedom parameter,
 $\nu$, we bound the lower value to $2$ for computational stability and use a
 gamma(2, 0.1) prior (i.e., shape = 2, rate = 0.1), which has a mean of $20$ and
-a median of $\sim 17$ \citep{juarez2010}. 
+a median of $\sim 17$ \citep{juarez2010}.
 
 \subsection{Testing the recovery of spatial extremeness}
 \label{sec:testing-recovery}
 
-We used simulation test to evaluate how well heavy spatial tails could be
+We used simulation testing to evaluate how well heavy spatial tails could be
 recovered under various conditions.
 Our simulations included 50 data points (15 knots) collected at the same
 locations for 5, 15, or 25 years. The spatial process was
 independent by year ($\gamma_{s,t} = W_{s,t}$) with $\sigma^2 = 1$
-(the spatial variance),
+(the spatial variance) and
 $\eta = 1$ (the spatial correlation parameter).
+% with spatial data locations drawn with uniform probability from 0 to 10.
 We set the MVT $\nu$ parameter to 2.5 (heavy tails), 5 (moderately
-heavy tails), or 20 (effectively normal tails). We corrupted 
-`true' spatial process with observation error, using a gamma
+heavy tails), or 20 (effectively normal tails). We then corrupted
+the `true' spatial process with observation error, using a gamma
 distribution with a log link, $Y_{it}\sim \mathrm{gamma}\left(a,\frac
   {a}{\mathbb{E}(Y_{it})} \right)$, where the shape parameter $a$ can be
 re-parameterized into the coefficient of variation (CV),
@@ -358,13 +357,16 @@ generating the simulated data. We
 provide a full description of the priors, posteriors, and joint probability distributions
 along with details of the MCMC sampling for this and all other models in the
 Supporting Information.
+% TODO: make sure that all priors are listed in the supplement
+% generating the simulated data. We placed weakly informative priors on $\sigma$,
+% $\eta$, and CV of half-$t$(3, 0, 3) (i.e. Student-$t$(3, 0, 3)[0, $\infty$]). We
 
 \subsection{Diagnosing the advantage of allowing for extremes}
 \label{sec:diagnosing}
 
-To evaluate the consequence of assuming spatial processes aren't present when they really are, 
+To evaluate the consequence of assuming spatial processes are not present when they really are,
 we generated simulated data sets
-from a model with spatial extremes (MVT) then compared the fit of models with and without extremes (MVT vs MVN). 
+from a model with spatial extremes (MVT) then compared the fit of models with and without extremes (MVT vs.\ MVN).
 Specifically, we simulated data from the model:
 $\mu_{s,t} \sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right)$,
 $y_{s,t} \sim \mathrm{normal} \left(\mu_{s,t},
@@ -376,6 +378,7 @@ set the MVT df parameter $\nu$ to 2 (very heavy tails) and used a
 Gaussian observation model with standard deviation $\sigma_{\mathrm{obs}}$ of
 0.8. We fit our estimation model as described above and with a half-$t$(3,0,3) prior
 on $\sigma_{\mathrm{obs}}$.
+% TODO: consider moving this and other priors into the supplement
 
 To evaluate out-of-sample predictive accuracy, we withheld
 10\% of the data randomly (10 points per year)
@@ -400,10 +403,12 @@ US Pacific Northwest
 from 1994 to 2014 \citep{usdaforestservice2017}. We rasterized the map into a 500 by 500 grid
 and then aggregated this high-resolution grid
 into percent cover in a coarser grid reduced by a factor of 25.
+% This maintained a reasonable resolution
+% while limiting the data size for rapid model fitting.
 We modelled the
 proportion of finer grid cells affected by outbreaks per coarser grid cell
 (excluding coarser grid cells without outbreaks).
-As the proportion affected was far from $1$, we
+Since the proportion affected was far from $1$, we
 can fit a model with a log link and lognormal observation distribution.
 The log of the mean proportion affected at location $s$ and time $t$, $\mu_{s,t}$,
 is predicted by a year-specific random walk defined by $\beta_t$,
@@ -434,7 +439,7 @@ or approximately 10\% of the data.
 We then compared the log predictive density for the held-out data and
 the width of the 95\% CIs
 % from the MVN and MVT models, and
-% the leave-one-out-information-criterion 
+% the leave-one-out-information-criterion
 (details, including priors in Supporting Information).
 
 \section{Results}
@@ -483,7 +488,7 @@ infestation in the US Pacific Northwest, with particularly strong hotspots in
 
 We have introduced a spatial process model that models random fields
 through time with a MVT rather than MVN distribution. Through simulation, we
-demonstrate the advantages of this new model; when spatiotemporal extremes exist in 
+demonstrate the advantages of this new model; when spatiotemporal extremes exist in
 simulated data, our MVT model has superior predictive accuracy
 and precision. Using a case study on mountain pine beetle outbreaks in the
 Pacific Northwest, we show that our MVT model produces more accurate and
@@ -503,7 +508,7 @@ since \citep{rindorf2006}. In southern Australia, several weeks of extreme warm
 water temperatures led to the sudden range contraction of a brown alga seaweed
 \citep{smale2013}. Heat waves can also increase the likelihood of wildfires or
 disease outbreaks (e.g. REF), which could generate spatial extremes through
-time. Human-caused disasters, such as marine oil spills could cause
+time. Additionally, human-caused disasters, such as marine oil spills could cause
 extremes in spatial patterns through time. In essence, the MVT random fields
 model allows for unexpected and unmodelled events to occur and have less
 influence on parameter estimates and predictions.
@@ -521,7 +526,7 @@ influence on parameter estimates and predictions.
 
 For our case study of pine beetle outbreak coverage, the MVT model provided
 better out-of-sample predictive ability and greater precision compared to the
-same model with a MVN random field. Covariates were not linked to the mean
+same model with a MVN random field. We did not link covariates to the mean
 response, but it is possible that their inclusion could help explain the spatial
 anomalies. Importantly, our model is descriptive rather than dynamic
 \citep{cressie2011}. A dynamic model would include mechanisms governing the
@@ -548,7 +553,7 @@ package includes a simulation function that can simulate data from any model
 the package can fit, and a series of unit tests that simulate and fit all
 major model configurations.
 
-There are some limitations to the approach we have described. First,
+There are limitations to the approach we have described. First,
 spatial predictive models require the selection of knots; too few may
 not characterize the spatial field accurately, biasing
 parameter estimates. The spatial process may also be poorly described by a MVT or
@@ -561,7 +566,7 @@ sampling error to detect spatial extremes (though when extremes cannot be
 detected, the model converges to the MVN model).
 
 Our MVT spatial model uses a predictive approach to achieve considerable
-efficiency over modelling a full covariance matrix describing all observed locations. 
+efficiency over modelling a full covariance matrix describing all observed locations.
 However, an important topic for research is to include sparse matrix
 algorithms in spatiotemporal models of extremes. A recent advance to
 spatial models with large datasets has been the stochastic partial
