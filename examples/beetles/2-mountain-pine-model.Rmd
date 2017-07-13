@@ -1,4 +1,4 @@
-# Robust spatiotemporal mountain pine beetle example 
+# Robust spatiotemporal mountain pine beetle example
 
 ```{r, echo = FALSE, cache=FALSE, message=FALSE}
 knitr::opts_chunk$set(
@@ -7,7 +7,7 @@ knitr::opts_chunk$set(
   fig.height=8.5,
   fig.width=9
 )
-knitr::opts_knit$set(root.dir = "../../") 
+knitr::opts_knit$set(root.dir = "../../")
 library(dplyr)
 library(ggplot2)
 library(rrfields)
@@ -46,10 +46,10 @@ proj4string(mp2)
 id <- "mountain-pine-beetle-pnw-raster"
 nbin <- 500
 
-d <- readRDS(paste0("examples/beetles/", 
+d <- readRDS(paste0("examples/beetles/",
   id, "-", "dataframe", "-", nbin, "x", nbin, ".rds"))
 
-d_highres <- readRDS(paste0("examples/beetles/", 
+d_highres <- readRDS(paste0("examples/beetles/",
   id, "-", "dataframe", "-", nbin, "x", nbin, "highres.rds"))
 
 # rescale
@@ -59,16 +59,16 @@ d$y <- d$y/1e5
 d <- dplyr::filter(d, cover > 0)
 d_highres <- dplyr::filter(d_highres, cover > 0)
 
-ggplot(d_highres, aes(x, y)) + 
-  # geom_polygon(data = mp2, aes(long, lat, group = group), 
+ggplot(d_highres, aes(x, y)) +
+  # geom_polygon(data = mp2, aes(long, lat, group = group),
     # inherit.aes = FALSE, fill = "white", col = "grey40", lwd = 0.3) +
   geom_point(size = 0.1, alpha = 0.1) +
   facet_wrap(~year)
   # theme(panel.background = element_rect(fill="#e6e8ed")) +
   # coord_fixed(xlim = range(d_highres$x), ylim = range(d_highres$y))
 
-ggplot(d, aes(x, y, fill = log(cover))) + 
-  # geom_polygon(data = mp2, aes(long/1e5, lat/1e5, group = group), 
+ggplot(d, aes(x, y, fill = log(cover))) +
+  # geom_polygon(data = mp2, aes(long/1e5, lat/1e5, group = group),
     # inherit.aes = FALSE, fill = "white", col = "grey40", lwd = 0.3) +
   geom_tile() +
   facet_wrap(~year) +
@@ -84,9 +84,9 @@ ggplot(d, aes(x, y, fill = cover)) + geom_tile() +
 
 d <- mutate(d, station = paste(x, y), row_number = seq_len(nrow(d)))
 set.seed(1)
-d <- group_by(d, year) %>% 
-  mutate(hold_out = row_number %in% 
-      sample(row_number, size = 25L)) %>% 
+d <- group_by(d, year) %>%
+  mutate(hold_out = row_number %in%
+      sample(row_number, size = 25L)) %>%
   ungroup()
 
 saveRDS(d, file = "examples/beetles/mountain-pine-beetle-data.rds")
@@ -98,52 +98,51 @@ assert_that(nrow(d) > 500)
 assert_that(nrow(d) < 5000)
 ```
 
-Fit the model. First the multivariate t model. 
+Fit the model. First the multivariate t model.
 
 ```{r model, cache=FALSE, warning=FALSE, message=FALSE, results='hide'}
-model_file <- paste0("examples/beetles/", id, "-", 
+model_file <- paste0("examples/beetles/", id, "-",
   "mvt-lognormal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
-  mvt <- rrfield(cover ~ 1, 
+  mvt <- rrfield(cover ~ 1,
     data = dplyr::filter(d, !hold_out),
     time = "year", lon = "x", lat = "y",
     station = "station",
-    nknots = 15,
+    nknots = 20,
     family = lognormal(link = "log"),
     prior_gp_sigma = half_t(3, 0, 3),
     prior_gp_scale = half_t(3, 0, 3),
     prior_intercept = student_t(1e9, 0, 10),
-    prior_beta = student_t(1e9, 0, 4),
     prior_rw_sigma = half_t(3, 0, 3),
     prior_sigma = half_t(3, 0, 3),
     prior_ar = half_t(1e9, 0, 0.5),
     estimate_ar = TRUE,
     estimate_df = TRUE,
     year_re = TRUE,
-    chains = 3, iter = 1000, thin = 1,
-    # chains = 4, iter = 2000, thin = 1,
-    control = list(adapt_delta = 0.98),
+    chains = 6, iter = 2000, thin = 2,
+    control = list(adapt_delta = 0.99),
     save_log_lik = TRUE)
   save(mvt, file = model_file)
 } else {
   load(model_file)
 }
 # print(mvt)
-# shinystan::launch_shinystan(mvt$model)
+shinystan::launch_shinystan(mvt$model)
+names(extract(mvt$model))
 
 ```
 
-Now the multivariate normal model. 
+Now the multivariate normal model.
 
 ```{r, warning=FALSE, message=FALSE, results='hide'}
-model_file <- paste0("examples/beetles/", id, "-", 
+model_file <- paste0("examples/beetles/", id, "-",
   "mvn-lognormal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
-  mvn <- rrfield(cover ~ 1, 
+  mvn <- rrfield(cover ~ 1,
     data = dplyr::filter(d, !hold_out),
     time = "year", lon = "x", lat = "y",
     station = "station",
-    nknots = 15,
+    nknots = 20,
     family = lognormal(link = "log"),
     prior_gp_sigma = half_t(3, 0, 3),
     prior_gp_scale = half_t(3, 0, 3),
@@ -155,9 +154,8 @@ if (!file.exists(model_file)) {
     estimate_df = FALSE,
     year_re = TRUE,
     fixed_df_value = 2000,
-    chains = 3, iter = 1000, thin = 1,
-    # chains = 4, iter = 2000, thin = 1,
-    control = list(adapt_delta = 0.98),
+    chains = 6, iter = 2000, thin = 2,
+    control = list(adapt_delta = 0.99),
     save_log_lik = TRUE)
   save(mvn, file = model_file)
 } else {
@@ -172,8 +170,12 @@ Let's make sure both models converged:
 ```{r}
 bt <- broom::tidyMCMC(mvt$model, ess = TRUE, rhat = TRUE)
 bn <- broom::tidyMCMC(mvn$model, ess = TRUE, rhat = TRUE)
+max(bt$rhat)
+min(bt$ess)
 assertthat::assert_that(min(bt$ess) > 100)
 assertthat::assert_that(max(bt$rhat) < 1.05)
+max(bn$rhat)
+min(bn$ess)
 assertthat::assert_that(min(bn$ess) > 100)
 assertthat::assert_that(max(bn$rhat) < 1.05)
 ```
@@ -181,33 +183,33 @@ assertthat::assert_that(max(bn$rhat) < 1.05)
 Plot the predictions and check the model. Although functions for most of these plots are contained in the package, we will extract the data and make the plots ourselves so they can be more customized.
 
 ```{r plots, cache=FALSE, eval=TRUE}
-pred <- predict(mvt, interval = "confidence", conf_level = 0.95, 
+pred <- predict(mvt, interval = "confidence", conf_level = 0.95,
   newdata = d)
-pred <- pred %>% mutate(x = d$x, y = d$y, observed = d$cover, 
+pred <- pred %>% mutate(x = d$x, y = d$y, observed = d$cover,
   year = d$year, residual = log(observed) - estimate)
 
-g <- ggplot(pred, aes(x, y, fill = estimate)) + 
+g <- ggplot(pred, aes(x, y, fill = estimate)) +
   geom_tile() + facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
   coord_fixed()
 print(g)
 
-g <- ggplot(dplyr::filter(pred), 
-  aes(x, y, fill = exp(estimate))) + 
+g <- ggplot(dplyr::filter(pred),
+  aes(x, y, fill = exp(estimate))) +
   geom_tile() + facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
   coord_fixed()
 print(g)
 
-g <- ggplot(pred, aes(x, y, fill = residual)) + 
+g <- ggplot(pred, aes(x, y, fill = residual)) +
   geom_tile() + facet_wrap(~year) +
   scale_fill_gradient2() +
   coord_fixed()
 print(g)
 
-ggplot(pred, aes(estimate, residual)) + 
+ggplot(pred, aes(estimate, residual)) +
   geom_point(alpha = 0.5) + facet_wrap(~year) +
-  geom_hline(yintercept = 0, lty = 2) + 
+  geom_hline(yintercept = 0, lty = 2) +
   geom_smooth(method = "loess", se = FALSE, colour = "red")
 
 ggplot(pred, aes(log(observed), estimate)) +
@@ -217,22 +219,22 @@ ggplot(pred, aes(log(observed), estimate)) +
   geom_abline(intercept = 0, slope = 1, colour = "red")
 ```
 
-Let's compare the multivariate t and multivariate normal predictions. 
+Let's compare the multivariate t and multivariate normal predictions.
 
 ```{r}
 pred_mvn <- predict(mvn, interval = "confidence", conf_level = 0.95,
   newdata = d)
-pred_mvn <- pred_mvn %>% mutate(x = d$x, y = d$y, observed = d$cover, 
+pred_mvn <- pred_mvn %>% mutate(x = d$x, y = d$y, observed = d$cover,
   year = d$year, residual = log(observed) - estimate)
 
-g <- ggplot(dplyr::filter(pred_mvn), 
-  aes(x, y, fill = exp(estimate))) + 
+g <- ggplot(dplyr::filter(pred_mvn),
+  aes(x, y, fill = exp(estimate))) +
   geom_tile() + facet_wrap(~year) +
   scale_fill_viridis(option = "D") +
   coord_fixed()
 print(g)
 
-g <- ggplot(pred_mvn, aes(x, y, fill = residual)) + 
+g <- ggplot(pred_mvn, aes(x, y, fill = residual)) +
   geom_tile() + facet_wrap(~year) +
   scale_fill_gradient2() +
   coord_fixed()
@@ -241,14 +243,14 @@ print(g)
 pred2 <- pred
 pred2$mvn_estimate <- pred_mvn$estimate
 pred2$mvt_estimate <- pred$estimate
-g <- ggplot(pred2, aes(mvt_estimate, mvn_estimate)) + 
+g <- ggplot(pred2, aes(mvt_estimate, mvn_estimate)) +
   geom_point() + facet_wrap(~year) +
   coord_fixed() +
   geom_abline(intercept = 0, slope = 1, colour = "red")
 print(g)
 
-g <- ggplot(pred2, aes(mvt_estimate, mvn_estimate)) + 
-  aes(x, y, fill = exp(mvt_estimate) - exp(mvn_estimate)) + 
+g <- ggplot(pred2, aes(mvt_estimate, mvn_estimate)) +
+  aes(x, y, fill = exp(mvt_estimate) - exp(mvn_estimate)) +
   geom_tile() + facet_wrap(~year) +
   scale_fill_gradient2() +
   coord_fixed()
@@ -258,7 +260,7 @@ print(g)
 
 ```{r}
 combined <- bind_rows(
-  mutate(pred, model = "mvt"), 
+  mutate(pred, model = "mvt"),
   mutate(pred_mvn, model = "mvn"))
 
 combined <- mutate(combined, id = paste(x, y))
@@ -267,25 +269,25 @@ set.seed(1234)
 ids <- sample(unique(combined$id), size = 10)
 jitter <- 0.2
 dplyr::filter(combined, id %in% ids) %>%
-  mutate(id_numeric = as.numeric(as.factor(id))) %>% 
-  mutate(id_numeric = ifelse(model == "mvn", id_numeric - jitter, 
-    id_numeric + jitter)) %>% 
+  mutate(id_numeric = as.numeric(as.factor(id))) %>%
+  mutate(id_numeric = ifelse(model == "mvn", id_numeric - jitter,
+    id_numeric + jitter)) %>%
   ggplot(aes(x = id_numeric, y = estimate, ymin = conf_low,
     ymax = conf_high, color = model)) +
   geom_pointrange(size = 0.25) +
-  facet_wrap(~year) + 
-  coord_flip() + 
-  geom_point(aes(x = round(id_numeric), y = log(observed)), 
+  facet_wrap(~year) +
+  coord_flip() +
+  geom_point(aes(x = round(id_numeric), y = log(observed)),
     color = "black", pch = 21) +
   xlab("y") + ylab("Point ID")
 ```
 
-What about the holdout data? 
+What about the holdout data?
 
 ```{r}
 combined$hold_out <- c(d$hold_out, d$hold_out)
 
-dplyr::filter(combined, hold_out) %>% 
+dplyr::filter(combined, hold_out) %>%
   ggplot(aes(log(observed), estimate)) +
   geom_point(alpha = 0.2) +
   geom_pointrange(aes(ymin = conf_low, ymax = conf_high), alpha = 0.1) +
@@ -294,7 +296,7 @@ dplyr::filter(combined, hold_out) %>%
   facet_wrap(~model)
 ```
 
-Let's look at the mean squared error between the 2 models for the holdout data: 
+Let's look at the mean squared error between the 2 models for the holdout data:
 
 ```{r}
 mse <- dplyr::filter(combined, hold_out) %>%
@@ -324,22 +326,22 @@ mse <- dplyr::filter(combined) %>%
 print(mse)
 ```
 
-Let's look at the observed and predicted values with confidence intervals for 10 of the holdout data points. In the simulations we've shown that the predictions in years with moderately large spikes can get inflated if we use the MVN model and the confidence intervals inflate to obtain the same correct coverage. 
+Let's look at the observed and predicted values with confidence intervals for 10 of the holdout data points. In the simulations we've shown that the predictions in years with moderately large spikes can get inflated if we use the MVN model and the confidence intervals inflate to obtain the same correct coverage.
 
 ```{r}
 jitter <- 0.2
 dplyr::filter(combined, hold_out) %>%
-  group_by(year, model) %>% 
-  mutate(id_numeric = 1:n()) %>% 
-  dplyr::filter(id_numeric <= 10) %>% 
-  mutate(id_numeric = ifelse(model == "mvn", id_numeric - jitter, 
-    id_numeric + jitter)) %>% 
+  group_by(year, model) %>%
+  mutate(id_numeric = 1:n()) %>%
+  dplyr::filter(id_numeric <= 10) %>%
+  mutate(id_numeric = ifelse(model == "mvn", id_numeric - jitter,
+    id_numeric + jitter)) %>%
   ggplot(aes(x = id_numeric, y = estimate, ymin = conf_low,
     ymax = conf_high, color = model)) +
   geom_pointrange(size = 0.25) +
-  facet_wrap(~year, scales = "free_x") + 
-  coord_flip() + 
-  geom_point(aes(x = round(id_numeric), y = log(observed)), 
+  facet_wrap(~year, scales = "free_x") +
+  coord_flip() +
+  geom_point(aes(x = round(id_numeric), y = log(observed)),
     color = "black", pch = 21) +
   xlab("y") + ylab("Point ID")
 ```
@@ -358,7 +360,7 @@ cis <- mutate(combined, conf_width = conf_high - conf_low) %>%
 dplyr::filter(cis) %>%
   ggplot(aes(conf_width_ratio)) +
   geom_histogram() +
-  geom_vline(aes(xintercept = median(conf_width_ratio))) 
+  geom_vline(aes(xintercept = median(conf_width_ratio)))
 
 dplyr::filter(cis) %>%
   ggplot(aes(conf_width_ratio)) +
@@ -371,7 +373,7 @@ dplyr::filter(cis) %>%
 median(cis$conf_width_ratio)
 ```
 
-How are the model parameters themselves different? 
+How are the model parameters themselves different?
 
 ```{r}
 pars <- c("gp_sigma", "gp_scale", "sigma[1]")
@@ -383,7 +385,7 @@ bn$model <- "mvn"
 b <- bind_rows(bt, bn)
 
 dplyr::filter(b, term %in% pars) %>%
-  ggplot(aes(term, estimate, ymin = conf.low, 
+  ggplot(aes(term, estimate, ymin = conf.low,
     ymax = conf.high, color = model)) +
   geom_pointrange(position = position_dodge(width = 0.2)) +
   coord_flip()
@@ -396,16 +398,16 @@ Let's look at the coverage of the credible intervals between the 2 models:
 ```{r}
 pred_mvt <- predict(mvt, interval = "prediction", conf_level = 0.95,
   newdata = d, type = "response")
-pred_mvt <- pred_mvt %>% mutate(x = d$x, y = d$y, observed = d$cover, 
+pred_mvt <- pred_mvt %>% mutate(x = d$x, y = d$y, observed = d$cover,
   year = d$year, hold_out = d$hold_out)
 
 pred_mvn <- predict(mvn, interval = "prediction", conf_level = 0.95,
   newdata = d, type = "response")
-pred_mvn <- pred_mvn %>% mutate(x = d$x, y = d$y, observed = d$cover, 
+pred_mvn <- pred_mvn %>% mutate(x = d$x, y = d$y, observed = d$cover,
   year = d$year, hold_out = d$hold_out)
 
 combined <- bind_rows(
-  mutate(pred_mvt, model = "mvt"), 
+  mutate(pred_mvt, model = "mvt"),
   mutate(pred_mvn, model = "mvn"))
 ```
 
@@ -415,9 +417,9 @@ Coverage for all the data:
 coverage <- dplyr::filter(combined) %>%
   group_by(model, year) %>%
   mutate(contained = observed < conf_high & observed > conf_low) %>%
-  ungroup() %>% 
-  group_by(model) %>% 
-  summarize(coverage = mean(contained)) %>% 
+  ungroup() %>%
+  group_by(model) %>%
+  summarize(coverage = mean(contained)) %>%
   print()
 ```
 
@@ -427,8 +429,8 @@ Coverage for just the held-out data:
 coverage <- dplyr::filter(combined, hold_out) %>%
   group_by(model, year) %>%
   mutate(contained = observed < conf_high & observed > conf_low) %>%
-  ungroup() %>% 
-  group_by(model) %>% 
-  summarize(coverage = mean(contained)) %>% 
+  ungroup() %>%
+  group_by(model) %>%
+  summarize(coverage = mean(contained)) %>%
   print()
 ```
