@@ -1,10 +1,8 @@
 ---
-title: "MVT vs. MVN performance for true versus observed values"
+title: "MVT vs. MVN performance for matched and mismatched models."
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 ---
-
-This file creates a figure that compares matched and mismatched models.
 
 ```{r set-knitr-options, cache=FALSE, echo=FALSE}
 library("knitr")
@@ -25,72 +23,85 @@ throughout.
 ```{r setup}
 set.seed(123)
 options(mc.cores = parallel::detectCores())
-ITER <- 600
-CHAINS <- 2
-SEED <- 2
+CHAINS <- 4
+SEED <- 123
 gp_sigma <- 0.3
 sigma <- 0.8
 df <- 2
 gp_scale <- 1.2
 n_draws <- 15
-nknots <- 12
-
-# s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
-#   gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
-#
-# print(s$plot)
+nknots <- 10
 ```
 
 Let's simulate some data that has heavy tails, fit correct and mismatched
 models, make predictions, and then calculate the root mean squared error
 compared to the true values.
 
-The following function will accomplish that.
-
 ```{r simulate-and-fit-data}
 simulate_and_fit <- function() {
-
+  
+  message(i+1)
+  set.seed(i+1)
   s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
     gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
-
   d <- s$dat
-
   d <- mutate(d, withhold = station_id %in% sample(unique(station_id), 10))
-
-  m1 <- rrfield(y ~ 0, data = filter(d, !withhold),
-    time = "time", station = "station_id",
-    lat = "lat", lon = "lon", nknots = nknots,
-    iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE,
-    prior_gp_scale = half_t(3, 0, 3),
-    prior_gp_sigma = half_t(3, 0, 3),
-    prior_sigma = half_t(3, 0, 3))
-
-  m_wrong <- rrfield(y ~ 0, data = filter(d, !withhold),
-    time = "time", station = "station_id",
-    lat = "lat", lon = "lon", nknots = nknots,
-    iter = ITER, chains = CHAINS,
-    estimate_df = FALSE, fixed_df_value = 2000, save_log_lik = TRUE,
-    prior_gp_scale = half_t(3, 0, 3),
-    prior_gp_sigma = half_t(3, 0, 3),
-    prior_sigma = half_t(3, 0, 3))
-
-  diag <- broom::tidy(m1$model, rhat = TRUE, ess = TRUE)
-  diagw <- broom::tidy(m_wrong$model, rhat = TRUE, ess = TRUE)
-
+  
+  ess <- 0
+  rhat <- 1e9
+  ITER <- 2000
+  giveup <- FALSE
+  
+  while((ess <= 100 | rhat > 1.05) & !giveup) {
+    m1 <- rrfield(y ~ 0, data = filter(d, !withhold),
+      time = "time", station = "station_id",
+      lat = "lat", lon = "lon", nknots = nknots,
+      iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE,
+      prior_gp_scale = half_t(3, 0, 3),
+      prior_gp_sigma = half_t(3, 0, 3),
+      prior_sigma = half_t(3, 0, 3),
+      control = list(adapt_delta = 0.90))
+    
+    m_wrong <- rrfield(y ~ 0, data = filter(d, !withhold),
+      time = "time", station = "station_id",
+      lat = "lat", lon = "lon", nknots = nknots,
+      iter = ITER, chains = CHAINS,
+      estimate_df = FALSE, fixed_df_value = 1e9, save_log_lik = TRUE,
+      prior_gp_scale = half_t(3, 0, 3),
+      prior_gp_sigma = half_t(3, 0, 3),
+      prior_sigma = half_t(3, 0, 3),
+      control = list(adapt_delta = 0.90))
+    
+    diag <- broom::tidy(m1$model, rhat = TRUE, ess = TRUE)
+    diagw <- broom::tidy(m_wrong$model, rhat = TRUE, ess = TRUE)
+    
+    ess <- min(c(diag$ess, diagw$ess))
+    rhat <- max(c(diag$rhat, diagw$rhat))
+    
+    ITER <- ITER * 2
+    if (ITER > 4000) giveup <- TRUE
+  }
+  
+  p <- predict(m1, interval = "confidence", type = "response",
+    newdata = d)
+  p_wrong <- predict(m_wrong, interval = "confidence", type = "response",
+    newdata = d)
+  
+  loo_t <- loo::loo(loo::extract_log_lik(m1$model))
+  loo_n <- loo::loo(loo::extract_log_lik(m_wrong$model))
+  
   i <<- i + 1
-  list(i = i, sim = s, dat = d, m = m1, m_wrong = m_wrong,
-    diag = diag, diag_wrong = diagw)
+  list(i = i, dat = d, p = p, p_wrong = p_wrong, ess = ess, rhat = rhat, giveup = giveup,
+    loo_t = loo_t, loo_n = loo_n)
 }
 ```
 
 Now let's run our function a number of times:
 
 ```{r}
-set.seed(1)
 i <<- 0
-# system("rm sim/match-mismatch.rds")
 if (!file.exists("sim/match-mismatch.rds")) {
-  output <- plyr::rlply(.n = 40, simulate_and_fit)
+  output <- plyr::rlply(.n = 100, simulate_and_fit)
   saveRDS(output, "sim/match-mismatch.rds")
 } else {
   output <- readRDS("sim/match-mismatch.rds")
@@ -98,29 +109,26 @@ if (!file.exists("sim/match-mismatch.rds")) {
 ```
 
 ```{r}
-# system("rm sim/match-mismatch-rmse.rds")
 if (!file.exists("sim/match-mismatch-rmse.rds")) {
   rmse <- plyr::ldply(output, function(x) {
-    p <- predict(x$m, interval = "confidence", type = "response",
-      newdata = x$s$dat)
-    p_wrong <- predict(x$m_wrong, interval = "confidence", type = "response",
-      newdata = x$s$dat)
+    p <- x$p
+    p_wrong <- x$p_wrong
     proj <- reshape2::melt(x$s$proj)
     names(proj) <- c("time", "pt", "proj")
     proj <- dplyr::arrange_(proj, "time", "pt")
-
+    
     assertthat::assert_that(identical(proj[,1:2], x$s$dat[,1:2]))
-
+    
     d <- data.frame(x$dat, p)
     d_wrong <- data.frame(x$dat, p_wrong)
     d_combined <- data.frame(d,
       select(d_wrong, estimate, conf_high, conf_low) %>%
-      rename(est_wrong = estimate,
-        conf_high_wrong = conf_high, conf_low_wrong = conf_low))
-
+        rename(est_wrong = estimate,
+          conf_high_wrong = conf_high, conf_low_wrong = conf_low))
+    
     assertthat::assert_that(identical(proj[,1:2], d_combined[,1:2]))
     d2 <- data.frame(d_combined, proj = proj$proj)
-
+    
     d2 %>%
       filter(withhold) %>%
       mutate(
@@ -136,14 +144,12 @@ if (!file.exists("sim/match-mismatch-rmse.rds")) {
       mutate(i = i) %>%
       mutate(perc_better = (rmse_wrong - rmse) / rmse * 100) %>%
       mutate(perc_better_ci =
-        (median_conf_width_wrong - median_conf_width) / median_conf_width * 100)
+          (median_conf_width_wrong - median_conf_width) / median_conf_width * 100)
   })
   saveRDS(rmse, file = "sim/match-mismatch-rmse.rds")
 } else {
   rmse <- readRDS("sim/match-mismatch-rmse.rds")
 }
-# rmse
-# ggplot(rmse, aes(perc_better)) + geom_histogram(binwidth = 2)
 ```
 
 What about leave-one-out information criteria?
@@ -151,8 +157,8 @@ What about leave-one-out information criteria?
 ```{r}
 library(loo)
 loo <- plyr::ldply(output, function(x) {
-  loo_t <- loo(extract_log_lik(x$m$model))
-  loo_n <- loo(extract_log_lik(x$m_wrong$model))
+  loo_t <- x$loo_t
+  loo_n <- x$loo_n
   data.frame(loo_t = loo_t$looic, loo_n = loo_n$looic, i = x$i)
 })
 loo <- loo %>% mutate(delta_loo = loo_t - loo_n)
@@ -162,11 +168,10 @@ hist(loo$delta_loo)
 mean(loo$delta_loo)
 ```
 
-Plot example parameter estimates:
+Extract parameter estimates:
 
 ```{r}
-set.seed(3)
-i <<- 1
+i <<- 2 # set.seed(3)
 ITER <- 1000
 CHAINS <- 4
 n_draws <- 20
