@@ -38,9 +38,11 @@ models, make predictions, and then calculate the root mean squared error
 compared to the true values.
 
 ```{r simulate-and-fit-data}
-simulate_and_fit <- function() {
+simulate_and_fit <- function(return_model = FALSE, ITER = 2000, 
+  giveup_thresh = 4) {
   
-  message(i+1)
+  print("----------------------------------------------------------")
+  print(i+1)
   set.seed(i+1)
   s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
     gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
@@ -49,7 +51,7 @@ simulate_and_fit <- function() {
   
   ess <- 0
   rhat <- 1e9
-  ITER <- 2000
+  this_ITER <- ITER
   giveup <- FALSE
   
   while((ess <= 100 | rhat > 1.05) & !giveup) {
@@ -78,8 +80,8 @@ simulate_and_fit <- function() {
     ess <- min(c(diag$ess, diagw$ess))
     rhat <- max(c(diag$rhat, diagw$rhat))
     
-    ITER <- ITER * 2
-    if (ITER > 4000) giveup <- TRUE
+    this_ITER <- this_ITER * 2
+    if (this_ITER > ITER * giveup_thresh) giveup <- TRUE
   }
   
   p <- predict(m1, interval = "confidence", type = "response",
@@ -91,8 +93,9 @@ simulate_and_fit <- function() {
   loo_n <- loo::loo(loo::extract_log_lik(m_wrong$model))
   
   i <<- i + 1
-  list(i = i, dat = d, p = p, p_wrong = p_wrong, ess = ess, rhat = rhat, giveup = giveup,
-    loo_t = loo_t, loo_n = loo_n)
+  r <- list(i = i, dat = d, p = p, p_wrong = p_wrong, ess = ess, rhat = rhat, giveup = giveup,
+    loo_t = loo_t, loo_n = loo_n, proj = s$proj)
+  if (return_model) r <- list(r, m = m1, m_wrong = m_wrong)
 }
 ```
 
@@ -106,18 +109,27 @@ if (!file.exists("sim/match-mismatch.rds")) {
 } else {
   output <- readRDS("sim/match-mismatch.rds")
 }
+
+i <<- 200
+if (!file.exists("sim/match-mismatch2.rds")) {
+  output2 <- plyr::rlply(.n = 50, function(x) simulate_and_fit(ITER = 600, giveup_thresh = 1))
+  saveRDS(output2, "sim/match-mismatch2.rds")
+} else {
+  output2 <- readRDS("sim/match-mismatch2.rds")
+}
 ```
 
 ```{r}
+output <- c(output, output2)
 if (!file.exists("sim/match-mismatch-rmse.rds")) {
   rmse <- plyr::ldply(output, function(x) {
     p <- x$p
     p_wrong <- x$p_wrong
-    proj <- reshape2::melt(x$s$proj)
+    proj <- reshape2::melt(x$proj)
     names(proj) <- c("time", "pt", "proj")
     proj <- dplyr::arrange_(proj, "time", "pt")
     
-    assertthat::assert_that(identical(proj[,1:2], x$s$dat[,1:2]))
+    assertthat::assert_that(identical(proj[,1:2], x$dat[,1:2]))
     
     d <- data.frame(x$dat, p)
     d_wrong <- data.frame(x$dat, p_wrong)
@@ -171,11 +183,12 @@ mean(loo$delta_loo)
 Extract parameter estimates:
 
 ```{r}
-i <<- 2 # set.seed(3)
-ITER <- 1000
 CHAINS <- 4
 n_draws <- 20
-o <- simulate_and_fit()
+i <<- 4 # affects seed 
+o <- simulate_and_fit(return_model = TRUE, ITER = 2000)
+o$m_wrong
+o$m
 e1 <- rstan::extract(o$m$model)
 e2 <- rstan::extract(o$m_wrong$model)
 save(e1, e2, file = "sim/match-mismatch-example.rda")
