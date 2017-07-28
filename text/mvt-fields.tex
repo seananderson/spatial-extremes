@@ -811,22 +811,24 @@ $\hat{R}$ of $\le 1.05$) across all parameters.
 
 We compared MVN and MVT models via log predictive density, $\Delta$ LOOIC
 (leave-one-out information criteria), RMSE (root mean squared error), and
-credible interval width. We calculated the log predictive density (lpd) as:
+credible interval width. We calculated the log predictive density (lpd) for
+held-out data as:
 
 \begin{equation}
-  \mathrm{lpd} = \sum^{S}_{s=1}{ \sum^{T}_{t=1}{ \log  p(\mu_{s,t} | \widehat{y_{s,t}}, \theta)}},
+  \mathrm{lpd} = \sum^{n}_{i=1}{\log  p(y_{i} |
+      \widehat{y_{i}}, \theta)},
 \end{equation}
 
-\noindent where $\mu_{s,t}$ represents the true (unobserved) response value at
-location $s$ and time $t$, $\widehat{y_{s,t}}$ indicates the predicted
-response value at location $s$ and time $t$, and $\theta$ represents estimated
-parameters. We display the distribution of these quantities across MCMC
-samples.
+\noindent where $y_{i}$ represents the observed beetle coverage response value
+for omitted data row $i$ (representing a given point in space and time),
+$\widehat{y_{i}}$ indicates the predicted response value, and $\theta$
+represents estimated parameters. We display the distribution of these quantities
+across MCMC samples.
 
 The Bayesian LOO (leave-one-out) estimate of out-of-sample
 predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
 \begin{equation}
-  \mathrm{elpd}_\mathrm{loo} = \sum^{n}_{i=1}{\log ( p(y_i | y_{i-1}) },
+  \mathrm{elpd}_\mathrm{loo} = \sum^{n}_{i=1}{\log  p(y_i | y_{i-1}) },
 \end{equation}
 
 \noindent where
