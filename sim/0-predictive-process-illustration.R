@@ -1,10 +1,10 @@
-library(rrfields)
+library(glmmfields)
 library(ggsidekick)
 library(tidyverse)
 theme_set(theme_sleek())
 
 set.seed(1)
-x <- sim_rrfield(df = 99, n_data_points = 30, seed = NULL,
+x <- sim_glmmfields(df = 99, n_data_points = 30, seed = NULL,
   n_draws = 1, n_knots = 8, gp_scale = 0.5, gp_sigma = 1,
   sd_obs = 0.01, obs_error = "normal")
 

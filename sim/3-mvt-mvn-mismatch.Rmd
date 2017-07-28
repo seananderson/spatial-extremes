@@ -11,7 +11,7 @@ opts_chunk$set(message=FALSE, fig.width=7, fig.height=5,
 ```
 
 ```{r}
-library(rrfields)
+library(glmmfields)
 library(dplyr)
 library(ggplot2)
 library(rstan)
@@ -44,7 +44,7 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
   print("----------------------------------------------------------")
   print(i+1)
   set.seed(i+1)
-  s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
+  s <- sim_glmmfields(df = df, n_draws = n_draws, gp_scale = gp_scale,
     gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
   d <- s$dat
   d <- mutate(d, withhold = station_id %in% sample(unique(station_id), 10))
@@ -55,7 +55,7 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
   giveup <- FALSE
   
   while((ess <= 100 | rhat > 1.05) & !giveup) {
-    m1 <- rrfield(y ~ 0, data = filter(d, !withhold),
+    m1 <- glmmfields(y ~ 0, data = filter(d, !withhold),
       time = "time", station = "station_id",
       lat = "lat", lon = "lon", nknots = nknots,
       iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE,
@@ -64,7 +64,7 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
       prior_sigma = half_t(3, 0, 3),
       control = list(adapt_delta = 0.90))
     
-    m_wrong <- rrfield(y ~ 0, data = filter(d, !withhold),
+    m_wrong <- glmmfields(y ~ 0, data = filter(d, !withhold),
       time = "time", station = "station_id",
       lat = "lat", lon = "lon", nknots = nknots,
       iter = ITER, chains = CHAINS,

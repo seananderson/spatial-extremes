@@ -1,6 +1,6 @@
 library(dplyr)
 library(ggplot2)
-library(rrfields)
+library(glmmfields)
 library(rstan)
 library(viridis)
 library(assertthat)

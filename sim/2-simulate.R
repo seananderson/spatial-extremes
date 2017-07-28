@@ -1,5 +1,5 @@
 library(tidyverse)
-library(rrfields)
+library(glmmfields)
 library(rstan)
 options(mc.cores = min(c(4L, parallel::detectCores())))
 library(ggsidekick) # devtools::install_github("seananderson/ggsidekick")
@@ -11,7 +11,7 @@ if (interactive()) {
   library(manipulate)
   manipulate({
     set.seed(seed)
-    simulation_data <- sim_rrfield(df = df, n_data_points = 50, seed = NULL,
+    simulation_data <- sim_glmmfields(df = df, n_data_points = 50, seed = NULL,
       n_draws = 6, n_knots = 7, gp_scale = gp_scale, gp_sigma = gp_sigma,
       obs_error = "gamma", sd_obs = CV)
     print(simulation_data$plot)
@@ -33,12 +33,12 @@ sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
   i <<- i + 1
   message(i)
 
-  s <- sim_rrfield(df = df, n_data_points = n_data_points, seed = NULL,
+  s <- sim_glmmfields(df = df, n_data_points = n_data_points, seed = NULL,
     n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale,
     gp_sigma = gp_sigma, sd_obs = sd_obs, obs_error = "gamma")
 
   fit_model <- function(iter) {
-    rrfield(y ~ 0, data = s$dat, time = "time", lon = "lon", lat = "lat",
+    glmmfields(y ~ 0, data = s$dat, time = "time", lon = "lon", lat = "lat",
       nknots = n_knots,
       station = "station_id",
       chains = 4L, iter = iter, family = Gamma(link = "log"),

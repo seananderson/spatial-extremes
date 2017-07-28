@@ -1,8 +1,7 @@
 library(dplyr)
 library(ggplot2)
-source("sim/sim_mvt_rf.R")
 library(ggsidekick)
-library(rrfields)
+library(glmmfields)
 
 g <- expand.grid(lon = seq(1, 10, 0.5),
   lat = seq(1, 10, 0.5))
@@ -16,7 +15,7 @@ draws <- lapply(c(2, 1e9),
     g <- expand.grid(lon = seq(1, 10, length.out = 25),
       lat = seq(1, 10, length.out = 25))
     draws <- 3
-    s <- rrfields::sim_rrfield(df = x, n_draws = draws,
+    s <- glmmfields::sim_glmmfields(df = x, n_draws = draws,
       gp_scale = 1.6, gp_sigma = 0.3, n_knots = 30, seed = 9,
       g = g, n_data_points = nrow(g))
     out <- reshape2::melt(s$proj)

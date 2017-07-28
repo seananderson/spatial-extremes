@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
 knitr::opts_knit$set(root.dir = "../../")
 library(dplyr)
 library(ggplot2)
-library(rrfields)
+library(glmmfields)
 library(rstan)
 library(viridis)
 library(assertthat)
@@ -104,7 +104,7 @@ Fit the model. First the multivariate t model.
 model_file <- paste0("examples/beetles/", id, "-",
   "mvt-lognormal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
-  mvt <- rrfield(cover ~ 1,
+  mvt <- glmmfields(cover ~ 1,
     data = dplyr::filter(d, !hold_out),
     time = "year", lon = "x", lat = "y",
     station = "station",
@@ -138,7 +138,7 @@ Now the multivariate normal model.
 model_file <- paste0("examples/beetles/", id, "-",
   "mvn-lognormal", "-", nbin, "x", nbin, ".rda")
 if (!file.exists(model_file)) {
-  mvn <- rrfield(cover ~ 1,
+  mvn <- glmmfields(cover ~ 1,
     data = dplyr::filter(d, !hold_out),
     time = "year", lon = "x", lat = "y",
     station = "station",
