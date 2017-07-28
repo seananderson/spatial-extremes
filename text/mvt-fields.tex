@@ -186,12 +186,12 @@ accounting for spatial autocorrelation can improve model predictions and
 inference about parameters of interest \citep[e.g.][]{thorson2015}.
 
 Including spatial components in statistical models involves extending models
-that most ecologists are already familiar with, such as generalized linear
+that most ecologists are familiar with, such as generalized linear
 models (GLMs) or generalized additive models (GAMs). Spatial relationships can
 be included as predictors in models of the mean (such as in a 2-dimensional GAM)
 or can be included in models of the covariance (e.g.\ kriging). Recent
 extensions of these spatial covariance models include modelling spatial
-deviations in GLMs or GAMs as random effects (Gaussian random fields, GRFs).
+deviations in GLMs as random effects (Gaussian random fields, GRFs).
 Examples of these methods in existing R packages include but are not limited to
 \textbf{spBayes} \citep{finley2007}, \textbf{INLA} \citep{rue2009}, and
 \textbf{spate} \citep{sigrist2015} (see~Table~\ref{tab:packages}).
@@ -211,7 +211,7 @@ Several extensions of GRFs have been proposed to better capture extreme spatial
 events, including max-stable or extreme value theory \citep{davison2012,
   davison2012a}, where quantities of interest include probabilities of exceeding
 some threshold \citep{davis2008}. Other extensions of spatiotemporal models to
-describing extremes include the use of multivariate-$t$ (MVT) spatial random
+describe extremes include the use of multivariate-$t$ (MVT) spatial random
 fields \citep{roislien2007}. Focusing on the latter, to our knowledge these
 methods have not been applied in ecology, fisheries, or environmental sciences.
 
@@ -334,8 +334,8 @@ process was independent by year ($\gamma_{s,t} = W_{s,t}$) with $\sigma^2 = 1$
 % with spatial data locations drawn with uniform probability from 0 to 10.
 We set the MVT $\nu$ parameter to 2.5 (heavy tails), 5 (moderately heavy tails),
 or 20 (effectively normal tails). We then corrupted the `true' spatial process
-with observation error, using a gamma distribution with a log link, $Y_{it}\sim
-\mathrm{gamma}\left(a,\frac {a}{\mathbb{E}(Y_{it})} \right)$, where the shape
+with observation error, using a gamma distribution with a log link, $y_{s,t}\sim
+\mathrm{gamma}\left(a,\frac {a}{\mathbb{E}(y_{s,t})} \right)$, where the shape
 parameter $a$ can be re-parameterized into the coefficient of variation (CV),
 $a=\frac{1}{\mathrm{CV}^2}$. We tested CVs of 0.1, 0.6, and 1.2. The underlying
 linear predictor $\bm{X_{s,t}} \bm{\beta}$ was set to zero to focus on the
@@ -347,18 +347,18 @@ spatial process. Therefore, the simulation of data $y_{s,t}$ simplifies to
 % \end{align}
 
 We attempted to recover $\nu$ by fitting a model that matched the process
-generating the simulated data. We provide a full description of the priors,
-posteriors, and joint probability distributions along with details of the MCMC
+generating the simulated data. We provide a full description of the priors
+and joint probability distributions along with details of the MCMC
 sampling for this and all other models in the Supporting Information.
 % TODO: make sure that all priors are listed in the supplement generating the
 % simulated data. We placed weakly informative priors on $\sigma$, $\eta$, and
 % CV of half-$t$(3, 0, 3) (i.e. Student-$t$(3, 0, 3)[0, $\infty$]).
 
-\subsection{Diagnosing the advantage of allowing for extremes}
+\subsection{Testing the advantage of allowing for extremes}
 \label{sec:diagnosing}
 
 To evaluate the consequence of assuming spatial processes are not present when
-they really are, we generated simulated data sets from a model with spatial
+they actually are, we generated simulated data sets from a model with spatial
 extremes (MVT) then compared the fit of models with and without extremes (MVT
 vs.\ MVN). Specifically, we simulated data from the model:
 $\mu_{s,t} \sim \mathrm{MVT}\left(\nu, 0, \Sigma_{W(s,t)}\right)$,
@@ -366,16 +366,13 @@ $y_{s,t} \sim \mathrm{normal} \left(\mu_{s,t},
   \sigma_{\mathrm{obs}} \right)$,
 with $\sigma = 0.3$, $\eta = 1.2$, and 100 spatial data points. The locations of
 the data, and the knots (15), were held constant through time to enable faster
-computations. We set the MVT df parameter $\nu$ to 2 (very heavy tails) and used
+computations. We set the MVT $\nu$ parameter to 2 (very heavy tails) and used
 a Gaussian observation model with standard deviation $\sigma_{\mathrm{obs}}$ of
 0.8.
-% We fit our estimation model as described above and with a half-$t$(3,0,3)
-% prior on $\sigma_{\mathrm{obs}}$.
-% TODO: consider moving this and other priors into the supplement
 
 To evaluate out-of-sample predictive accuracy, we withheld 10\% of the data
 randomly (10 points per year) from the model fitting and then compared the MVT
-and MVN models: the root mean squared error between the
+and MVN models. We compared the root mean squared error between the
 $\log(\hat{\mu}^{\mathrm{withheld}}_{s,t})$ posterior medians and the true
 $\log\left(\mu^{\mathrm{withheld}}_{s,t}\right)$, the width of the 95\% credible
 intervals (CIs) on $\hat{\mu}^{\mathrm{withheld}}_{s,t}$, and the difference in
@@ -405,7 +402,7 @@ spatial process itself modelled as autoregressive:
   \gamma_{s^{*},t} &\sim \mathrm{MVT}\left(\nu, \phi \gamma_{s^{*},t-1}, \Sigma_{W(s^{*},t)}\right).
 \end{align}
 
-\noindent Furthermore, we model the data, $y_{s,t}$, as generated by a lognormal
+\noindent We model the data, $y_{s,t}$, as generated by a lognormal
 observation model with scale parameter $\sigma_{\mathrm{obs}}$: $y_{s,t} \sim
 \mathrm{lognormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right)$.
 
