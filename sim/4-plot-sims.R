@@ -5,6 +5,7 @@
 # Recapture row:
 
 library("beanplot")
+library("dplyr")
 
 axis_col <- "grey45"
 cols <- RColorBrewer::brewer.pal(3, "YlOrRd")
@@ -183,12 +184,12 @@ box(col = axis_colour)
 add_label(label = "d)", cex = cex_text, col = margin_color)
 
 
-plot(0,0, xlim = range(rmse$perc_better), ylim = c(0, 15), type = "n",
+h <- hist(rmse$perc_better, probability = TRUE, breaks = seq(range(rmse$perc_better)[1], range(rmse$perc_better)[2], length.out = 12), plot = FALSE,
+  warn.unused = FALSE)
+plot(0,0, xlim = range(rmse$perc_better), ylim = c(0, max(h$counts)), type = "n",
   xlab = "", axes = FALSE,
   ylab = "Count")
 mtext("% worse RMSE\nwith MVN vs. MVT", side = 1, line = margin_line+1, cex = axis_lab_cex, col = margin_color)
-h <- hist(rmse$perc_better, probability = TRUE, breaks = seq(range(rmse$perc_better)[1], range(rmse$perc_better)[2], length.out = 12), plot = FALSE,
-  warn.unused = FALSE)
 for(j in seq_along(h$breaks)) {
   rect(h$breaks[j], 0, h$breaks[j+1], h$counts[j], border = "white",
     col = bar_colour, lwd = 1)
@@ -200,15 +201,15 @@ box(col = axis_colour)
 add_label(label = "e)", cex = cex_text, col = margin_color)
 
 
-plot(0,0, xlim = range(loo$delta_loo), ylim = c(0, 15), type = "n",
-  xlab = "", axes = FALSE,
-  ylab = "Count")
-mtext(expression(Delta~LOOIC), side = 1, line = margin_line, cex = axis_lab_cex, col = margin_color)
-mtext("(MVT - MVN)", side = 1, line = margin_line+1, cex = axis_lab_cex, col = margin_color)
 h <- hist(loo$delta_loo, probability = TRUE,
   breaks = seq(range(loo$delta_loo)[1],
     range(loo$delta_loo)[2], length.out = 12), plot = FALSE,
   warn.unused = FALSE)
+plot(0,0, xlim = range(loo$delta_loo), ylim = c(0, max(h$counts)), type = "n",
+  xlab = "", axes = FALSE,
+  ylab = "Count")
+mtext(expression(Delta~LOOIC), side = 1, line = margin_line, cex = axis_lab_cex, col = margin_color)
+mtext("(MVT - MVN)", side = 1, line = margin_line+1, cex = axis_lab_cex, col = margin_color)
 for(j in seq_along(h$breaks)) {
   rect(h$breaks[j], 0, h$breaks[j+1], h$counts[j], border = "white",
     col = bar_colour, lwd = 1)
