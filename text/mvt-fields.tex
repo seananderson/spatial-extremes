@@ -420,16 +420,17 @@ the held-out data and the width of the 95\% CIs
 \section{Results}
 
 Under most scenarios we were able to recapture true values of $\nu$ with
-reasonable accuracy and low bias (Fig.~\ref{fig:recapture}a--c). The number of
-time steps had the largest effect on detecting low values of $\nu$. For example,
-the median absolute proportional error between $\nu$ and $\hat{\nu}$ (median of
-the posterior) was only \mapeTwentyFive\ with 25 time steps, minimal observation
-error (CV = 0.1), and $\nu = 2.5$ (Fig.~\ref{fig:recapture}b). However, the
-median absolute proportional error increased by approximately
-\mapeFifteenIncFold - and \mapeFiveIncFold -fold when the number of time steps
-was reduced to 15 and 5, respectively (Fig.~\ref{fig:recapture}b). Observation
-error did not substantially affect the estimation of $\nu$ until relatively high
-levels of observation error (i.e.\ CV = 1.2, Fig.~\ref{fig:recapture}c).
+reasonable accuracy and low bias (Fig.~\ref{fig:recapture}a--c,
+Fig.~\ref{fig:recapture-factorial}). The number of time steps had the largest
+effect on detecting low values of $\nu$. For example, the median absolute
+proportional error between $\nu$ and $\hat{\nu}$ (median of the posterior) was
+only \mapeTwentyFive\ with 25 time steps, minimal observation error (CV = 0.1),
+and $\nu = 2.5$ (Fig.~\ref{fig:recapture}b). However, the median absolute
+proportional error increased by approximately \mapeFifteenIncFold - and
+\mapeFiveIncFold -fold when the number of time steps was reduced to 15 and 5,
+respectively (Fig.~\ref{fig:recapture}b). Observation error did not
+substantially affect the estimation of $\nu$ until relatively high levels of
+observation error (i.e.\ CV = 1.2, Fig.~\ref{fig:recapture}c).
 
 When the true underlying data were generated with spatiotemporal extremes (MVT,
 $\nu = 2$), fitting a model without extremes reduced out-of-sample predictive
@@ -478,12 +479,12 @@ winters around 1990 led to a sudden northward shift in juvenile cod and low
 abundance in the southern North Sea since \citep{rindorf2006}. In southern
 Australia, several weeks of extreme warm water temperatures led to the sudden
 range contraction of a brown alga seaweed \citep{smale2013}. Heat waves can also
-increase the likelihood of wildfires or disease outbreaks (e.g. REF), which
-could generate spatial extremes through time. Additionally, human-caused
-disasters, such as marine oil spills could cause extremes in spatial patterns
-through time. In essence, the MVT random fields model allows for unexpected and
-unmodelled events to occur and have less influence on parameter estimates and
-predictions.
+increase the likelihood of wildfires or disease outbreaks
+\citep[e.g.][]{harvell2002}, which could generate spatial extremes through time.
+Additionally, human-caused disasters, such as marine oil spills could cause
+extremes in spatial patterns through time. In essence, the MVT random fields
+model allows for unexpected and unmodelled events to occur and have less
+influence on parameter estimates and predictions.
 
 % For example, several weeks of extreme warm water temperatures caused a sudden
 % 100 km range contraction for a brown alga seaweed species off Southern Australia
@@ -498,11 +499,12 @@ predictions.
 
 For our case study of pine beetle outbreak coverage, the MVT model provided
 better out-of-sample predictive ability and greater precision compared to the
-same model with a MVN random field. We did not link covariates to the mean
-response, but it is possible that their inclusion could help explain the spatial
-anomalies. Importantly, our model is descriptive rather than dynamic
-\citep{cressie2011}. A dynamic model would include mechanisms governing the
-spatial evolution of the pine beetle outbreaks (such as XX REF), and these
+same model with a MVN random field. We did not link covariates, such as
+temperature, to the mean response, but it is possible that their inclusion could
+help explain the spatial anomalies. Importantly, our model is descriptive rather
+than dynamic \citep{cressie2011}. A dynamic model would include mechanisms
+governing the spatial evolution of the pine beetle outbreaks \citep[such as
+available tree host size and quality,][]{chubaty2009}, and these types of
 mechanisms could generate the extremes we observe with our descriptive model.
 Alternatively, incorporating spatiotemporal extremes into a dynamic model of
 pine beetle outbreaks might improve its predictive capacity.
@@ -510,7 +512,7 @@ pine beetle outbreaks might improve its predictive capacity.
 Our associated R package, \textbf{glmmfields}, is designed to be familiar for
 anyone who has fit GLMs in R, and includes flexibility for many features beyond
 those described so far. For example, \textbf{glmmfields} can be used to fit
-spatial GLMs for data without a temporal component (Appendix XX). The package
+spatial GLMMs for data without a temporal component (Appendix XX). The package
 can fit observation models beyond those included in this paper, such as Poisson,
 negative binomial, or binomial, and can include numeric or factor covariates.
 % In addition to fixed, independent, and random walk temporal processes, the
@@ -789,21 +791,21 @@ degrees of freedom parameter, the location parameter, and the scale parameter).
 In the section \emph{\nameref{sec:diagnosing}}, we used these same priors and a
 half-$t$(3,0,3) prior on $\sigma_{\mathrm{obs}}$. In the section
 \emph{\nameref{sec:beetles-methods}}, we fit our models with a normal(0, 10)
-prior on the initial year effect ($B_{t=1}$) (i.e.\ mean $0$ and \emph{standard
-  deviation} $10$, not variance, following the convention in Stan), half-$t$(3,
+prior on the initial year effect ($B_{t=1}$) (i.e.\ mean $0$ and standard
+  deviation $10$, not variance, following the convention in Stan), half-$t$(3,
 0, 3) priors on all scale parameters, and a normal(0, 0.5)[-1, 1] prior on
 $\phi$.
 
 \subsection{MCMC sampling details}
 
 For the models fit to the simulated datasets, we initially sampled from each
-model with 500 iterations across four chains discarding the first half of the
+model with 2000 iterations across four chains discarding the first half of the
 iterations as warm-up. If the samples had not converged after this initial run,
-we re-sampled from the model with 2000 iterations across four chains. For the
-models fit to the mountain pine beetle data, we sampled TODO iterations,
-discarding the first half as warm-up. We measured convergence as a minimum
-effective sample size of $\ge 100$ and a maximum $\hat{R}$ of $\le 1.05$) across
-all parameters.
+we re-sampled from the model with 4000 iterations across four chains and then
+8000 if needed. For the models fit to the mountain pine beetle data, we sampled
+2000 iterations, discarding the first half as warm-up. We measured
+convergence as a minimum effective sample size of $\ge 100$ and a maximum
+$\hat{R}$ of $\le 1.05$) across all parameters.
 
 \subsection{Model comparison}
 
@@ -824,7 +826,7 @@ samples.
 The Bayesian LOO (leave-one-out) estimate of out-of-sample
 predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
 \begin{equation}
-  \mathrm{elpd}_\mathrm{loo} = \sum^{n}_{i=1}{\log ( p(y_i | y_{-1}) },
+  \mathrm{elpd}_\mathrm{loo} = \sum^{n}_{i=1}{\log ( p(y_i | y_{i-1}) },
 \end{equation}
 
 \noindent where
@@ -834,6 +836,7 @@ predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
 \end{equation}
 
 \noindent is the predictive density given the data without the $i$th data point
+and $\theta$ represents all estimated parameters
 \citep{vehtari2017}. For computational efficiency, the LOO R package calculates
 LOOIC using an approach called Pareto smoothed importance sampling
 \citep{vehtari2017}. We calculated $\Delta$LOOIC as
@@ -923,7 +926,7 @@ $\widehat{\mu_{s,t}}$ for the model assuming MVN random fields.
         spate    & No             & No      & No      & MCMC/SPDE                   & Yes        & Gaussian, skewed Tobit                                            & Yes      & Matern family                                     & No                    & No        & \url{https://CRAN.R-project.org/package=spate} \\
         spBayes  & No             & Yes     & Yes     & MCMC                        & No         & Gaussian, binomial, Poisson                                       & No       & Exponential, Gaussian, Matern family, spherical   & No                    & Yes       & \url{https://CRAN.R-project.org/package=spBayes} \\
         INLA     & No             & Yes     & Yes     & Approximate posterior/SPDE  & Yes        & Many                                                              & Yes      & Exponential, Gaussian, Matern family, many others & Yes                   & Yes       & \url{http://www.r-inla.org/}                                     \\
-        VAST     & No             & No      & No      & Maximum likelihood/SPDE     & Yes        & Gaussian, lognormal, gamma, binomial, Poisson, negative binomial  & Yes      & Matern family                                     & Yes                   & No        & \url{https://github.com/James-Thorson/VAST}                      \\
+        VAST     & No             & No      & Yes     & Maximum likelihood/SPDE     & Yes        & Gaussian, lognormal, gamma, binomial, Poisson, negative binomial  & Yes      & Matern family                                     & Yes                   & No        & \url{https://github.com/James-Thorson/VAST}                      \\
         glmmfields & Yes          & Yes     & No      & MCMC/NUTS                   & Yes        & Gaussian, lognormal, gamma, binomial, Poisson, negative binomial  & No       & Exponential, Gaussian, Matern family              & Yes                   & Yes       & \url{https://github.com/seananderson/glmmfields}                  \\
         \bottomrule
       \end{tabular}
