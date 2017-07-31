@@ -60,7 +60,7 @@ set.seed(1)
 holdout = sample(1:nrow(d), size=round(nrow(d)*0.1,0), replace=F)
 mvt_gamma = rrfield(HgResult ~ Length, 
   data = d[-holdout,], 
-  time = "Year", lon = "lon", lat = "lat", station = "StationID", 
+  time = "Year", lon = "lon", lat = "lat",
   nknots = 15, 
   obs_error = "gamma", 
   prior_gp_sigma = half_t(3, 0, 2),
@@ -74,7 +74,7 @@ mvt_gamma = rrfield(HgResult ~ Length,
 
 mvn_gamma = rrfield(HgResult ~ Length, 
   data = d[-holdout,], 
-  time = "Year", lon = "lon", lat = "lat", station = "StationID", 
+  time = "Year", lon = "lon", lat = "lat",
   nknots = 15, 
   obs_error = "gamma", 
   prior_gp_sigma = half_t(3, 0, 2),

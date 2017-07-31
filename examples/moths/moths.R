@@ -13,7 +13,7 @@ filter(d, species == "Xestia xanthographa") %>%
 library(rrfields)
 m <- rrfield(number ~ 1, data = filter(d, species == "Xestia xanthographa"),
   time = "year", lon = "easting", lat = "northing",
-  station = "site", estimate_ar = FALSE, estimate_df = TRUE, fixed_ar_value = 1,
+  estimate_ar = FALSE, estimate_df = TRUE, fixed_ar_value = 1,
   obs_error = "nb2",
   iter = 2000, chains = 4, cores = 4,
   prior_gp_sigma = half_t(1000, 0, 1), prior_intercept = student_t(1000, 0, 15),

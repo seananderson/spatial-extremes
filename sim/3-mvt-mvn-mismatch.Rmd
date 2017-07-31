@@ -56,7 +56,7 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
   
   while((ess <= 100 | rhat > 1.05) & !giveup) {
     m1 <- glmmfields(y ~ 0, data = filter(d, !withhold),
-      time = "time", station = "station_id",
+      time = "time",
       lat = "lat", lon = "lon", nknots = nknots,
       iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE,
       prior_gp_scale = half_t(3, 0, 3),
@@ -65,7 +65,7 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
       control = list(adapt_delta = 0.90))
     
     m_wrong <- glmmfields(y ~ 0, data = filter(d, !withhold),
-      time = "time", station = "station_id",
+      time = "time",
       lat = "lat", lon = "lon", nknots = nknots,
       iter = ITER, chains = CHAINS,
       estimate_df = FALSE, fixed_df_value = 1e9, save_log_lik = TRUE,

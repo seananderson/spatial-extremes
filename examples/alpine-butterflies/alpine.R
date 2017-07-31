@@ -34,7 +34,7 @@ d$lat_scaled <- d$lat * 100
 d$n_trans <- log(d$n + 1)
 library(glmmfields)
 m <- glmmfields(n_trans ~ 1, data = d, time = "year", lon = "lon_scaled", lat = "lat_scaled",
-  nknots = 12, station = "meadow",
+  nknots = 12,
   estimate_df = TRUE,
   chains = 4, iter = 1000,
     prior_gp_sigma = half_t(3, 0, 3),
@@ -79,7 +79,7 @@ d$n_int <- round(d$n)
 
 library(glmmfields)
 m <- glmmfields(n_int ~ 1, data = d, time = "year", lon = "lon_scaled", lat = "lat_scaled",
-  nknots = 12, obs_error = "nb2", station = "meadow",
+  nknots = 12, obs_error = "nb2",
   estimate_df = TRUE, estimate_ar = FALSE, fixed_ar_value = 0, algorithm = "sampling",
   chains = 2, iter = 800,
   prior_intercept = student_t(3, 0, 6), prior_gp_sigma = half_t(1000, 0, 1),

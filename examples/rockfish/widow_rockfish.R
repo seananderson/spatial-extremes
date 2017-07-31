@@ -44,7 +44,7 @@ holdout = sample(1:nrow(catch), size=round(nrow(catch)*0.1,0))
 catch$cpue_kg_per_km2 = catch$cpue_kg_per_ha_der*100
 
 mvt_gamma = rrfield(I(cpue_kg_per_ha_der*10000) ~ -1 + as.factor(year), data = catch[,],
-  time = "year", lon = "longitude_dd", lat = "latitude_dd", station = "ID",
+  time = "year", lon = "longitude_dd", lat = "latitude_dd",
   nknots = 25,
   obs_error = "gamma",
   prior_gp_sigma = half_t(7, 0, 2),

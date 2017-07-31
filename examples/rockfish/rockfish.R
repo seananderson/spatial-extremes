@@ -34,7 +34,7 @@ ggplot(catch, aes(longitude_dd, latitude_dd, color = log(cpue_kg_per_ha_der))) +
 #temperature_at_gear_c_der + depth_m
 
 mvt_gamma = rrfield(log(cpue_kg_per_ha_der) ~ 1, data = catch[-holdout,],
-  time = "year", lon = "longitude_dd", lat = "latitude_dd", station = "ID",
+  time = "year", lon = "longitude_dd", lat = "latitude_dd",
   nknots = 40,
   obs_error = "normal",
   prior_gp_sigma = half_t(100, 0, 3),
@@ -48,7 +48,7 @@ mvt_gamma = rrfield(log(cpue_kg_per_ha_der) ~ 1, data = catch[-holdout,],
 
 mvn_gamma = rrfield(HgResult ~ Length,
   data = d[-holdout,],
-  time = "Year", lon = "lon", lat = "lat", station = "StationID",
+  time = "Year", lon = "lon", lat = "lat",
   nknots = 15,
   obs_error = "gamma",
   prior_gp_sigma = half_t(100, 0, 1),

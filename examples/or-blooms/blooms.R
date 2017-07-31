@@ -75,7 +75,7 @@ dsub = dsub[which(is.na(dsub$prc_chla_trans)==FALSE),]
 nKnots = 20L
 
 dsub <- mutate(dsub, lat_scaled = lat / 100000, lon_scaled = lon / 100000,
-  stationID = as.integer(as.factor(paste(lon_scaled, lat_scaled))), timeID = as.integer(as.factor(month)))
+  timeID = as.integer(as.factor(month)))
 
 dsub %>%
   ggplot() + geom_point(data=dsub, aes(lon, lat, color = prc_chla_trans)) +
@@ -90,7 +90,7 @@ options(mc.cores = parallel::detectCores())
 # mvt_norm <- rrfield(prc_chla_trans ~ 0, data = filter(dsub, timeID > 4),
 #   time = "timeID", lon="lon_scaled", lat="lat_scaled",
 #   nknots = nKnots, estimate_df = TRUE,
-#   algorithm = "sampling", station = "stationID",
+#   algorithm = "sampling",
 #   chains = 3L, iter = 1000L)
 
 mvt_norm <- rrfield(prc_chla_trans ~ 0, data = dsub,
@@ -136,11 +136,10 @@ distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
 
 Y = as.numeric(dsub$prc_chla_trans)
 yearID = as.numeric(as.factor(dsub$month))
-stationID = seq(1,nrow(dsub))
 
 # create list for STAN
 spatglm_data = list("nKnots"=nKnots, "nLocs"=nLocs, "nT" = length(unique(yearID)),
-  "N" = length(Y), "stationID" = stationID, "yearID" = yearID, "y" = Y,
+  "N" = length(Y), "yearID" = yearID, "y" = Y,
   "distKnotsSq" = distKnotsSq, "distKnots21Sq" = distKnots21Sq, "x" = rep(0, length(Y)))
 spatglm_pars = c("scaledf","yearEffects", "sigma", "gp_sigmaSq", "gp_scale",
   "year_sigma","ar","spatialEffectsKnots")

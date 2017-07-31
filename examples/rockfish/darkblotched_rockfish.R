@@ -38,7 +38,7 @@ ggplot(catch, aes(longitude_dd, latitude_dd, color = log(cpue_kg_per_ha_der))) +
 
 catch$depth = scale(log(catch$depth_m), scale=FALSE)
 mvt_gamma = rrfield(cpue_kg_per_ha_der ~ -1 + as.factor(year), data = catch[-holdout,],
-  time = "year", lon = "longitude_dd", lat = "latitude_dd", station = "ID",
+  time = "year", lon = "longitude_dd", lat = "latitude_dd",
   nknots = 40,
   obs_error = "gamma",
   prior_gp_sigma = half_t(100, 0, 2),

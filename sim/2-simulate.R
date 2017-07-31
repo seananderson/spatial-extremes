@@ -40,7 +40,6 @@ sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
   fit_model <- function(iter) {
     glmmfields(y ~ 0, data = s$dat, time = "time", lon = "lon", lat = "lat",
       nknots = n_knots,
-      station = "station_id",
       chains = 4L, iter = iter, family = Gamma(link = "log"),
       prior_gp_scale = half_t(3, 0, 3),
       prior_gp_sigma = half_t(3, 0, 3),

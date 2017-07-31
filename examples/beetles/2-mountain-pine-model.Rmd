@@ -82,7 +82,7 @@ ggplot(d, aes(x, y, fill = cover)) + geom_tile() +
   scale_fill_viridis(option = "D") +
   coord_fixed()
 
-d <- mutate(d, station = paste(x, y), row_number = seq_len(nrow(d)))
+d <- mutate(d, row_number = seq_len(nrow(d)))
 set.seed(1)
 d <- group_by(d, year) %>%
   mutate(hold_out = row_number %in%
@@ -107,7 +107,6 @@ if (!file.exists(model_file)) {
   mvt <- glmmfields(cover ~ 1,
     data = dplyr::filter(d, !hold_out),
     time = "year", lon = "x", lat = "y",
-    station = "station",
     nknots = 20,
     family = lognormal(link = "log"),
     prior_gp_sigma = half_t(3, 0, 3),
@@ -141,7 +140,6 @@ if (!file.exists(model_file)) {
   mvn <- glmmfields(cover ~ 1,
     data = dplyr::filter(d, !hold_out),
     time = "year", lon = "x", lat = "y",
-    station = "station",
     nknots = 20,
     family = lognormal(link = "log"),
     prior_gp_sigma = half_t(3, 0, 3),

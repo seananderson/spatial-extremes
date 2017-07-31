@@ -44,7 +44,7 @@ ggplot(catch, aes(longitude_dd, latitude_dd, color = depth_scaled)) +
   geom_point() + facet_wrap(~year) + viridis::scale_color_viridis()
 
 mvt_gamma = rrfield(log(cpue_kg_per_ha_der*10000) ~ as.factor(year) + poly(depth_scaled, 2), data = catch,
-  time = "year", lon = "longitude_dd", lat = "latitude_dd", station = "ID",
+  time = "year", lon = "longitude_dd", lat = "latitude_dd",
   nknots = 20, fixed_ar_value = 1,
   obs_error = "normal",
   prior_gp_sigma = half_t(7, 0, 3),

@@ -48,7 +48,7 @@ We set the degrees of freedom parameter to 2. This represents data with some ver
 Let's fit a model where we estimate the degrees of freedom parameter. 
 
 ```{r, message=FALSE, results=FALSE, message=FALSE}
-m1 <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
+m1 <- rrfield(y ~ 0, data = s$dat, time = "time",
   lat = "lat", lon = "lon", nknots = nknots, fixed_df_value = 1,
   iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE)
 print(m1)
@@ -69,7 +69,7 @@ The coverage of our prediction intervals is approximately correct.
 Now let's fit a model where we force the random field to be multivariate normal by fixing the degrees of freedom parameter at a large value. 
 
 ```{r, message=FALSE, results=FALSE, message=FALSE}
-m_wrong <- rrfield(y ~ 0, data = s$dat, time = "time", station = "station_id",
+m_wrong <- rrfield(y ~ 0, data = s$dat, time = "time",
   lat = "lat", lon = "lon", nknots = nknots,
   iter = ITER, chains = CHAINS,
   estimate_df = FALSE, fixed_df_value = 2000, save_log_lik = TRUE)

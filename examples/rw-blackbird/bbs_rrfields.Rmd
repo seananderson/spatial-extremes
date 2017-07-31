@@ -37,7 +37,7 @@ d$StationID = as.integer(as.factor(d$Route))
 
 mvt_gamma = rrfield(sum ~ as.factor(year) - 1, 
   data = d, 
-  time = "year", lon = "Longitude", lat = "Latitude", station = "StationID", 
+  time = "year", lon = "Longitude", lat = "Latitude",
   nknots = 30,
   obs_error = "gamma", 
   prior_gp_sigma = half_t(3, 0, 1), 
@@ -53,7 +53,7 @@ mvt_gamma
 
 mvt_gamma2 = rrfield(sum ~ as.factor(year) - 1, 
   data = d, 
-  time = "year", lon = "Longitude", lat = "Latitude", station = "StationID", 
+  time = "year", lon = "Longitude", lat = "Latitude",
   nknots = 30, 
   obs_error = "gamma", 
   prior_gp_sigma = half_t(100, 0, 0.1),  # <- this line changed
@@ -70,7 +70,7 @@ mvt_gamma2
 
 
 mvn_gamma = rrfield(sum ~ as.factor(year), data=d, time = "year",
-  lon="Longitude", lat="Latitude", station = "StationID", nknots = 30, obs_error = "gamma", covariance="squared-exponential",prior_gp_sigma = half_t(100, 0, 0.1), prior_gp_scale = half_t(100, 0, 0.05), prior_intercept = student_t(100, 3.5, 0.3), prior_beta = student_t(100, 0, 1), prior_sigma = half_t(10, 0, 0.5), 
+  lon="Longitude", lat="Latitude", nknots = 30, obs_error = "gamma", covariance="squared-exponential",prior_gp_sigma = half_t(100, 0, 0.1), prior_gp_scale = half_t(100, 0, 0.05), prior_intercept = student_t(100, 3.5, 0.3), prior_beta = student_t(100, 0, 1), prior_sigma = half_t(10, 0, 0.5), 
   estimate_df = FALSE, estimate_ar = FALSE, fixed_ar_value = 1, algorithm="sampling", chains = 5L, warmup = 500, iter=1000, thin=1, control = list(adapt_delta = 0.99))
 
 

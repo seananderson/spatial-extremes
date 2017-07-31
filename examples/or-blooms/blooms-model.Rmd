@@ -127,7 +127,7 @@ Let's rescale the coordinates and plot the data.
 
 ```{r}
 dsub <- mutate(dsub, lat_scaled = lat / 100000, lon_scaled = lon / 100000,
-  stationID = as.integer(as.factor(paste(lon_scaled, lat_scaled))), timeID = as.integer(as.factor(month)))
+  timeID = as.integer(as.factor(month)))
 
 dsub %>%
   ggplot() + geom_point(data=dsub, aes(lon_scaled, lat_scaled, color = prc_chla_trans)) +
@@ -162,7 +162,6 @@ options(mc.cores = parallel::detectCores())
     lon = "lon_scaled",
     lat = "lat_scaled",
     nknots = 22L,
-    station = "stationID",
     algorithm = "sampling",
     chains = 4L,
     iter = 400L,
@@ -189,7 +188,6 @@ print(mvt)
     lat = "lat_scaled",
     nknots = 22L,
     estimate_df = FALSE,
-    station = "stationID",
     fixed_df_value = 1e6,
     algorithm = "sampling",
     chains = 4L,
