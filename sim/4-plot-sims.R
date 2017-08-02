@@ -165,12 +165,15 @@ for(i in 1:length(op)) {
   par(xpd = FALSE)
 }
 
-text(0, 2.5, label = "x = true value", cex = cex_text, col = "grey50", pos = 4)
-text(1.5, 1+gap+0.1, label = expression(MVN~does~not), cex = cex_text, col = mvn_bar_colour, pos = 4)
-text(1.5, 1+gap+0.4, label = expression(estimate~nu), cex = cex_text, col = mvn_bar_colour, pos = 4)
-text(1.5, 2.8, label = expression(MVN), cex = cex_text, col = mvn_bar_colour, pos = 4)
-text(1.5, 2.8+0.3, label = expression(overestimates), cex = cex_text, col = mvn_bar_colour, pos = 4)
-text(1.5, 2.8+0.3+0.3, label = expression(sigma), cex = cex_text, col = mvn_bar_colour, pos = 4)
+# text(0, 2.5, label = "x = true value", cex = cex_text, col = "grey50", pos = 4)
+# text(1.5, 1+gap+0.1, label = expression(MVN~does~not), cex = cex_text, col = mvn_bar_colour, pos = 4)
+# text(1.5, 1+gap+0.4, label = expression(estimate~nu), cex = cex_text, col = mvn_bar_colour, pos = 4)
+# text(1.5, 2.8, label = expression(MVN), cex = cex_text, col = mvn_bar_colour, pos = 4)
+# text(1.5, 2.8+0.3, label = expression(overestimates), cex = cex_text, col = mvn_bar_colour, pos = 4)
+# text(1.5, 2.8+0.3+0.3, label = expression(sigma), cex = cex_text, col = mvn_bar_colour, pos = 4)
+
+text(1.7, 2.8+0.7, label = "MVN", cex = cex_text, col = mvn_bar_colour, pos = 4)
+text(1.7, 2.8+0.2, label = "MVT", cex = cex_text, col = bar_colour_dark, pos = 4)
 
 # symbols(2.2, 2+gap, circles = 0.4, add = TRUE, inches = FALSE)
 
