@@ -118,8 +118,8 @@ if (!file.exists(model_file)) {
     estimate_ar = TRUE,
     estimate_df = TRUE,
     year_re = TRUE,
-    chains = 6, iter = 2000, thin = 2,
-    control = list(adapt_delta = 0.99),
+    chains = 4, iter = 3000, thin = 1,
+    control = list(adapt_delta = 0.98, max_treedepth = 25),
     save_log_lik = TRUE)
   save(mvt, file = model_file)
 } else {
@@ -151,9 +151,9 @@ if (!file.exists(model_file)) {
     estimate_ar = TRUE,
     estimate_df = FALSE,
     year_re = TRUE,
-    fixed_df_value = 2000,
-    chains = 6, iter = 2000, thin = 2,
-    control = list(adapt_delta = 0.99),
+    fixed_df_value = 1000,
+    chains = 4, iter = 3000, thin = 1,
+    control = list(adapt_delta = 0.98, max_treedepth = 25),
     save_log_lik = TRUE)
   save(mvn, file = model_file)
 } else {
