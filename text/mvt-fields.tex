@@ -80,6 +80,11 @@
 \titlespacing*{\subsection}
 {0pt}{1.5ex plus 1ex minus .2ex}{1.0ex plus .2ex}
 
+% Suppress section numbers 
+\makeatletter
+\renewcommand{\@seccntformat}[1]{}
+\makeatother
+
 % \setlength{\abovedisplayskip}{-30pt}
 % \setlength{\belowdisplayskip}{-30pt}
 % \setlength{\abovedisplayshortskip}{-30pt}
@@ -93,8 +98,8 @@
   % of
   spatiotemporal processes with extremes}
 \author{
-Sean C. Anderson$^{1\ast}$ and
-Eric J. Ward$^2$
+Sean C. Anderson$^{1,2\ast}$ and
+Eric J. Ward$^3$
 }
 \date{}
 
@@ -105,7 +110,13 @@ Eric J. Ward$^2$
 $^1$School of Aquatic and Fishery Sciences, Box 355020, University of
 Washington, Seattle, WA 98195, USA
 
-$^2$Conservation Biology Division, Northwest Fisheries Science Center, National
+$^2$Aquatic Resources, Research and Assessment Division,
+Fisheries and Oceans Canada,
+Pacific Biological Station,
+3190 Hammond Bay Road,
+Nanaimo, BC, V6T 6N7, Canada
+
+$^3$Conservation Biology Division, Northwest Fisheries Science Center, National
 Marine Fisheries Service, National Oceanographic and Atmospheric Administration,
 2725 Montlake Blvd E, Seattle, WA 98112, USA
 
@@ -261,20 +272,20 @@ correspond to smooth spatial patterns and small values correspondence to wiggly
 spatial patterns.
 % --- the degree of wiggliness implied by a value of $\eta$
 % depends on the scale of the $\delta_{ij}$.
-The elements of the covariance matrix $\bm{\Sigma}$ at the $m$ knot locations are
-then defined as $\bm{\Sigma}_{ij}^* = \sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta}
-\right)$ with the parameter $\sigma$ scaling the amplitude of the spatial
+The elements of the covariance matrix $\mathbf{\Sigma}$ at the $m$ knot locations are
+then defined as $\mathbf{\Sigma}_{ij}^* = \sigma^2 \left( \frac{-\delta_{ij}^2}{2 \eta}
+\right)$ with the spatial variance parameter $\sigma^2$ scaling the amplitude of the spatial
 deviations and the $*$ denoting a symbol referring to the knot locations as opposed to
 the sample locations.
 Following \citet{latimer2009}, we can calculate the covariance matrix
-$\bm{\Sigma}_{\left(\bm{W}, \bm{W^*} \right)}$
-between the spatial random effects at the sample locations $\bm{W}$
-and the realizations of the spatial process at the knot locations $\bm{W^*}$.
+$\mathbf{\Sigma}_{\left(\mathbf{W}, \mathbf{W^*} \right)}$
+between the spatial random effects at the sample locations $\mathbf{W}$
+and the realizations of the spatial process at the knot locations $\mathbf{W^*}$.
 Given
-$\bm{\Sigma^*}$, we can generate $\bm{W^*}$ by drawing
-from a multivariate distribution (MVN or MVT) with covariance $\bm{\Sigma^*}$ and
-projecting these to the data locations using $\bm{\Sigma}_{\left( \bm{W},\bm{W^{*}} \right)}$:
-$\bm{W}=\bm{\Sigma}_{\left(\bm{W},\bm{W^*} \right)}^{'} \bm{\Sigma}^{*-1}\bm{W^*}$.
+$\mathbf{\Sigma^*}$, we can generate $\mathbf{W^*}$ by drawing
+from a multivariate distribution (MVN or MVT) with covariance $\mathbf{\Sigma^*}$ and
+projecting these to the data locations using $\mathbf{\Sigma}_{\left( \mathbf{W},\mathbf{W^{*}} \right)}$:
+$\mathbf{W}=\mathbf{\Sigma}_{\left(\mathbf{W},\mathbf{W^*} \right)}^{'} \mathbf{\Sigma}^{*-1}\mathbf{W^*}$.
 
 
 % Here, we summarize the important features of these models and highlight how
@@ -283,11 +294,11 @@ $\bm{W}=\bm{\Sigma}_{\left(\bm{W},\bm{W^*} \right)}^{'} \bm{\Sigma}^{*-1}\bm{W^*
 \subsection{MVT random fields}
 
 Our model is essentially a GLMM with a spatiotemporal element described by a MVN
-or MVT random field. The mean, $\mu \equiv \mathbb{E}(y)$, at a set of locations
-in space $s$ and time $t$ is $g(\mu_{s,t}) = \bm{X}_{s,t} \bm{\beta} +
-\gamma_{s,t},$ where $g$ is a link function, $\bm{X}_{s,t}$ represents the
-predictors, and $\bm{\beta}$ represents estimated coefficients. The symbol
-$\gamma$ represents the spatiotemporal process, described below. The variance of
+or MVT random field. We define the mean $\mu_{s,t} \equiv \mathbb{E}(y_{s,t})$ at a set of locations
+in space $s$ and time $t$ as $g(\mu_{s,t}) = \mathbf{X}_{s,t} \bm{\beta} +
+\gamma_{s,t},$ where $g$ is a link function, $\mathbf{X}_{s,t}$ represents a matrix of
+predictors, and $\bm{\beta}$ represents a vector of estimated coefficients. The symbol
+$\gamma_{s,t}$ represents the spatiotemporal process, described below. The variance of
 the observation component of our model is a function of the mean via a
 probability distribution such as the Gaussian, Poisson, or gamma.
 
@@ -298,7 +309,8 @@ requires estimating the degrees of freedom parameter $\nu$. When $\nu$ is small
 purposes, the MVT and MVN are indistinguishable for moderate values of $\nu$
 (say $\nu > 20$) similarly to the univariate $t$-distribution compared with the
 normal distribution \citep[e.g.][]{anderson2017}. If $W_{s,t}$
-defines a random field, then the spatiotemporal element, $\gamma_{s,t}$, can be
+defines the value of a random field at spatial location $s$ and time $t$,
+then the spatiotemporal element $\gamma_{s,t}$ can be
 made temporally constant (one field shared across time, $\gamma_{s,t} = W_{s}$),
 independent at each time step ($\gamma_{s,t} = W_{s,t}$), or autoregressive so
 that the spatial pattern at time $t$ is dependent on the spatial pattern at time
@@ -323,9 +335,9 @@ estimates and derived quantities (e.g.\ predictions, probabilities of exceeding
 extremes). Second, the Bayesian framework lets us place weakly informative
 priors on parameters to impose our existing knowledge of reasonable values and
 to aid computation. In the case of the degrees of freedom parameter, $\nu$, we
-bound the lower value to $2$ for computational stability and use a gamma(2, 0.1)
-prior (i.e., shape = 2, rate = 0.1), which has a mean of $20$ and a median of
-$\sim 17$ \citep{juarez2010}.
+bound the lower value to $2$ for computational stability and use a gamma(shape = 2, rate = 0.1)
+prior, which has a mean of $20$ and a median of
+about $17$ \citep{juarez2010}.
 
 \subsection{Testing the recovery of spatial extremeness}
 \label{sec:testing-recovery}
@@ -344,10 +356,10 @@ $y_{s,t}\sim
   \mathrm{rate} = \frac {a}{\mathbb{E}(y_{s,t})} \right)$, where the shape
 parameter $a$ can be re-parameterized into the coefficient of variation (CV),
 $a=\frac{1}{\mathrm{CV}^2}$. We tested CVs of 0.1, 0.6, and 1.2. The underlying
-linear predictor $\bm{X_{s,t}} \bm{\beta}$ was set to zero to focus on the
+linear predictor $\mathbf{X_{s,t}} \bm{\beta}$ was set to zero to focus on the
 spatial process. Therefore, the simulation of data $y_{s,t}$ simplifies to
 % \begin{align}
-$\log(\bm{\mu_{s,t}}) \sim \mathrm{MVT}\left(\nu, \bm{0}, \bm{\Sigma_{W(s,t)}}\right),$
+$\log(\mu_{s,t}) \sim \mathrm{MVT}\left(\nu, 0, \mathbf{\Sigma}_{W(s,t)}\right),$
   $y_{s,t} \sim \mathrm{gamma} \left( \frac{1}{\mathrm{CV}_\mathrm{obs}^2},
     \frac{1}{\mathrm{CV}_\mathrm{obs}^2 \cdot \mu_{s,t} } \right)$.
 % \end{align}
@@ -355,7 +367,7 @@ $\log(\bm{\mu_{s,t}}) \sim \mathrm{MVT}\left(\nu, \bm{0}, \bm{\Sigma_{W(s,t)}}\r
 We attempted to recover $\nu$ by fitting a model that matched the process
 generating the simulated data. We provide a full description of the priors
 and joint probability distributions along with details of the MCMC
-sampling for this and all other models in the Supporting Information.
+sampling for this and all other models in the Appendix S1.
 % TODO: make sure that all priors are listed in the supplement generating the
 % simulated data. We placed weakly informative priors on $\sigma$, $\eta$, and
 % CV of half-$t$(3, 0, 3) (i.e. Student-$t$(3, 0, 3)[0, $\infty$]).
@@ -367,7 +379,7 @@ To evaluate the consequence of assuming spatial processes are not present when
 they actually are, we generated simulated data sets from a model with spatial
 extremes (MVT) then compared the fit of models with and without extremes (MVT
 vs.\ MVN). Specifically, we simulated data from the model:
-$\mu_{s,t} \sim \mathrm{MVT}\left(\nu, 0, \bm{\Sigma}_{W(s,t)}\right)$,
+$\mu_{s,t} \sim \mathrm{MVT}\left(\nu, 0, \mathbf{\Sigma}_{W(s,t)}\right)$,
 $y_{s,t} \sim \mathrm{normal} \left(\mu_{s,t},
   \sigma_{\mathrm{obs}} \right)$,
 with $\sigma = 0.3$ (the scale of the spatial deviations),
@@ -385,7 +397,7 @@ $\log\left(\mu^{\mathrm{withheld}}_{s,t}\right)$, the width of the 95\% credible
 intervals (CIs) on $\hat{\mu}^{\mathrm{withheld}}_{s,t}$, and the difference in
 the leave-one-out information criteria \citep[LOOIC;][]{vehtari2017}, a Bayesian
 information criteria that approximates leave-one-out predictive performance
-(Supporting Information).
+(Appendix S1).
 
 \subsection{Mountain pine beetles in the US Pacific Northwest}
 \label{sec:beetles-methods}
@@ -407,7 +419,7 @@ defined by $\beta_t$, and the spatiotemporal process $\gamma_{s,t}$, with the
 spatial process itself modelled as autoregressive:
 \begin{align} \log(\mu_{s,t}) &= \beta_t + \gamma_{s,t}, \label{eq:beetle-mu} \\
   \beta_t &\sim \mathrm{normal}\left( \beta_{t-1}, \sigma_{\beta} \right), \\
-  \gamma_{s^{*},t} &\sim \mathrm{MVT}\left(\nu, \phi \gamma_{s^{*},t-1}, \bm{\Sigma}_{W(s^{*},t)}\right).
+  \gamma_{s^{*},t} &\sim \mathrm{MVT}\left(\nu, \phi \gamma_{s^{*},t-1}, \mathbf{\Sigma}_{W(s^{*},t)}\right).
 \end{align}
 
 \noindent We model the data, $y_{s,t}$, as generated by a lognormal
@@ -423,7 +435,7 @@ per year from the model fitting, for a total of 400 withheld data points, or
 approximately 10\% of the data. We then compared the log predictive density for
 the held-out data and the width of the 95\% CIs
 % from the MVN and MVT models, and the leave-one-out-information-criterion
-(details, including priors in Supporting Information).
+(details, including priors in Appendix S1).
 
 \section{Results}
 
@@ -657,6 +669,10 @@ The R package \textbf{glmmfields} is available at
       (d) Parameter posteriors for an
       example model fit of a mismatched MVN model (orange)
       and a correct MVT model (blue) (black crosses indicate true values).
+      The parameter $\nu$ represents the MVT degrees of freedom, 
+      $\sigma$ represents the spatial standard deviation,
+      $\eta$ represents the spatial decay parameter,
+      and $\sigma_\mathrm{obs}$ represents the observation error standard deviation. 
       (e) Percent greater root mean squared error (RMSE)
       and (f) $\Delta$ LOOIC (leave-one-out information criteria)
       for the mismatched MVN model compared to the correct MVT model.
@@ -705,17 +721,19 @@ The R package \textbf{glmmfields} is available at
 
 \clearpage
 
-\section{Supporting Information}
+\setcounter{section}{0}
+\section{Appendix S1}
 
 \subsection{Posterior and joint distributions}
 
 In this section, for clarity, we use the notation $[a|b]$ to describe the
-conditional distribution of $a$ given $b$. The joint posterior distribution for
+conditional distribution of $a$ given $b$. We use bolds symbol to refer to vectors or matrices. 
+The joint posterior distribution for
 the model in the section \textit{\nameref{sec:testing-recovery}} can be written
 as:
 \begin{equation}
   [
-  \bm{\gamma},
+  \bm{\gamma}^*,
   \eta,
   \nu,
   \mathrm{CV}_\mathrm{obs},
@@ -723,8 +741,8 @@ as:
   |
   \bm{y}]
   \propto
-  [y_{s,t} | \gamma_{s^*,t}, \mathrm{CV}_\mathrm{obs}]
-  [\gamma_{s^*,t} | \eta, \nu, \sigma^2]
+  [\bm{y} | \bm{\gamma}^*, \mathrm{CV}_\mathrm{obs}]
+  [\bm{\gamma}^* | \eta, \nu, \sigma^2]
   [\eta]
   [\nu]
   [\mathrm{CV}_\mathrm{obs}]
@@ -732,10 +750,10 @@ as:
 \end{equation}
 
 \noindent where the parameters are defined in the main Methods section.
-Importantly, we use parameters with an asterisk ($\gamma_{s^{*},t}$) to describe
+Importantly, we use parameters with an asterisk (e.g.\ $\bm{\gamma}^*$) to describe
 the random effects at the locations of the unobserved knots, and parameters
-without the asterisk ($\gamma_{s,t}$) to describe the projected random effects
-at the locations of observed data (projection equation in main text). The joint
+without the asterisk to describe the projected random effects
+at the locations of sampled data (projection equation in main text). The joint
 probability is calculated over points in space $s$, and time $t$. Missing
 observations or replicate observations for given points in space and time may be
 present.
@@ -744,7 +762,7 @@ The joint posterior distribution for the model in the section
 \textit{\nameref{sec:diagnosing}} can be written as:
 \begin{equation}
   [
-  \bm{\gamma},
+  \bm{\gamma}^*,
   \eta,
   \nu,
   \sigma^2_{\mathrm{obs}},
@@ -752,8 +770,8 @@ The joint posterior distribution for the model in the section
   |
   \bm{y}]
   \propto
-  [y_{s,t} | \gamma_{s^*,t}, \sigma^2_{\mathrm{obs}}]
-  [\gamma_{s^*,t} | \eta, \nu, \sigma^2]
+  [\bm{y} | \bm{\gamma}^*, \sigma^2_{\mathrm{obs}}]
+  [\bm{\gamma}^* | \eta, \nu, \sigma^2]
   [\eta]
   [\nu]
   [\sigma^2_{\mathrm{obs}}]
@@ -766,7 +784,7 @@ for the model of mountain pine beetle outbreaks can be written as:
 \begin{multline}
   [
   \bm{\beta},
-  \bm{\gamma},
+  \bm{\gamma}^*,
   \phi,
   \eta,
   \nu,
@@ -776,14 +794,14 @@ for the model of mountain pine beetle outbreaks can be written as:
   |
   \bm{y}]
   \propto \\
-  [y_{s,t} | \beta_{t}, \gamma_{s^*,t}, \sigma^2_{\mathrm{obs}}] \\
+  [\bm{y} | \beta_{t}, \bm{\gamma}^*, \sigma^2_{\mathrm{obs}}] \\
   \times
   [\beta_t | \beta_{t-1}, \sigma^2_{\beta}] \\
   \times
-  [\gamma_{s^*,t} | \gamma_{s^*,t-1}, \phi, \eta, \nu, \sigma^2] \\
+  [\bm{\gamma}^*_{t} | \bm{\gamma}^*_{t-1}, \phi, \eta, \nu, \sigma^2] \\
   \times
   [\beta_{t=1}]
-  [\gamma_{s^*,t=1}]
+  [\bm{\gamma}^*_{t=1}]
   [\phi]
   [\eta]
   [\nu]
