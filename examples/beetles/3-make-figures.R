@@ -178,8 +178,8 @@ for(j in seq_along(h$breaks)) {
   rect(h$breaks[j], 0, h$breaks[j+1], h$density[j], border = "white",
     col = bar_colour, lwd = 1)
 }
-text(-18, 0.09, "MVN", col = "#f1691390", pos = 4)
-text(0, 0.09, "MVT", col = bar_colour_dark, pos = 4)
+text(25, 0.13, "MVN", col = "#f1691390", pos = 4)
+text(32, 0.14, "MVT", col = bar_colour_dark, pos = 4)
 axis(1, col = axis_colour, col.axis = axis_colour)
 axis(2, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
@@ -307,6 +307,7 @@ dp$cover <- NA
 
 # if (!exists("pred")) {
 load("examples/beetles/mountain-pine-beetle-pnw-raster-mvt-lognormal-500x500.rda")
+# load("examples/beetles/mountain-pine-beetle-pnw-raster-mvn-lognormal-500x500.rda")
   pred <- predict(mvt, interval = "confidence", conf_level = 0.95,
     newdata = dp, type = "link")
   pred <- data.frame(pred, dp)
@@ -324,8 +325,8 @@ g <- ggplot(dplyr::filter(pred), # year %in% c(2010)),
   geom_tile() +
   facet_wrap(~year) +
   theme_sleek() +
-  scale_fill_viridis(option = "B", trans = "sqrt", breaks = seq(0.1, 1.3, 0.3)) +
-  scale_color_viridis(option = "B", trans = "sqrt", breaks = seq(0.1, 1.3, 0.3)) +
+  scale_fill_viridis(option = "B", trans = "sqrt") +
+  scale_color_viridis(option = "B", trans = "sqrt") +
   coord_fixed() +
   coord_cartesian(ylim=range(pred$y) + c(-0.1, 0.1),
     xlim = range(pred$x) + c(-0.1, 0.1)) +
