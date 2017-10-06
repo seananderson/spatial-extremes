@@ -110,7 +110,7 @@ if (!file.exists(model_file)) {
     nknots = 20,
     family = lognormal(link = "log"),
     prior_gp_sigma = half_t(3, 0, 1),
-    prior_gp_scale = half_t(3, 0, 2),
+    prior_gp_theta = half_t(3, 0, 2),
     prior_intercept = student_t(1000, 0, 10),
     prior_rw_sigma = half_t(3, 0, 2),
     prior_sigma = half_t(3, 0, 3),
@@ -142,7 +142,7 @@ if (!file.exists(model_file)) {
     nknots = 20,
     family = lognormal(link = "log"),
     prior_gp_sigma = half_t(3, 0, 1),
-    prior_gp_scale = half_t(3, 0, 2),
+    prior_gp_theta = half_t(3, 0, 2),
     prior_intercept = student_t(1000, 0, 10),
     prior_rw_sigma = half_t(3, 0, 2),
     prior_sigma = half_t(3, 0, 3),
@@ -373,7 +373,7 @@ median(cis$conf_width_ratio)
 How are the model parameters themselves different?
 
 ```{r}
-pars <- c("gp_sigma", "gp_scale", "sigma[1]")
+pars <- c("gp_sigma", "gp_theta", "sigma[1]")
 
 bt <- broom::tidyMCMC(mvt$model, estimate.method = "median", conf.int = TRUE)
 bn <- broom::tidyMCMC(mvn$model, estimate.method = "median", conf.int = TRUE)
