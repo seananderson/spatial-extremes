@@ -15,7 +15,7 @@
 \modulolinenumbers[2]
 \usepackage{booktabs}
 \usepackage{bm}
-\textheight 22.0cm
+\textheight 22.2cm
 % \usepackage{mathptmx}
 \usepackage{nameref}
 
@@ -110,8 +110,7 @@ Eric J. Ward$^3$
 $^1$School of Aquatic and Fishery Sciences, Box 355020, University of
 Washington, Seattle, WA 98195, USA
 
-$^2$
-Pacific Biological Station,
+$^2$Pacific Biological Station,
 Fisheries and Oceans Canada,
 3190 Hammond Bay Road,
 Nanaimo, BC, V6T 6N7, Canada
@@ -130,7 +129,7 @@ Nanaimo, BC, V6T 6N7, Canada
 \hyphenpenalty=500
 
 % \begin{spacing}{1.4}
-\begin{spacing}{1.9}
+\begin{spacing}{1.8}
 % \begin{flushleft}
 \linenumbers
 
@@ -154,7 +153,7 @@ Here we introduce a model that allows for extremes
 to occur simultaneously in time and space.
 Our model is a Bayesian predictive-process GLMM
 (generalized linear mixed-effects model)
-that uses a multivariate-t distribution to describe spatial random effects.
+that uses a multivariate-$t$ distribution to describe spatial random effects.
 The approach is easily implemented with
 our flexible R package \textbf{glmmfields}.
 First, using simulated data,
@@ -363,7 +362,6 @@ $\log(\mu_{s,t}) \sim \mathrm{MVT}\left(\nu, 0, \mathbf{\Sigma}_{W(s,t)}\right),
 $y_{s,t} \sim \mathrm{gamma} \left( \frac{1}{\mathrm{CV}_\mathrm{obs}^2},
     \frac{1}{\mathrm{CV}_\mathrm{obs}^2 \cdot \mu_{s,t} } \right)$.
 % \end{align}
-
 We attempted to recover $\nu$ by fitting a model that matched the process
 generating the simulated data. We provide a full description of the priors
 and joint probability distributions along with details of the MCMC
@@ -832,13 +830,21 @@ $\phi$.
 \subsection{MCMC sampling details}
 
 For the models fit to the simulated datasets, we initially sampled from each
-model with 2000 iterations across four chains discarding the first half of the
+model with 500 iterations across four chains discarding the first half of the
 iterations as warm-up. If the samples had not converged after this initial run,
-we re-sampled from the model with 4000 iterations across four chains and then
-8000 if needed. For the models fit to the mountain pine beetle data, we sampled
+we re-sampled from the model with 2000 iterations across four chains. 
+For the models fit to the mountain pine beetle data, we sampled
 2000 iterations, discarding the first half as warm-up. We measured
 convergence as a minimum effective sample size of $\ge 100$ and a maximum
 $\hat{R}$ of $\le 1.05$) across all parameters.
+
+\subsection{Simulation details}
+
+In the section \emph{\nameref{sec:testing-recovery}}, we ran 100 simulations for
+each parameter configuration. 
+In the section \emph{\nameref{sec:diagnosing}}, we ran 150 simulations.
+We ran more simulations in the second case to smooth the model
+comparison histograms in Fig.~\ref{fig:recapture}e--f.
 
 \subsection{Model comparison}
 
