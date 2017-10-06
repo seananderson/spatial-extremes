@@ -29,7 +29,7 @@ SEED <- 42131
 gp_sigma <- 0.3
 sigma <- 0.8
 df <- 2
-gp_scale <- 1.2
+gp_theta <- 1.2
 n_draws <- 16
 nknots <- 12
 ```
@@ -38,7 +38,7 @@ Let's simulate some data that has heavy tails.
 
 ```{r simulate-data}
 set.seed(SEED)
-s <- sim_rrfield(df = df, n_draws = n_draws, gp_scale = gp_scale,
+s <- sim_rrfield(df = df, n_draws = n_draws, gp_theta = gp_theta,
   gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
 print(s$plot)
 ```
@@ -79,11 +79,11 @@ print(m_wrong)
 Let's look at the difference between the parameter estimates.
 
 ```{r}
-pars <- c("df[1]", "gp_sigma", "sigma[1]", "gp_scale")
+pars <- c("df[1]", "gp_sigma", "sigma[1]", "gp_theta")
 mm <- as.matrix(m1$model)
 p1 <- mcmc_areas(mm, pars = pars) + xlim(0, 5)
 
-pars <- c("gp_sigma", "sigma[1]", "gp_scale")
+pars <- c("gp_sigma", "sigma[1]", "gp_theta")
 mm_wrong <- as.matrix(m_wrong$model)
 p2 <- mcmc_areas(mm_wrong, pars = pars) + xlim(0, 5)
 

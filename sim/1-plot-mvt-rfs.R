@@ -16,7 +16,7 @@ draws <- lapply(c(2, 1e9),
       lat = seq(1, 10, length.out = 25))
     draws <- 3
     s <- glmmfields::sim_glmmfields(df = x, n_draws = draws,
-      gp_scale = 1.6, gp_sigma = 0.3, n_knots = 30, seed = 9,
+      gp_theta = 1.6, gp_sigma = 0.3, n_knots = 30, seed = 9,
       g = g, n_data_points = nrow(g))
     out <- reshape2::melt(s$proj)
     names(out) <- c("i", "pt", "re")

@@ -43,15 +43,15 @@ knots = pam(grid,nKnots)$medoids
 distKnots = as.matrix(dist(knots))
 distKnotsSq = distKnots^2 # squared distances
 # note: shape parameter scaled to distance matrix
-gp_scale = 0.01
+gp_theta = 0.01
 sigma.norm = 0.01
-corKnots = exp(-gp_scale*distKnotsSq)
+corKnots = exp(-gp_theta*distKnotsSq)
 Sigma.normal = corKnots * sigma.norm * sigma.norm
 invSigmaKnots.norm = solve(Sigma.normal)
 # Calculate distance from knots to grid
 distAll = as.matrix(dist(rbind(grid, knots)))^2
 distKnots21Sq = t(distAll[-c(1:nLocs), -c((nLocs+1):ncol(distAll))])
-Sigma21.normal = exp(-gp_scale*distKnots21Sq) * sigma.norm * sigma.norm
+Sigma21.normal = exp(-gp_theta*distKnots21Sq) * sigma.norm * sigma.norm
 # Generate vector of random effects
 re.norm = rmvt(1, sigma = Sigma.normal, df = 2)
 re.norm = re.norm-mean(re.norm)# Scale

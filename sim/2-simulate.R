@@ -12,10 +12,10 @@ if (interactive()) {
   manipulate({
     set.seed(seed)
     simulation_data <- sim_glmmfields(df = df, n_data_points = 50, seed = NULL,
-      n_draws = 6, n_knots = 7, gp_scale = gp_scale, gp_sigma = gp_sigma,
+      n_draws = 6, n_knots = 7, gp_theta = gp_theta, gp_sigma = gp_sigma,
       obs_error = "gamma", sd_obs = CV)
     print(simulation_data$plot)
-  }, gp_scale = slider(0.05, 10, 1, step = 0.25),
+  }, gp_theta = slider(0.05, 10, 1, step = 0.25),
     gp_sigma = slider(0.05, 10, 0.5, step = 0.25),
     df = slider(2, 50, 4, step = 1),
     CV = slider(0.01, 1, 0.05, step = 0.05),
@@ -27,21 +27,21 @@ if (interactive()) {
 
 i <<- 0
 
-sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
+sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_theta = 0.5, sd_obs = 0.2,
   comment = "", gp_sigma = 0.5, n_data_points = 50) {
 
   i <<- i + 1
   message(i)
 
   s <- sim_glmmfields(df = df, n_data_points = n_data_points, seed = NULL,
-    n_draws = n_draws, n_knots = n_knots, gp_scale = gp_scale,
+    n_draws = n_draws, n_knots = n_knots, gp_theta = gp_theta,
     gp_sigma = gp_sigma, sd_obs = sd_obs, obs_error = "gamma")
 
   fit_model <- function(iter) {
     glmmfields(y ~ 0, data = s$dat, time = "time", lon = "lon", lat = "lat",
       nknots = n_knots,
       chains = 4L, iter = iter, family = Gamma(link = "log"),
-      prior_gp_scale = half_t(3, 0, 3),
+      prior_gp_theta = half_t(3, 0, 3),
       prior_gp_sigma = half_t(3, 0, 3),
       prior_sigma = half_t(3, 0, 3),
       prior_intercept = student_t(1e6, 0, 1),
@@ -52,6 +52,10 @@ sim_fit <- function(n_draws, df = 2, n_knots = 30, gp_scale = 0.5, sd_obs = 0.2,
   b <- broom::tidyMCMC(m$model, rhat = TRUE, ess = TRUE)
   if (any(b$ess < 100) | any(b$rhat > 1.05)) {
     m <- fit_model(iter = 2000L)
+  }
+  b <- broom::tidyMCMC(m$model, rhat = TRUE, ess = TRUE)
+  if (any(b$ess < 100) | any(b$rhat > 1.05)) {
+    m <- fit_model(iter = 4000L)
   }
 
   b <- broom::tidyMCMC(m$model,
@@ -75,7 +79,7 @@ arguments <- expand.grid(
   df = c(2.5, 5, 20),
   n_knots = 15,
   n_draws = c(5, 15, 25),
-  gp_scale = 1,
+  gp_theta = 1,
   gp_sigma = 1,
   sd_obs = c(0.1, 0.6, 1.2)
 )
@@ -85,7 +89,10 @@ arguments <- arguments[rep(seq_len(nrow(arguments)), arguments$count), ]
 arguments_apply <- dplyr::select(arguments,-count)
 nrow(arguments_apply)
 
-out <- plyr::mdply(arguments_apply, sim_fit)
+system.time({
+  out <- plyr::mdply(arguments_apply, sim_fit)
+})
+
 saveRDS(out, file = "sim/mvt-norm-sim-testing2.rds")
 
 out <- readRDS("sim/mvt-norm-sim-testing2.rds")

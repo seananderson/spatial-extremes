@@ -27,6 +27,7 @@ add_label <- function(xfrac = 0, yfrac = 0.07, label = "", pos = 4, ...) {
 }
 
 out <- readRDS("sim/mvt-norm-sim-testing2.rds")
+if ("gp_scale" %in% names(out)) out <- rename(out, gp_theta_est = gp_scale_est, gp_theta = gp_scale)
 
 out_summary <- data.frame(out) %>%
   filter(rhat < 1.05, ess > 100) %>%
@@ -90,7 +91,7 @@ mtext("Observation error CV", 1, col = margin_color, line = margin_line, cex = a
 gp_sigma <- 0.3
 sigma <- 0.8
 df <- 2
-gp_scale <- 1.2
+gp_theta <- 1.2
 rmse <- readRDS("sim/match-mismatch-rmse.rds")
 loo <- readRDS("sim/match-mismatch-loo.rds")
 load("sim/match-mismatch-example.rda")
@@ -136,7 +137,7 @@ abline(v = 0, lty = 2, col = "grey40", lwd = 0.6)
 scaling_factor <- 85
 gap <- 0.4
 # rect(0,2+gap+0.2,20,1-0.2, col = "grey90", border = NA)
-true <- c(df, gp_sigma, gp_scale, sigma)
+true <- c(df, gp_sigma, gp_theta, sigma)
 names(e1)
 for(i in 1:length(op)) {
   if (i == 4) scaling_factor <- scaling_factor * 1.5
@@ -178,7 +179,7 @@ text(1.7, 2.8+0.2, label = "MVT", cex = cex_text, col = bar_colour_dark, pos = 4
 # symbols(2.2, 2+gap, circles = 0.4, add = TRUE, inches = FALSE)
 
 axis(2, at = seq_along(op)+gap/2,
-  labels = c(expression(nu), expression(sigma), expression(eta), expression(sigma[obs])),
+  labels = c(expression(nu), expression(sigma[GP]), expression(theta[GP]), expression(sigma[obs])),
   las = 1, lwd = 0, line = 0.2, col.axis = margin_color, col = axis_colour)
 axis(1, at = seq(0, 5, 1), mgp = c(2, 0.3, 0), col = axis_colour, col.axis = axis_colour)
 mtext("Coefficient value", side = 1, line = margin_line, cex = axis_lab_cex, col = margin_color)

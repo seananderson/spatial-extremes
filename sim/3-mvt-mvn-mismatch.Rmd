@@ -28,7 +28,7 @@ SEED <- 123
 gp_sigma <- 0.3
 sigma <- 0.8
 df <- 2
-gp_scale <- 1.2
+gp_theta <- 1.2
 n_draws <- 15
 nknots <- 10
 ```
@@ -44,7 +44,7 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
   print("----------------------------------------------------------")
   print(i+1)
   set.seed(i+1)
-  s <- sim_glmmfields(df = df, n_draws = n_draws, gp_scale = gp_scale,
+  s <- sim_glmmfields(df = df, n_draws = n_draws, gp_theta = gp_theta,
     gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
   d <- s$dat
   d <- mutate(d, withhold = station_id %in% sample(unique(station_id), 10))
@@ -59,7 +59,7 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
       time = "time",
       lat = "lat", lon = "lon", nknots = nknots,
       iter = ITER, chains = CHAINS, estimate_df = TRUE, save_log_lik = TRUE,
-      prior_gp_scale = half_t(3, 0, 3),
+      prior_gp_theta = half_t(3, 0, 3),
       prior_gp_sigma = half_t(3, 0, 3),
       prior_sigma = half_t(3, 0, 3),
       control = list(adapt_delta = 0.90))
@@ -69,7 +69,7 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
       lat = "lat", lon = "lon", nknots = nknots,
       iter = ITER, chains = CHAINS,
       estimate_df = FALSE, fixed_df_value = 1e9, save_log_lik = TRUE,
-      prior_gp_scale = half_t(3, 0, 3),
+      prior_gp_theta = half_t(3, 0, 3),
       prior_gp_sigma = half_t(3, 0, 3),
       prior_sigma = half_t(3, 0, 3),
       control = list(adapt_delta = 0.90))
@@ -104,7 +104,7 @@ Now let's run our function a number of times:
 ```{r}
 i <<- 0
 if (!file.exists("sim/match-mismatch.rds")) {
-  output <- plyr::rlply(.n = 100, simulate_and_fit)
+  output <- plyr::rlply(.n = 100, function(x) simulate_and_fit(ITER = 500, giveup_thresh = 1))
   saveRDS(output, "sim/match-mismatch.rds")
 } else {
   output <- readRDS("sim/match-mismatch.rds")
@@ -112,7 +112,7 @@ if (!file.exists("sim/match-mismatch.rds")) {
 
 i <<- 200
 if (!file.exists("sim/match-mismatch2.rds")) {
-  output2 <- plyr::rlply(.n = 50, function(x) simulate_and_fit(ITER = 600, giveup_thresh = 1))
+  output2 <- plyr::rlply(.n = 50, function(x) simulate_and_fit(ITER = 500, giveup_thresh = 1))
   saveRDS(output2, "sim/match-mismatch2.rds")
 } else {
   output2 <- readRDS("sim/match-mismatch2.rds")
