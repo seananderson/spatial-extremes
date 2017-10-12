@@ -114,20 +114,22 @@ if (!file.exists(model_file)) {
     prior_intercept = student_t(1000, 0, 10),
     prior_rw_sigma = half_t(3, 0, 2),
     prior_sigma = half_t(3, 0, 3),
-    prior_ar = half_t(1000, 0, 0.5),
+    prior_phi = half_t(1000, 0, 0.5),
     estimate_ar = TRUE,
     estimate_df = TRUE,
     year_re = TRUE,
-    chains = 4, iter = 3000, thin = 2,
-    control = list(adapt_delta = 0.99, max_treedepth = 20),
-    gp_sigma_scaling_factor = 0.25,
-    save_log_lik = TRUE)
+    chains = 4, iter = 3000, thin = 1,
+    control = list(adapt_delta = 0.95, max_treedepth = 20),
+    # covariance = "exponential",
+    # gp_sigma_scaling_factor = 1,
+    save_log_lik = TRUE,
+    df_lower_bound = 2)
   save(mvt, file = model_file)
 } else {
   load(model_file)
 }
 # print(mvt)
-shinystan::launch_shinystan(mvt$model)
+# shinystan::launch_shinystan(mvt$model)
 ```
 
 Now the multivariate normal model.
@@ -146,13 +148,13 @@ if (!file.exists(model_file)) {
     prior_intercept = student_t(1000, 0, 10),
     prior_rw_sigma = half_t(3, 0, 2),
     prior_sigma = half_t(3, 0, 3),
-    prior_ar = half_t(1000, 0, 0.5),
+    prior_phi = half_t(1000, 0, 0.5),
     estimate_ar = TRUE,
     estimate_df = FALSE,
     year_re = TRUE,
     fixed_df_value = 1000,
-    chains = 4, iter = 3000, thin = 2,
-    control = list(adapt_delta = 0.98, max_treedepth = 20),
+    chains = 4, iter = 3000, thin = 1,
+    control = list(adapt_delta = 0.95, max_treedepth = 20),
     save_log_lik = TRUE)
   save(mvn, file = model_file)
 } else {
