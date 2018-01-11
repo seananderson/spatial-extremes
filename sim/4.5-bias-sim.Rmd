@@ -22,7 +22,7 @@ We will generate our covariate data from a random field as well so that it has s
 
 First our parameter initialization function. This isn't necessary but speeds up the simulation model fitting somewhat.
 
-```{r}
+```{r initf}
 initf <- function(init_b0, n_time, n_knots, n_beta, type = "normal", spread = 0.05) {
   ini <- list(
     gp_sigma = rlnorm(1, log(1.2), spread),
@@ -39,7 +39,7 @@ initf <- function(init_b0, n_time, n_knots, n_beta, type = "normal", spread = 0.
 
 A function to simulate some data and fit models with MVN and MVT random fields:
 
-```{r}
+```{r sim_and_fit}
 sim_and_fit <- function(N = 100, n_time = 15, slope = 0.5, plot = FALSE) {
   
   locs <- data.frame(lon = runif(N, 0, 10),
@@ -115,7 +115,7 @@ sim_and_fit <- function(N = 100, n_time = 15, slope = 0.5, plot = FALSE) {
 
 Now let's run a simulation:
 
-```{r simulate}
+```{r simulate, cache=TRUE, dependson=c('sim_and_fit', 'initf')}
 set.seed(1)
 library(doParallel)
 registerDoParallel(cores = parallel::detectCores())

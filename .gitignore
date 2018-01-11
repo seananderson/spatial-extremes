@@ -66,3 +66,5 @@ simulationTesting/mvt-mvn-difference_cache/html/__objects
 
 *.jpg
 *.docx
+sim/4.5-bias-sim_cache
+sim/4.5-bias-sim_files
