@@ -1,0 +1,155 @@
+---
+title: "Bias in fixed effect parameter estimates with spatial extremes?"
+output: html_document
+---
+
+```{r set-knitr-options, cache=FALSE, echo=FALSE}
+library("knitr")
+opts_chunk$set(message=FALSE, fig.width = 5.5)
+```
+
+Let's load the necessary packages:
+
+```{r, message=FALSE, warning=FALSE}
+library(glmmfields)
+library(ggplot2)
+library(dplyr)
+```
+
+Let's simulate some data to fit our model to. We will use the built-in function `sim_glmmfields()` .
+
+We will generate our covariate data from a random field as well so that it has spatial correlation as a typical spatial covariate would. 
+
+First our parameter initialization function. This isn't necessary but speeds up the simulation model fitting somewhat.
+
+```{r}
+initf <- function(init_b0, n_time, n_knots, n_beta, type = "normal", spread = 0.05) {
+  ini <- list(
+    gp_sigma = rlnorm(1, log(1.2), spread),
+    gp_theta = rlnorm(1, log(1.5), spread),
+    B        = c(init_b0, rnorm(n_beta, 0, spread)),
+    spatialEffectsKnots =
+      matrix(runif(n_time * n_knots, -spread/2, spread/2), 
+        nrow = n_time, ncol = n_knots))
+  if (type == "normal")
+    ini$sigma <- array(rlnorm(1, log(0.9), spread), dim = 1)
+  ini
+}
+```
+
+A function to simulate some data and fit models with MVN and MVT random fields:
+
+```{r}
+sim_and_fit <- function(N = 100, n_time = 15, slope = 0.5, plot = FALSE) {
+  
+  locs <- data.frame(lon = runif(N, 0, 10),
+    lat = runif(N, 0, 10))
+  
+  # Build our predictor variable - obs error negligible
+  b <- sim_glmmfields(n_draws = n_time, gp_theta = 1.5, n_data_points = N,
+    B = slope, gp_sigma = 0.3, sd_obs = 0.0001, n_knots = 10, df = 1000, g = locs)
+  
+  if (plot) {
+    ggplot(b$dat, aes(lon, lat, color = y)) +
+      geom_point() +
+      facet_wrap(~time) +
+      geom_point(size = 3) +
+      scale_colour_gradient2()
+  }
+  
+  X <- cbind(1, b$dat$y) # our design matrix
+  
+  s <- sim_glmmfields(n_draws = n_time, gp_theta = 1.5, n_data_points = N,
+    gp_sigma = 1.2, sd_obs = 0.05, n_knots = 10, X = X,
+    B = c(0, 1), g = locs, df = 2) # B represents our intercept and slope
+  d <- s$dat
+  d$predictor <- b$dat$y 
+  
+  if (plot) {
+    ggplot(d, aes(lon, lat, colour = y)) +
+      geom_point(size = 3) +
+      scale_colour_gradient2() +
+      facet_wrap(~time)
+  }
+  
+  m_sp_mvn <- glmmfields(y ~ predictor, data = d, time = "time",
+    lat = "lat", lon = "lon", nknots = 10, iter = 700, chains = 1,
+    control = list(adapt_delta = 0.95), fixed_df_value = 1000,
+    prior_gp_theta = half_t(7, 0, 4),
+    prior_gp_sigma = half_t(7, 0, 3),
+    prior_sigma = half_t(7, 0, 2),
+    prior_intercept = student_t(1000, 0, 1),
+    prior_beta = student_t(1000, 0, 3),
+    init = function() {initf(init_b0 = 0,
+      n_time = n_time, n_knots = 10, n_beta = 1)})
+  
+  m_sp_mvt <- glmmfields(y ~ predictor, data = d,  time = "time",
+    lat = "lat", lon = "lon", nknots = 10, iter = 700, chains = 1,
+    control = list(adapt_delta = 0.95), fixed_df_value = 2,
+    prior_gp_theta = half_t(7, 0, 4),
+    prior_gp_sigma = half_t(7, 0, 3),
+    prior_sigma = half_t(7, 0, 2),
+    prior_intercept = student_t(1000, 0, 1),
+    prior_beta = student_t(1000, 0, 3),
+    init = function() {initf(init_b0 = 0,
+      n_time = n_time, n_knots = 10, n_beta = 1)})
+  
+  sp_coef_mvn <- rstan::extract(m_sp_mvn$model, pars = c("B[1]", "B[2]")) %>% 
+    plyr::laply(median) %>% 
+    `[[`(2)
+  
+  sp_coef_mvt <- rstan::extract(m_sp_mvt$model, pars = c("B[1]", "B[2]")) %>% 
+    plyr::laply(median) %>% 
+    `[[`(2)
+  
+  su <- broom::tidyMCMC(m_sp_mvt$model, rhat = TRUE)
+  rhat_mvt <- su[su$term == "B[2]", "rhat"]
+  
+  su <- broom::tidyMCMC(m_sp_mvn$model, rhat = TRUE)
+  rhat_mvn <- su[su$term == "B[2]", "rhat"]
+  
+  data.frame(sp_coef_mvt = sp_coef_mvt, sp_coef_mvn = sp_coef_mvn, 
+    rhat_mvt = rhat_mvt, rhat_mvn = rhat_mvn)
+}
+```
+
+Now let's run a simulation:
+
+```{r simulate}
+set.seed(1)
+library(doParallel)
+registerDoParallel(cores = parallel::detectCores())
+system.time({out <- plyr::ldply(seq_len(8*4), 
+  function(x) sim_and_fit(), .parallel = TRUE)})
+```
+
+And plot the results:
+
+```{r}
+not_converged <- out %>% filter(rhat_mvt >= 1.1 | rhat_mvn >= 1.1)
+print(not_converged)
+
+b1 <- 0.5
+out %>% filter(rhat_mvt < 1.1, rhat_mvn < 1.1) %>% 
+  ggplot() + 
+  geom_point(aes(x = 1, y = sp_coef_mvn-b1), col = "red") +
+  geom_point(aes(x = 2, y = sp_coef_mvt-b1), col = "blue") +
+  geom_segment(aes(x = 1, xend = 2, y = sp_coef_mvn-b1, yend = sp_coef_mvt-b1), alpha = 0.2) +
+  geom_hline(yintercept = mean(out$sp_coef_mvn-b1), lty = 2, col = "red") +
+  geom_hline(yintercept = mean(out$sp_coef_mvt-b1), lty = 2, col = "blue") +
+  geom_hline(yintercept = 0, lty = 1) +
+  scale_x_continuous(breaks = c(1, 2), labels = c("MVN", "MVT (correct)")) +
+  ggsidekick::theme_sleek() +
+  ylab("Coefficient estimate - true coefficient value")
+
+out %>% filter(rhat_mvt < 1.1, rhat_mvn < 1.1) %>% 
+  ggplot() + 
+  geom_density(aes(sp_coef_mvn-b1), fill = NA, col = "red", alpha = 0.2) +
+  geom_density(aes(sp_coef_mvt-b1), fill = NA, col = "blue", alpha = 0.2) +
+  ggsidekick::theme_sleek() +
+  geom_vline(xintercept = 0) +
+  xlab("Coefficient estimate - true coefficient value") +
+  ylab("Density")
+```
+
+The red line is from the MVN model and the blue line is from the MVT.
