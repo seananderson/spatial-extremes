@@ -17,6 +17,8 @@
 \usepackage{bm}
 \textheight 22.2cm
 % \usepackage{mathptmx}
+
+\usepackage[hidelinks]{hyperref}
 \usepackage{nameref}
 
 % Linux Libertine:
@@ -292,13 +294,14 @@ $\mathbf{W}=\mathbf{\Sigma}_{\left(\mathbf{W},\mathbf{W^*} \right)}^{'} \mathbf{
 \subsection{MVT random fields}
 
 Our model is essentially a GLMM with a spatiotemporal element described by a MVN
-or MVT random field. We define the mean $\mu_{s,t} \equiv \mathbb{E}(y_{s,t})$ at a set of locations
+or MVT random field. We define the mean $\mu_{s,t} \equiv \mathbb{E}(y_{s,t})$ 
+at a set of locations
 in space $s$ and time $t$ as $g(\mu_{s,t}) = \mathbf{X}_{s,t} \bm{\beta} +
 \gamma_{s,t},$ where $g$ is a link function, $\mathbf{X}_{s,t}$ represents a matrix of
 predictors, and $\bm{\beta}$ represents a vector of estimated coefficients. The symbol
-$\gamma_{s,t}$ represents the spatiotemporal process, described below. The variance of
-the observation component of our model is a function of the mean via a
-probability distribution such as the Gaussian, Poisson, or gamma.
+$\gamma_{s,t}$ represents the spatiotemporal process, described below. 
+The variance of the observation model depends on the
+chosen error distribution (e.g.\ Gaussian, Poisson, or gamma).\R{B14}
 
 Modifying the MVN spatiotemporal model to the more flexible MVT distribution
 requires estimating the degrees of freedom parameter $\nu$. When $\nu$ is small
@@ -409,9 +412,15 @@ reduced by a factor of 25.
 % This maintained a reasonable resolution while limiting the data size for rapid
 % model fitting.
 We modelled the proportion of finer grid cells affected by outbreaks per coarser
-grid cell (excluding coarser grid cells without outbreaks). Since the proportion
+grid cell.
+We excluded a small number of coarser cells without outbreaks 
+since we chose to fit this example with a lognormal observation model for
+simplicity.\R{B16} An alternative, to include the zeros, would be
+a beta-binomial observation model. 
+Since the proportion
 affected was far from $1$, we can fit a model with a log link and lognormal
-observation distribution. The log of the mean proportion affected at location
+observation distribution. 
+The log of the mean proportion affected at location
 $s$ and time $t$, $\mu_{s,t}$, is predicted by a year-specific random walk
 defined by $\beta_t$, and the spatiotemporal process $\gamma_{s,t}$, with the
 spatial process itself modelled as autoregressive:
@@ -652,7 +661,7 @@ The R package \textbf{glmmfields} is available at
   \begin{center}
     \includegraphics[width=0.8\textwidth]{../figs/simulation-results.pdf}
     \caption{Simulation testing the ability to recapture the
-      degree of spatial heavy tailedness in a MVT random fields model.
+      degree of spatial heavy tailedness in an MVT random fields model.
       Shown are tests with
       (a) various true values of $\nu$ (the MVT degrees of freedom parameter),
       (b) an increasing number of time steps in the data set (with low observation error),
@@ -660,7 +669,8 @@ The R package \textbf{glmmfields} is available at
       The full factorial results are shown in Fig.~\ref{fig:recapture-factorial}.
       Individual dots show the median estimates from individual simulation runs.
       The colour scale indicates the true degree of heavy tailedness from
-      yellow (effectively normal) to red (very heavy tailed).
+      yellow (effectively normal) to red (very heavy tailed) and the
+      violin-shaped polygons represent the density.
     }
     \label{fig:recapture}
   \end{center}
@@ -674,7 +684,7 @@ The R package \textbf{glmmfields} is available at
       when the true underlying data are drawn from simulated MVT random fields.
       (a) Parameter posteriors for an
       example model fit of a mismatched MVN model (orange)
-      and a correct MVT model (blue) (black crosses indicate true values).
+      and a correct MVT model (blue). Black crosses indicate true values.
       The parameter $\nu$ represents the MVT degrees of freedom,
       $\sigma_{\mathrm{GP}}$ represents the spatial standard deviation,
       $\theta_{\mathrm{GP}}$ represents the spatial decay or correlation parameter,
@@ -682,7 +692,7 @@ The R package \textbf{glmmfields} is available at
       (b) Percent greater root mean squared error (RMSE)
       and (c) $\Delta$ LOOIC (leave-one-out information criteria)
       for the mismatched MVN model compared to the correct MVT model (negative
-      values favour the MVT model).
+      $\Delta$ LOOIC values favour the MVT model).
     }
     \label{fig:sim-performance}
   \end{center}
@@ -700,7 +710,9 @@ The R package \textbf{glmmfields} is available at
       (c) Posterior and prior distributions of the degrees of freedom parameter, $\nu$.
       Low $\nu$ values (approximately $\nu < 10$) indicate evidence of heavy-tails.
       (d) Log predictive density for held-out data for MVT (blue) and MVN (orange) models.
-      (e) The ratio of 95\% CI widths between the MVN and MVT models.
+      (e) The ratio of 95\% CI widths on the predicted percent beetle cover in
+      time and space between the MVN and MVT models (i.e. on the predictions
+      shown in Fig.~\ref{fig:beetle-pred}). \R{B5}
     }
     \label{fig:map-etc}
   \end{center}
@@ -731,6 +743,8 @@ The R package \textbf{glmmfields} is available at
 
 \setcounter{section}{0}
 \section{Appendix S1}
+
+\linenumbers
 
 \subsection{Posterior and joint distributions}
 
@@ -837,7 +851,7 @@ $\phi$.
 For the models fit to the simulated datasets, we initially sampled from each
 model with 500 iterations across four chains discarding the first half of the
 iterations as warm-up. If the samples had not converged after this initial run,
-we re-sampled from the model with 2000 iterations across four chains. 
+we re-sampled from the model with 2000 iterations across four chains.
 For the models fit to the mountain pine beetle data, we sampled
 2000 iterations, discarding the first half as warm-up. We measured
 convergence as a minimum effective sample size of $\ge 100$ and a maximum
@@ -846,7 +860,7 @@ $\hat{R}$ of $\le 1.05$) across all parameters.
 \subsection{Simulation details}
 
 In the section \emph{\nameref{sec:testing-recovery}}, we ran 100 simulations for
-each parameter configuration. 
+each parameter configuration.
 In the section \emph{\nameref{sec:diagnosing}}, we ran 150 simulations.
 We ran more simulations in the second case to smooth the model
 comparison histograms in Fig.~\ref{fig:recapture}e--f.
@@ -869,7 +883,7 @@ $\widehat{y_{i}}$ indicates the predicted response value, and $\theta$
 represents estimated parameters. We display the distribution of these quantities
 across MCMC samples.
 
-The Bayesian LOO (leave-one-out) estimate of out-of-sample
+The Bayesian LOO (leave-one-out) expected of out-of-sample
 predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
 \begin{equation}
   \mathrm{elpd}_\mathrm{loo} = \sum^{n}_{i=1}{\log  p(y_i | y_{i-1}) },
@@ -885,8 +899,10 @@ predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
 and $\theta$ represents all estimated parameters
 \citep{vehtari2017}. For computational efficiency, the LOO R package calculates
 LOOIC using an approach called Pareto smoothed importance sampling
-\citep{vehtari2017}. We calculated $\Delta$LOOIC as
-$\mathrm{LOOIC}_\mathrm{MVT} - \mathrm{LOOIC}_\mathrm{MVN}$.
+\citep{vehtari2017}. LOOIC is then defined as $-2\ \mathrm{elpd}_\mathrm{loo}$
+so that lower values indicate increased parsimony.\R{B3}
+We calculated $\Delta$LOOIC as $\mathrm{LOOIC}_\mathrm{MVT}
+- \mathrm{LOOIC}_\mathrm{MVN}$.
 
 We calculated the root mean squared error (RMSE) of predictions as:
 
@@ -960,7 +976,10 @@ $\widehat{\mu_{s,t}}$ for the model assuming MVN random fields.
   \begin{table}
     \begin{minipage}{\textwidth}
     \caption{
-      Comparison of select R packages for spatiotemporal analysis with random fields.
+      Comparison of select R packages for spatiotemporal analysis with random
+      fields. ``Formula interface'' refers to the ability to pass a formula to
+      an R function such as \texttt{y ~ a + b} as is common in many R functions
+      such as \texttt{lm()} or \texttt{glm()}.
     }
     \label{tab:packages}
     \begin{scriptsize}
@@ -980,5 +999,8 @@ $\widehat{\mu_{s,t}}$ for the model assuming MVN random fields.
   \end{minipage}
   \end{table}
 \end{landscape}
+
+\clearpage
+\input{response}
 
 \end{document}

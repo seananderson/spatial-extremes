@@ -95,8 +95,8 @@ load("sim/match-mismatch-example.rda")
 rmse <- mutate(rmse, perc_better=(rmse_wrong-rmse)/rmse*100)
 # Plot example parameter estimates:
 
-pdf("figs/simulation-perf.pdf", width = 6, height = 2.4)
-par(mfrow = c(1, 3), mar = c(2.5, 0, .5, 0), oma = c(1.2, 3, 0, .5),
+pdf("figs/simulation-perf.pdf", width = 6.3, height = 2.4)
+par(mfrow = c(1, 3), mar = c(2.5, 2.8, .5, 0), oma = c(1.2, 0.7, 0, .5),
   cex = 0.8, tcl = -0.2, mgp = c(2, 0.4, 0))
 op <- vector(mode = "list", length = 4)
 for(i in seq_along(op)) {
@@ -153,6 +153,7 @@ axis(1, at = seq(0, 5, 1), mgp = c(2, 0.3, 0), col = axis_colour, col.axis = axi
 mtext("Coefficient value", side = 1, line = margin_line, cex = axis_lab_cex, col = margin_color)
 box(col = axis_colour)
 add_label(label = "a)", cex = cex_text, col = margin_color)
+mtext("Parameter", side = 2, line = 2.4, col = axis_colour, cex = 0.8)
 
 
 h <- hist(rmse$perc_better, probability = TRUE,
@@ -161,7 +162,7 @@ h <- hist(rmse$perc_better, probability = TRUE,
   warn.unused = FALSE)
 plot(0,0, xlim = range(rmse$perc_better), ylim = c(0, max(h$counts)), type = "n",
   xlab = "", axes = FALSE,
-  ylab = "Count")
+  ylab = "")
 mtext("% worse RMSE\nwith MVN vs. MVT", side = 1, line = margin_line+1,
   cex = axis_lab_cex, col = margin_color)
 for(j in seq_along(h$breaks)) {
@@ -172,7 +173,8 @@ abline(v = 1, lty = 2, col = "grey30")
 axis(1, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
 add_label(label = "b)", cex = cex_text, col = margin_color)
-
+axis(2, col = axis_colour, col.axis = axis_colour, las = 1, cex.axis = 1)
+mtext("Frequency", side = 2, line = 1.5, col = axis_colour, cex = 0.8)
 
 h <- hist(loo$delta_loo, probability = TRUE,
   breaks = seq(range(loo$delta_loo)[1],
@@ -180,7 +182,7 @@ h <- hist(loo$delta_loo, probability = TRUE,
   warn.unused = FALSE)
 plot(0,0, xlim = range(loo$delta_loo), ylim = c(0, max(h$counts)), type = "n",
   xlab = "", axes = FALSE,
-  ylab = "Count")
+  ylab = "")
 mtext(expression(Delta~LOOIC), side = 1, line = margin_line,
   cex = axis_lab_cex, col = margin_color)
 mtext("(MVT - MVN)", side = 1, line = margin_line+1, cex = axis_lab_cex, col = margin_color)
@@ -192,6 +194,8 @@ abline(v = 1, lty = 2, col = "grey30")
 axis(1, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
 add_label(label = "c)", cex = cex_text, col = margin_color)
+axis(2, col = axis_colour, col.axis = axis_colour, las = 1, cex.axis = 1)
+mtext("Frequency", side = 2, line = 1.5, col = axis_colour, cex = 0.8)
 
 dev.off()
 
