@@ -438,7 +438,7 @@ the held-out data and the width of the 95\% CIs
 \section{Results}
 
 Under most scenarios we were able to recapture true values of $\nu$ with
-reasonable accuracy and low bias (Fig.~\ref{fig:recapture}a--c,
+reasonable accuracy and low bias (Fig.~\ref{fig:recapture},
 Fig.~\ref{fig:recapture-factorial}). The number of time steps had the largest
 effect on detecting low values of $\nu$. For example, the median absolute
 proportional error between $\nu$ and $\hat{\nu}$ (median of the posterior) was
@@ -452,15 +452,15 @@ observation error (i.e.\ CV = 1.2, Fig.~\ref{fig:recapture}c).
 
 When the true underlying data were generated with spatiotemporal extremes (MVT,
 $\nu = 2$), fitting a model without extremes reduced out-of-sample predictive
-accuracy and precision (Fig.~\ref{fig:recapture}d--f). The MVN model tended to
+accuracy and precision (Fig.~\ref{fig:sim-performance}). The MVN model tended to
 overestimate $\sigma_{\mathrm{GP}}$ (which controls the magnitude of the random field
 deviations) to account for effectively fixing $\nu = \infty$ (e.g.\
-Fig.~\ref{fig:recapture}d). The out-of-sample RMSE was slightly higher for the
+Fig.~\ref{fig:sim-performance}a). The out-of-sample RMSE was slightly higher for the
 misspecified MVN model compared to a correctly specified MVT model (median RMSE
-= \rmseWrong\ vs.\ \rmseRight; Fig.~\ref{fig:recapture}e). The out-of-sample MVN
+= \rmseWrong\ vs.\ \rmseRight; Fig.~\ref{fig:sim-performance}b). The out-of-sample MVN
 model CIs were a median of \medianMedianCIWiderSim \% larger than the MVT model
 CIs. The leave-one-out information criterion (LOOIC) correctly chose the MVT
-model in \looCorrectSim \% of the simulations.
+model in \looCorrectSim \% of the simulations (Fig.~\ref{fig:sim-performance}c).
 
 For the pine beetle case study, the spatial model with extremes generated more
 accurate and precise out-of-sample predictions (Fig.~\ref{fig:map-etc}). The
@@ -651,35 +651,40 @@ The R package \textbf{glmmfields} is available at
 \begin{figure}[htb]
   \begin{center}
     \includegraphics[width=0.8\textwidth]{../figs/simulation-results.pdf}
-    \caption{Simulation testing the MVT random fields model.
-      Upper row
-      panels illustrate the ability to recapture the
-      degree of spatial heavy tailedness.
+    \caption{Simulation testing the ability to recapture the
+      degree of spatial heavy tailedness in a MVT random fields model.
       Shown are tests with
       (a) various true values of $\nu$ (the MVT degrees of freedom parameter),
       (b) an increasing number of time steps in the data set (with low observation error),
       and (c) an increasing level of observation error.
       The full factorial results are shown in Fig.~\ref{fig:recapture-factorial}.
       Individual dots show the median estimates from individual simulation runs.
-      % Polygons show the density of the distribution of estimates.
       The colour scale indicates the true degree of heavy tailedness from
       yellow (effectively normal) to red (very heavy tailed).
-      % The parameter $\nu$ has a lower limit of $2$ in the model
-      % for computational stability.
-      Lower row panels illustrate the impact of fitting MVN and MVT models
-      when the true underlying data are drawn from MVT random fields.
-      (d) Parameter posteriors for an
+    }
+    \label{fig:recapture}
+  \end{center}
+\end{figure}
+
+\begin{figure}[htb]
+  \begin{center}
+    \includegraphics[width=0.8\textwidth]{../figs/simulation-perf.pdf}
+    \caption{
+      The effect of fitting MVN and MVT models
+      when the true underlying data are drawn from simulated MVT random fields.
+      (a) Parameter posteriors for an
       example model fit of a mismatched MVN model (orange)
       and a correct MVT model (blue) (black crosses indicate true values).
       The parameter $\nu$ represents the MVT degrees of freedom,
       $\sigma_{\mathrm{GP}}$ represents the spatial standard deviation,
       $\theta_{\mathrm{GP}}$ represents the spatial decay or correlation parameter,
       and $\sigma_\mathrm{obs}$ represents the observation error standard deviation.
-      (e) Percent greater root mean squared error (RMSE)
-      and (f) $\Delta$ LOOIC (leave-one-out information criteria)
-      for the mismatched MVN model compared to the correct MVT model.
+      (b) Percent greater root mean squared error (RMSE)
+      and (c) $\Delta$ LOOIC (leave-one-out information criteria)
+      for the mismatched MVN model compared to the correct MVT model (negative
+      values favour the MVT model).
     }
-    \label{fig:recapture}
+    \label{fig:sim-performance}
   \end{center}
 \end{figure}
 

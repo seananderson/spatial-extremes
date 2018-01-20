@@ -56,8 +56,8 @@ plot_panel_base <- function(d, x, hlines = 2.5, col = rep(cols[[3]], 3), x_vals 
 
 margin_line <- 1.5
 margin_color <- "grey45"
-pdf("figs/simulation-results.pdf", width = 6, height = 4.5)
-par(mfrow = c(2, 3), mar = c(2.5, 0, 1, 0), oma = c(1.2, 3, 0, 1),
+pdf("figs/simulation-results.pdf", width = 6, height = 2.3)
+par(mfrow = c(1, 3), mar = c(1.5, 0, .5, 0), oma = c(1.2, 3, 0, .5),
   cex = 0.8, tcl = -0.2, mgp = c(2, 0.4, 0))
 filter(out_summary, sd_obs == "0.1", n_draws == 25) %>%
   plot_panel_base("df", hlines = c(2.5, 5, 20), col = rev(cols), x_vals = c(2.5, 5, 20))
@@ -84,7 +84,7 @@ text(x_text, 28, "c)", pos = 4, cex = cex_text, col = margin_color)
 text(x_text, 25, "25 time steps", pos = 4, cex = cex_text, col = margin_color)
 # text(x_text, 27, expression(nu==2.5), pos = 4, cex = cex_text, col = margin_color)
 mtext("Observation error CV", 1, col = margin_color, line = margin_line, cex = axis_lab_cex)
-# dev.off()
+dev.off()
 
 
 # ----------------------------------------------------------------
@@ -108,6 +108,9 @@ rmse <- mutate(rmse, perc_better=(rmse_wrong-rmse)/rmse*100)
 # par(tcl = -0.2)
 # par(col.lab = text_colour)
 # rm(i)
+pdf("figs/simulation-perf.pdf", width = 6, height = 2.4)
+par(mfrow = c(1, 3), mar = c(2.5, 0, .5, 0), oma = c(1.2, 3, 0, .5),
+  cex = 0.8, tcl = -0.2, mgp = c(2, 0.4, 0))
 op <- vector(mode = "list", length = 4)
 for(i in seq_along(op)) {
   op[[i]]$post <- e1[[i]]
@@ -185,7 +188,7 @@ axis(1, at = seq(0, 5, 1), mgp = c(2, 0.3, 0), col = axis_colour, col.axis = axi
 mtext("Coefficient value", side = 1, line = margin_line, cex = axis_lab_cex, col = margin_color)
 box(col = axis_colour)
 # mtext("A", side = 3, line = 0, cex = 1.2, adj = -0.6, font = 2)
-add_label(label = "d)", cex = cex_text, col = margin_color)
+add_label(label = "a)", cex = cex_text, col = margin_color)
 
 
 h <- hist(rmse$perc_better, probability = TRUE, breaks = seq(range(rmse$perc_better)[1], range(rmse$perc_better)[2], length.out = 12), plot = FALSE,
@@ -199,10 +202,10 @@ for(j in seq_along(h$breaks)) {
     col = bar_colour, lwd = 1)
 }
 abline(v = 1, lty = 2, col = "grey30")
-add_label(xfrac = 0.4, yfrac = 0.2, label = "MVT has\nlower RMSE", cex = cex_text, col = bar_colour_dark)
+# add_label(xfrac = 0.4, yfrac = 0.2, label = "MVT has\nlower RMSE", cex = cex_text, col = bar_colour_dark)
 axis(1, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
-add_label(label = "e)", cex = cex_text, col = margin_color)
+add_label(label = "b)", cex = cex_text, col = margin_color)
 
 
 h <- hist(loo$delta_loo, probability = TRUE,
@@ -221,8 +224,8 @@ for(j in seq_along(h$breaks)) {
 abline(v = 1, lty = 2, col = "grey30")
 axis(1, col = axis_colour, col.axis = axis_colour)
 box(col = axis_colour)
-add_label(label = "f)", cex = cex_text, col = margin_color)
-add_label(xfrac = 0.2, yfrac = 0.2, label = "LOOIC\nfavours MVT", cex = cex_text, col = bar_colour_dark)
+add_label(label = "c)", cex = cex_text, col = margin_color)
+# add_label(xfrac = 0.2, yfrac = 0.2, label = "LOOIC\nfavours MVT", cex = cex_text, col = bar_colour_dark)
 
 dev.off()
 
