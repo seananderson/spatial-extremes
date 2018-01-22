@@ -2,9 +2,12 @@ TEXT = mvt-fields
 SOM = supp
 REFS = spatial-extremes
 
-all: $(TEXT).pdf
+all: $(TEXT).pdf response.tex
 
-%.pdf: %.tex $(REFS).bib
+response.tex: response.md
+	pandoc response.md -o response.tex
+
+%.pdf: %.tex $(REFS).bib response.tex
 	latexmk -pdf $<
 
 continuous:
