@@ -231,11 +231,15 @@ proposed as a solution to modelling process variation with extremes, or
 
 Several extensions of GRFs have been proposed to better capture extreme spatial
 events, including max-stable or extreme value theory \citep{davison2012,
-  davison2012a}, where quantities of interest include probabilities of exceeding
+davison2012a}, where quantities of interest include probabilities of exceeding
 some threshold \citep{davis2008}. Other extensions of spatiotemporal models to
 describe extremes include the use of multivariate-$t$ (MVT) spatial random
-fields \citep{roislien2007}. Focusing on the latter, to our knowledge these
-methods have not been applied in ecology, fisheries, or environmental sciences.
+fields \citep{roislien2007}. Compared to GRFs, MVT random fields allow for
+increased flexibility in the representation of spatial patterns through time
+while converging on the multivariate normal (MVN) GRFs when appropriate
+\citep{roislien2007}.\R{A1} Focusing on MVT random fields, to our knowledge
+these methods have not been applied in ecology, fisheries, or environmental
+sciences.
 
 In this paper we introduce the use of robust spatial predictive models using the
 MVT distribution, and provide a user-friendly implementation in our new R
@@ -249,7 +253,7 @@ apply this model to data on mountain pine beetle (\textit{Dendroctonus
 
 We seek to allow for large deviations in an ecological spatial pattern over time
 by extending spatiotemporal predictive process models to use a MVT distribution
-instead of a multivariate normal (MVN) distribution. Below we describe the form
+instead of a MVN distribution. Below we describe the form
 of the model as implemented in \textbf{glmmfields}, describe two simulation
 tests exploring model performance, and finally describe the application of our
 model to a data set of mountain pine beetle outbreaks.
