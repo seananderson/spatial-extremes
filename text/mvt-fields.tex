@@ -253,7 +253,7 @@ ecologists. For large datasets, estimating spatial random effects at many
 locations may be computationally prohibitive. One solution is to estimate a
 spatial field as correlated random effects at a subset of locations or $m$
 ``knots'' \citep[e.g.][]{latimer2009, shelton2014}, where $m < n$, the number of
-data points. The location of the $m$ knots describing a random field can be
+data points (Fig.~\ref{fig:didactic}).\R{B11} The location of the $m$ knots describing a random field can be
 chosen via a clustering algorithm, such as the partitioning around medoids
 algorithm \citep{reynolds2006}. Instead of estimating an unconstrained $m \times
 m$ covariance matrix, a covariance function is specified \emph{a priori} to
@@ -282,8 +282,8 @@ deviations and the $*$ denoting a symbol referring to the knot locations as oppo
 the sample locations.
 Following \citet{latimer2009}, we can calculate the covariance matrix
 $\mathbf{\Sigma}_{\left(\mathbf{W}, \mathbf{W^*} \right)}$
-between the spatial random effects at the sample locations $\mathbf{W}$
-and the realizations of the spatial process at the knot locations $\mathbf{W^*}$.
+between the spatial random effects $\mathbf{W}$ at the sample locations \R{B12}
+and the realizations of the spatial process $\mathbf{W^*}$ at the knot locations.
 Given
 $\mathbf{\Sigma^*}$, we can generate $\mathbf{W^*}$ by drawing
 from a multivariate distribution (MVN or MVT) with covariance $\mathbf{\Sigma^*}$ and
@@ -299,7 +299,7 @@ $\mathbf{W}=\mathbf{\Sigma}_{\left(\mathbf{W},\mathbf{W^*} \right)}^{'} \mathbf{
 Our model is essentially a GLMM with a spatiotemporal element described by a MVN
 or MVT random field. We define the mean $\mu_{s,t} \equiv \mathbb{E}(y_{s,t})$
 at a set of locations
-in space $s$ and time $t$ as $g(\mu_{s,t}) = \mathbf{X}_{s,t} \bm{\beta} +
+in space $s$ and time $t$.\R{B12} We then define $g(\mu_{s,t}) = \mathbf{X}_{s,t} \bm{\beta} +
 \gamma_{s,t},$ where $g$ is a link function, $\mathbf{X}_{s,t}$ represents a matrix of
 predictors, and $\bm{\beta}$ represents a vector of estimated coefficients. The symbol
 $\gamma_{s,t}$ represents the spatiotemporal process, described below.
@@ -467,12 +467,16 @@ $\nu = 2$), fitting a model without extremes reduced out-of-sample predictive
 accuracy and precision (Fig.~\ref{fig:sim-performance}). The MVN model tended to
 overestimate $\sigma_{\mathrm{GP}}$ (which controls the magnitude of the random field
 deviations) to account for effectively fixing $\nu = \infty$ (e.g.\
-Fig.~\ref{fig:sim-performance}a). The out-of-sample RMSE was slightly higher for the
+Fig.~\ref{fig:sim-performance}a).
+The out-of-sample RMSE was slightly higher for the
 misspecified MVN model compared to a correctly specified MVT model (median RMSE
 = \rmseWrong\ vs.\ \rmseRight; Fig.~\ref{fig:sim-performance}b). The out-of-sample MVN
 model CIs were a median of \medianMedianCIWiderSim \% larger than the MVT model
 CIs. The leave-one-out information criterion (LOOIC) correctly chose the MVT
 model in \looCorrectSim \% of the simulations (Fig.~\ref{fig:sim-performance}c).
+Separately, if linear predictors were included, we found them to largely
+unbiased under the misspecified MVN model --- the effect lies in the random
+field estimation and therefore the predictions in space and time.\R{B1}
 
 For the pine beetle case study, the spatial model with extremes generated more
 accurate and precise out-of-sample predictions (Fig.~\ref{fig:map-etc}). The
