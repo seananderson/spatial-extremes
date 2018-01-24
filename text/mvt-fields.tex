@@ -299,7 +299,7 @@ $\mathbf{W}=\mathbf{\Sigma}_{\left(\mathbf{W},\mathbf{W^*} \right)}^{'} \mathbf{
 Our model is essentially a GLMM with a spatiotemporal element described by a MVN
 or MVT random field. We define the mean $\mu_{s,t} \equiv \mathbb{E}(y_{s,t})$
 at a set of locations
-in space $s$ and time $t$.\R{B12} We then define $g(\mu_{s,t}) = \mathbf{X}_{s,t} \bm{\beta} +
+in space $s$ and time $t$.\R{B13} We then define $g(\mu_{s,t}) = \mathbf{X}_{s,t} \bm{\beta} +
 \gamma_{s,t},$ where $g$ is a link function, $\mathbf{X}_{s,t}$ represents a matrix of
 predictors, and $\bm{\beta}$ represents a vector of estimated coefficients. The symbol
 $\gamma_{s,t}$ represents the spatiotemporal process, described below.
@@ -692,7 +692,11 @@ The R package \textbf{glmmfields} is available at
       (a) Parameter posteriors for an
       example model fit of a mismatched MVN model (orange)
       and a correct MVT model (blue). Black crosses indicate true values.
-      The parameter $\nu$ represents the MVT degrees of freedom,
+      The parameter $\nu$ is challenging to estimate but can generally
+      distinguish between providing evidence for heavy tails
+      (much lower than the prior) and not providing evidence for heavy tails
+      (matching the prior) \citep{anderson2017}.
+      The parameter
       $\sigma_{\mathrm{GP}}$ represents the spatial standard deviation,
       $\theta_{\mathrm{GP}}$ represents the spatial decay or correlation parameter,
       and $\sigma_\mathrm{obs}$ represents the observation error standard deviation.
