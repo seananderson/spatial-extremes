@@ -206,7 +206,7 @@ be included as predictors in models of the mean (such as in a 2-dimensional GAM)
 or can be included in models of the covariance (e.g.\ kriging). Recent
 extensions of these spatial covariance models include modelling spatial
 deviations in GLMs as random effects (Gaussian random fields, GRFs).
-Gaussian random fields represent a two-dimensional version of Gaussian
+GRFs represent a two-dimensional version of Gaussian
 processes and define the expected value, variance, and covariance of
 random draws from a multivariate normal distribution.\R{B6}
 Examples of these methods in existing R packages include but are not limited to
@@ -214,7 +214,12 @@ Examples of these methods in existing R packages include but are not limited to
 \textbf{spate} \citep{sigrist2015} (see~Table~\ref{tab:packages}).
 
 A limitation of spatial models that use GRFs is that they may perform poorly
-when data include extreme events. When models describing the spatial process
+when data include extreme or ``black-swan'' events. Black-swan events refer to
+seemingly improbable events that nonetheless happen --- often with large
+consequences \citep{taleb2007}.
+Recent work has demonstrated the regular occurrence of such events in natural
+and ecological processes \citep[e.g.][]{albeverio2006, ward2007, fey2015, anderson2017}.
+When models describing a spatial process
 also include an observation model, for example, anomalous observations may be
 reconciled by increasing the variance of the observation error (rather than
 attributing these to extremes in the process). Extremes in temporal processes
