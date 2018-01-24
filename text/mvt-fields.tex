@@ -309,10 +309,10 @@ $\mathbf{W}=\mathbf{\Sigma}_{\left(\mathbf{W},\mathbf{W^*} \right)}^{'} \mathbf{
 \subsection{MVT random fields}
 
 Our model is essentially a GLMM with a spatiotemporal element described by a MVN
-or MVT random field. We define the mean $\mu_{s,t} \equiv \mathbb{E}(y_{s,t})$
-at a set of locations
-in space $s$ and time $t$.\R{B13} We then define $g(\mu_{s,t}) = \mathbf{X}_{s,t} \bm{\beta} +
-\gamma_{s,t},$ where $g$ is a link function, $\mathbf{X}_{s,t}$ represents a matrix of
+or MVT random field. We define the mean of location $s$ and time $t$ as
+$\mu_{s,t} \equiv \mathbb{E}(y_{s,t})$.\R{B13} We then define
+$g(\mu_{s,t}) = \mathbf{X}_{s,t} \bm{\beta} +
+\gamma_{s,t},$ where $g$ is a link function, $\mathbf{X}_{s,t}$ represents
 predictors, and $\bm{\beta}$ represents a vector of estimated coefficients. The symbol
 $\gamma_{s,t}$ represents the spatiotemporal process, described below.
 The variance of the observation model depends on the
