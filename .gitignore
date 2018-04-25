@@ -68,3 +68,6 @@ simulationTesting/mvt-mvn-difference_cache/html/__objects
 *.docx
 sim/4.5-bias-sim_cache
 sim/4.5-bias-sim_files
+text/Appendix-S2-spatial-glms_cache/latex/__globals
+text/Appendix-S2-spatial-glms_cache/latex/__objects
+text/Appendix-S2-spatial-glms_cache/latex/__packages

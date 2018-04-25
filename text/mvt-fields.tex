@@ -1,3 +1,36 @@
+% [ ] It appears your manuscript was prepared using LaTeX.  In addition to supplying
+% your paper as a PDF, please also include a ZIP file containing the LaTeX source
+% files used to create your PDF.
+%
+% [x] List the Corresponding Author's email on the title page.
+%
+% [x] List the Running Head on the title page.
+%
+% [ ] Obtain DOIs from Zenodo and CRAN for the code, data, and R package associated
+% with this paper.  Remove the text on lines 280-283 of the Acknowledgments that
+% points to this material.  Instead, insert reference to the Zenodo and CRAN DOIs
+% in a Data Availability statement that follows the Literature Citations.  (For an
+% example please see:
+% https://esajournals.onlinelibrary.wiley.com/doi/full/10.1002/ecy.2165.)
+% Data and code associated with this study are available from Zenodo: https://doi.org/10.5281/zenodo.1146732.
+%
+% [ ] Appendix S1 must be uploaded as a separate file, using Supporting Information
+% as the online file type.  Note that equation numbering should begin anew in the
+% appendix, beginning with Eq. S1.  The appendix must also include a full
+% Literature Citations section for any references found therein.
+%
+% [x] In the main text, refer to both the appendix and the item within for HTML
+% linking purposes (ie: "Appendix S1: Table S1" rather than only "Table S1").
+%
+% [x] Line 245 of the main text refers to Appendix S2, however there is no such file
+% with the current version of your paper.  I see the original submission did
+% include an Appendix S2.  I'm assuming this was mistakenly omitted from your
+% revision?  If so, please be certain to restore this file.  If not, please
+% advise.
+
+
+
+
 \documentclass[12pt,english]{article}
 \usepackage{geometry}
 \geometry{verbose, letterpaper, tmargin = 2.54cm, bmargin = 2.54cm,
@@ -16,12 +49,11 @@
 \usepackage{booktabs}
 \usepackage{bm}
 \textheight 22.2cm
-% \usepackage{mathptmx}
 
 \providecommand{\tightlist}{%
 \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 
-\usepackage[hidelinks]{hyperref}
+%\usepackage[hidelinks]{hyperref}
 \usepackage{nameref}
 
 % Fix line numbering and align environment
@@ -43,9 +75,6 @@
 \patchBothAmsMathEnvironmentsForLineno{gather}%
 \patchBothAmsMathEnvironmentsForLineno{multline}%
 }
-
-\newcommand{\R}[1]{\label{#1}\linelabel{#1}}
-\newcommand{\lr}[1]{line~\lineref{#1}}
 
 \hyphenation{glmmfields}
 
@@ -79,27 +108,40 @@ Eric J. Ward$^3$
 }
 \date{}
 
+% refs from Appendix S1:
+\newlabel{fig:didactic}{{S1}{26}{}{figure.1}{}}
+\newlabel{fig:recapture-factorial}{{S2}{27}{}{figure.2}{}}
+\newlabel{tab:packages}{{S1}{28}{}{table.1}{}}
+
 \begin{document}
 
 \maketitle
 
+\noindent
 $^1$School of Aquatic and Fishery Sciences, Box 355020, University of
 Washington, Seattle, WA 98195, USA
 
+\noindent
 $^2$Pacific Biological Station,
 Fisheries and Oceans Canada,
 3190 Hammond Bay Road,
 Nanaimo, BC, V6T 6N7, Canada
 
+\noindent
 $^3$Conservation Biology Division, Northwest Fisheries Science Center, National
 Marine Fisheries Service, National Oceanographic and Atmospheric Administration,
 2725 Montlake Blvd E, Seattle, WA 98112, USA
 
+\noindent
 $^{\ast}$Corresponding author. Present address:
 Pacific Biological Station,
 Fisheries and Oceans Canada,
 3190 Hammond Bay Road,
-Nanaimo, BC, V6T 6N7, Canada
+Nanaimo, BC, V6T 6N7, Canada\\
+sean.anderson@dfo-mpo.gc.ca
+
+\noindent
+Running head: Spatiotemporal black-swan events
 
 \RaggedRight
 \hyphenpenalty=500
@@ -162,13 +204,13 @@ extensions of these spatial covariance models include modelling spatial
 deviations in GLMs as random effects (Gaussian random fields, GRFs).
 GRFs represent a two-dimensional version of Gaussian
 processes and define the expected value, variance, and covariance of
-random draws from a multivariate normal distribution.\R{B6}
+random draws from a multivariate normal distribution.
 Examples of these methods in existing R packages include, but are not limited to,
 \textbf{spBayes} \citep{finley2007}, \textbf{INLA} \citep{rue2009}, and
-\textbf{spate} \citep{sigrist2015} (see~Table~\ref{tab:packages}).
+\textbf{spate} \citep{sigrist2015} (Appendix S1: Table~\ref{tab:packages}).
 
 A limitation of spatial models that use GRFs is that they may perform poorly
-when data include extreme or ``black-swan'' events. \R{B7}Black-swan events refer to
+when data include extreme or ``black-swan'' events. Black-swan events refer to
 rare and seemingly improbable events that nonetheless happen --- often with large
 consequences \citep{taleb2007}.
 Recent work has demonstrated the regular occurrence of such events in natural
@@ -191,7 +233,7 @@ describe extremes include the use of multivariate-$t$ (MVT) spatial random
 fields \citep{roislien2007}. Compared to GRFs, MVT random fields allow for
 increased flexibility in the representation of spatial patterns through time
 while converging on the multivariate normal (MVN) GRFs when appropriate
-\citep{roislien2007}.\R{A1}
+\citep{roislien2007}.
 
 In this paper we introduce the use of robust spatial predictive models using the
 MVT distribution, and provide a user-friendly implementation in our R
@@ -217,7 +259,7 @@ ecologists. For large datasets, estimating spatial random effects at many
 locations may be computationally prohibitive. One solution is to estimate a
 spatial field as correlated random effects at a subset of locations or $m$
 ``knots'' \citep[e.g.][]{latimer2009, shelton2014}, where $m < n$, the number of
-data points (Fig.~\ref{fig:didactic}).\R{B11} The location of the $m$ knots describing a random field can be
+data points (Appendix S1: Fig.~\ref{fig:didactic}). The location of the $m$ knots describing a random field can be
 chosen via a clustering algorithm, such as the partitioning around medoids
 algorithm \citep{reynolds2006}. Instead of estimating an unconstrained $m \times
 m$ covariance matrix, a covariance function is specified \emph{a priori} to
@@ -227,7 +269,7 @@ covariance functions; however, anisotropic functions could be included in the
 future. Given estimated random effects at the knot locations and the known
 distance matrix between the knots and observed data, the knot random effects can
 be projected to the locations of the observations
-\citep[][Fig.~\ref{fig:didactic}]{roislien2007, latimer2009, finley2009}.
+\citep[][Appendix S1: Fig.~\ref{fig:didactic}]{roislien2007, latimer2009, finley2009}.
 
 As an example, the squared exponential covariance function models the
 correlation between points $i$ and $j$ as $H(\delta_{ij}) = \exp
@@ -245,7 +287,7 @@ deviations and the $*$ denoting a symbol referring to the knot locations as oppo
 the sample locations.
 Following \citet{latimer2009}, we can calculate the covariance matrix
 $\mathbf{\Sigma}_{\left(\mathbf{W}, \mathbf{W^*} \right)}$
-between the spatial random effects $\mathbf{W}$ at the sample locations\R{B12}
+between the spatial random effects $\mathbf{W}$ at the sample locations
 and the realizations of the spatial process $\mathbf{W^*}$ at the knot locations.
 Given
 $\mathbf{\Sigma^*}$, we can generate $\mathbf{W^*}$ by drawing
@@ -258,13 +300,13 @@ $\mathbf{W}=\mathbf{\Sigma}_{\left(\mathbf{W},\mathbf{W^*} \right)}^{'} \mathbf{
 
 Our model is essentially a GLMM with a spatiotemporal element described by a MVN
 or MVT random field. We define the mean of location $s$ and time $t$ as
-$\mu_{s,t} \equiv \mathbb{E}(y_{s,t})$.\R{B13} We then define
+$\mu_{s,t} \equiv \mathbb{E}(y_{s,t})$. We then define
 $g(\mu_{s,t}) = \mathbf{X}_{s,t} \bm{\beta} +
 \gamma_{s,t},$ where $g$ is a link function, $\mathbf{X}_{s,t}$ represents
 predictors, and $\bm{\beta}$ represents a vector of estimated coefficients. The symbol
 $\gamma_{s,t}$ represents the spatiotemporal process, described below.
 The variance of the observation model depends on the
-chosen error distribution (e.g.\ Gaussian, Poisson, or gamma).\R{B14}
+chosen error distribution (e.g.\ Gaussian, Poisson, or gamma).
 
 Modifying the MVN spatiotemporal model to the more flexible MVT distribution
 requires estimating the degrees of freedom parameter $\nu$. When $\nu$ is small
@@ -364,7 +406,7 @@ We modelled the proportion of finer grid cells affected by outbreaks per coarser
 grid cell.
 We excluded a small number of coarser cells without outbreaks
 since we chose to fit this example with a lognormal observation model for
-simplicity.\R{B16} An alternative, to include the zeros, would be
+simplicity. An alternative, to include the zeros, would be
 a beta-binomial observation model.
 Since the proportion
 affected was far from $1$, we can fit a model with a log link and lognormal
@@ -395,7 +437,7 @@ the held-out data and the width of the 95\% CIs
 
 Under most scenarios we were able to recapture true values of $\nu$ with
 reasonable accuracy and low bias (Fig.~\ref{fig:recapture},
-Fig.~\ref{fig:recapture-factorial}). The number of time steps had the largest
+Appendix S1: Fig.~\ref{fig:recapture-factorial}). The number of time steps had the largest
 effect on detecting low values of $\nu$. For example, the median absolute
 proportional error between $\nu$ and $\hat{\nu}$ (median of the posterior) was
 only \mapeTwentyFive\ with 25 time steps, minimal observation error (CV = 0.1),
@@ -412,7 +454,7 @@ accuracy and precision (Fig.~\ref{fig:sim-performance}). The MVN model tended to
 overestimate $\sigma_{\mathrm{GP}}$ (which controls the magnitude of the random field
 deviations) to account for effectively fixing $\nu = \infty$ (e.g.\
 Fig.~\ref{fig:sim-performance}a).
-The out-of-sample RMSE (root mean squared error)\R{E1} was slightly higher for the
+The out-of-sample RMSE (root mean squared error) was slightly higher for the
 misspecified MVN model compared to a correctly specified MVT model (median RMSE
 = \rmseWrong\ vs.\ \rmseRight; Fig.~\ref{fig:sim-performance}b). The out-of-sample MVN
 model CIs were a median of \medianMedianCIWiderSim \% larger than the MVT model
@@ -420,7 +462,7 @@ CIs. The leave-one-out information criterion (LOOIC) correctly chose the MVT
 model in \looCorrectSim \% of the simulations (Fig.~\ref{fig:sim-performance}c).
 Separately, if linear predictors were included, we found them to be largely
 unbiased under the misspecified MVN model --- the effect of misspecification was
-on the random field estimation\R{B1} and therefore the predictions in space and
+on the random field estimation and therefore the predictions in space and
 time.
 
 For the pine beetle case study, the spatial model with extremes generated more
@@ -535,7 +577,7 @@ The R package \textbf{glmmfields} is available at
 
 \setlength{\bibsep}{0pt plus 0ex}
 
-\bibliography{spp-refs}
+\bibliography{spatial-extremes}
 
 \clearpage
 
@@ -570,7 +612,7 @@ The R package \textbf{glmmfields} is available at
       (a) various true values of $\nu$ (the MVT degrees of freedom parameter),
       (b) an increasing number of time steps in the data set (with low observation error),
       and (c) an increasing level of observation error.
-      The full factorial results are shown in Fig.~\ref{fig:recapture-factorial}.
+      The full factorial results are shown in Appendix S1: Fig.~\ref{fig:recapture-factorial}.
       Individual dots show the median estimates from individual simulation runs.
       The colour scale indicates the true degree of heavy tailedness from
       yellow (effectively normal) to red (very heavy tailed) and the
@@ -645,272 +687,5 @@ The R package \textbf{glmmfields} is available at
 
 \end{spacing}
 
-\begin{spacing}{1.4}
-
-\clearpage
-
-\setcounter{section}{0}
-\section{Appendix S1}
-
-\linenumbers
-
-\subsection{Posterior and joint distributions}
-
-In this section, for clarity, we use the notation $[a|b]$ to describe the
-conditional distribution of $a$ given $b$. We use bold symbol to refer to vectors or matrices.
-The joint posterior distribution for
-the model in the section \textit{\nameref{sec:testing-recovery}} can be written
-as:
-\begin{equation}
-  [
-  \bm{\gamma}^*,
-  \theta_{\mathrm{GP}},
-  \nu,
-  \mathrm{CV}_\mathrm{obs},
-  \sigma_{\mathrm{GP}}^2
-  |
-  \bm{y}]
-  \propto
-  [\bm{y} | \bm{\gamma}^*, \mathrm{CV}_\mathrm{obs}]
-  [\bm{\gamma}^* | \theta_{\mathrm{GP}}, \nu, \sigma_{\mathrm{GP}}^2]
-  [\theta_{\mathrm{GP}}]
-  [\nu]
-  [\mathrm{CV}_\mathrm{obs}]
-  [\sigma_{\mathrm{GP}}^2],
-\end{equation}
-
-\noindent where the parameters are defined in the main Methods section.
-Importantly, we use parameters with an asterisk (e.g.\ $\bm{\gamma}^*$) to describe
-the random effects at the locations of the unobserved knots, and parameters
-without the asterisk to describe the projected random effects
-at the locations of sampled data (projection equation summarized in main text
-and described in \citet{latimer2009}). The joint
-probability is calculated over points in space $s$, and time $t$. Missing
-observations or replicate observations for given points in space and time may be
-present.
-
-The joint posterior distribution for the model in the section
-\textit{\nameref{sec:diagnosing}} can be written as:
-\begin{equation}
-  [
-  \bm{\gamma}^*,
-  \theta_{\mathrm{GP}},
-  \nu,
-  \sigma^2_{\mathrm{obs}},
-  \sigma_{\mathrm{GP}}^2
-  |
-  \bm{y}]
-  \propto
-  [\bm{y} | \bm{\gamma}^*, \sigma^2_{\mathrm{obs}}]
-  [\bm{\gamma}^* | \theta_{\mathrm{GP}}, \nu, \sigma_{\mathrm{GP}}^2]
-  [\theta_{\mathrm{GP}}]
-  [\nu]
-  [\sigma^2_{\mathrm{obs}}]
-  [\sigma_{\mathrm{GP}}^2],
-\end{equation}
-
-\noindent
-and the joint posterior distribution
-for the model of mountain pine beetle outbreaks can be written as:
-\begin{multline}
-  [
-  \bm{\beta},
-  \bm{\gamma}^*,
-  \phi,
-  \theta_{\mathrm{GP}},
-  \nu,
-  \sigma^2_{\mathrm{obs}},
-  \sigma^2_{\beta},
-  \sigma_{\mathrm{GP}}^2
-  |
-  \bm{y}]
-  \propto \\
-  [\bm{y} | \beta_{t}, \bm{\gamma}^*, \sigma^2_{\mathrm{obs}}] \\
-  \times
-  [\beta_t | \beta_{t-1}, \sigma^2_{\beta}] \\
-  \times
-  [\bm{\gamma}^*_{t} | \bm{\gamma}^*_{t-1}, \phi, \theta_{\mathrm{GP}}, \nu, \sigma_{\mathrm{GP}}^2] \\
-  \times
-  [\beta_{t=1}]
-  [\bm{\gamma}^*_{t=1}]
-  [\phi]
-  [\theta_{\mathrm{GP}}]
-  [\nu]
-  [\sigma^2_{\mathrm{obs}}]
-  [\sigma^2_{\beta}]
-  [\sigma_{\mathrm{GP}}^2].
-\end{multline}
-
-\subsection{Prior distributions}
-
-In the section \emph{\nameref{sec:testing-recovery}}, we placed weakly
-informative priors on $\sigma_{\mathrm{GP}}$, $\theta_{\mathrm{GP}}$, and CV of half-$t$(3, 0, 3) (i.e.
-Student-$t$(3, 0, 3)[0, $\infty$] where the Student-$t$ parameters refer to the
-degrees of freedom parameter, the location parameter, and the scale parameter).
-In the section \emph{\nameref{sec:diagnosing}}, we used these same priors and a
-half-$t$(3,0,3) prior on $\sigma_{\mathrm{obs}}$. In the section
-\emph{\nameref{sec:beetles-methods}}, we fit our models with a normal(0, 10)
-prior on the initial year effect ($B_{t=1}$) (i.e.\ mean $0$ and standard
-  deviation $10$, not variance, following the convention in Stan), half-$t$(3,
-0, 3) priors on all scale parameters, and a normal(0, 0.5)[-1, 1] prior on
-$\phi$.
-
-\subsection{MCMC sampling details}
-
-For the models fit to the simulated datasets, we initially sampled from each
-model with 500 iterations across four chains discarding the first half of the
-iterations as warm-up. If the samples had not converged after this initial run,
-we re-sampled from the model with 2000 iterations across four chains.
-For the models fit to the mountain pine beetle data, we sampled
-2000 iterations, discarding the first half as warm-up. We measured
-convergence as a minimum effective sample size of $\ge 100$ and a maximum
-$\hat{R}$ of $\le 1.05$) across all parameters.
-
-\subsection{Simulation details}
-
-In the section \emph{\nameref{sec:testing-recovery}}, we ran 100 simulations for
-each parameter configuration.
-In the section \emph{\nameref{sec:diagnosing}}, we ran 150 simulations.
-We ran more simulations in the second case to smooth the model
-comparison histograms in Fig.~\ref{fig:sim-performance}.
-
-\subsection{Model comparison}
-
-We compared MVN and MVT models via log predictive density, $\Delta$ LOOIC
-(leave-one-out information criteria), RMSE (root mean squared error), and
-credible interval width. We calculated the log predictive density (lpd) for
-held-out data as:
-
-\begin{equation}
-  \mathrm{lpd} = \sum^{n}_{i=1}{\log  p(y_{i} |
-      \widehat{y_{i}}, \theta)},
-\end{equation}
-
-\noindent where $y_{i}$ represents the observed beetle coverage response value
-for omitted data row $i$ (representing a given point in space and time),
-$\widehat{y_{i}}$ indicates the predicted response value, and $\theta$
-represents estimated parameters. We display the distribution of these quantities
-across MCMC samples.
-
-The Bayesian LOO (leave-one-out) expected out-of-sample
-predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
-\begin{equation}
-  \mathrm{elpd}_\mathrm{loo} = \sum^{n}_{i=1}{\log  p(y_i | y_{i-1}) },
-\end{equation}
-
-\noindent where
-
-\begin{equation}
-  p(y_i | y_{i-1}) = \int p(y_i | \theta) p (\theta | y_{-i}) d \theta ,
-\end{equation}
-
-\noindent is the predictive density given the data without the $i$th data point
-and $\theta$ represents all estimated parameters
-\citep{vehtari2017}. For computational efficiency, the LOO R package calculates
-LOOIC using an approach called Pareto smoothed importance sampling
-\citep{vehtari2017}. LOOIC is then defined as $-2\ \mathrm{elpd}_\mathrm{loo}$
-so that lower values indicate increased parsimony.\R{B3}
-We calculated $\Delta$LOOIC as $\mathrm{LOOIC}_\mathrm{MVT}
-- \mathrm{LOOIC}_\mathrm{MVN}$.
-
-We calculated the root mean squared error (RMSE) of predictions as:
-
-\begin{equation}
-  \sqrt{ \sum^{T}_{t=1}{ \sum^{S}_{s=1}{ \left( \log(\mu_{s,t}) - \log(\widehat{ \mu_{s,t} }) \right)^2 } } },
-\end{equation}
-
-\noindent where $\widehat{\mu_{s,t}}$ represents the median of the posterior of
-$\mu_{s,t}$. Finally, we calculated the ratio of the credible interval
-widths as:
-
-\begin{equation}
-\frac{
-\mathrm{CI}_\mathrm{MVN}^\mathrm{upper} - \mathrm{CI}_\mathrm{MVN}^\mathrm{lower}
-}{
-\mathrm{CI}_\mathrm{MVT}^\mathrm{upper} -
-\mathrm{CI}_\mathrm{MVT}^\mathrm{lower}
-},
-\end{equation}
-
-\noindent where $\mathrm{CI}_\mathrm{MVN}^\mathrm{upper}$, for example,
-represents the upper 95\% quantile-based credible interval of
-$\widehat{\mu_{s,t}}$ for the model assuming MVN random fields.
-
-\clearpage
-
-\end{spacing}
-
-\renewcommand{\thefigure}{S\arabic{figure}}
-\renewcommand{\thetable}{S\arabic{table}}
-\setcounter{figure}{0}
-\setcounter{table}{0}
-
-\begin{figure}[htb]
-  \begin{center}
-    \includegraphics[width=0.7\textwidth]{../figs/pp-illustration.pdf}
-    \caption{
-      Illustration of the steps to fitting a predictive process model.
-      First we observe spatial data, we select knot locations,
-      and we calculate the covariance between the knots and the observed data.
-      Then we fit the model with the knots and data remaining constant throughout.
-      For each MCMC iteration, values are proposed for the
-      knots, those values are projected from the knots to the locations of the observed data,
-      and the likelihood is evaluated at the locations of the observed data.}
-    \label{fig:didactic}
-  \end{center}
-\end{figure}
-% Might be good to just clarify the values being proposed are values of observed data - not spatial locations
-
-\clearpage
-
-\begin{figure}[htb]
-  \begin{center}
-    \includegraphics[width=0.90\textwidth]{../figs/sim-recapture.pdf}
-    \caption{
-      Full factorial results from the simulation shown in Fig.~\ref{fig:recapture}.
-      Individual dots show the median estimates from individual simulation runs.
-      Polygons indicate probability density of the median estimates of
-      individual simulation runs.
-      The colour scale indicates the true degree of heavy tailedness from
-      yellow (effectively normal) to red (very heavy tailed).
-    }
-    \label{fig:recapture-factorial}
-  \end{center}
-\end{figure}
-
-\renewcommand\theadfont{\scriptsize}
-\renewcommand\theadalign{cl}
-
-\begin{landscape}
-  \begin{table}
-    \begin{minipage}{\textwidth}
-    \caption{
-      Comparison of select R packages for spatiotemporal analysis with random
-      fields. ``Formula interface'' refers to the ability to pass a formula to
-      an R function such as \texttt{y $\sim$ a + b} as is common in many R functions
-      such as \texttt{lm()} or \texttt{glm()}.
-    }
-    \label{tab:packages}
-    \begin{scriptsize}
-      \begin{tabular}{llllL{2cm}lL{2.4cm}lL{2.0cm}llL{2.0cm}}
-        \toprule
-        Package  & \thead[l]{MVT \\ random \\ fields} & \thead[l]{Formula          \\ interface} & \thead[l]{Multi-                                                 \\ variate} & Estimation              & \thead[l]{Simulation \\ function} & \thead[l]{Observation                                      \\ model} & \thead[l]{Maximum \\ likelihood \\ estimation} & \thead[l]{Covariance \\ functions} & \thead[l]{AR Spatial \\ Fields} & \thead[l]{Dynamic \\ Linear \\ Models} & URL \\
-        \midrule
-        spTimer  & No             & Yes     & No      & MCMC                        & No         & Gaussian                                                          & No       & Exponential, Gaussian, Matern family, spherical   & Yes                   & No        & \url{https://CRAN.R-project.org/package=spTimer} \\
-        spate    & No             & No      & No      & MCMC/SPDE                   & Yes        & Gaussian, skewed Tobit                                            & Yes      & Matern family                                     & No                    & No        & \url{https://CRAN.R-project.org/package=spate} \\
-        spBayes  & No             & Yes     & Yes     & MCMC                        & No         & Gaussian, binomial, Poisson                                       & No       & Exponential, Gaussian, Matern family, spherical   & No                    & Yes       & \url{https://CRAN.R-project.org/package=spBayes} \\
-        INLA     & No             & Yes     & Yes     & Approximate posterior/SPDE  & Yes        & Many                                                              & Yes      & Exponential, Gaussian, Matern family, many others & Yes                   & Yes       & \url{http://www.r-inla.org/}                                     \\
-        VAST     & No             & No      & Yes     & Maximum likelihood/SPDE     & Yes        & Gaussian, lognormal, gamma, binomial, Poisson, negative binomial  & Yes      & Exponential, Matern family                                     & Yes                   & Yes        & \url{https://github.com/James-Thorson/VAST}                      \\
-        glmmfields & Yes          & Yes     & No      & MCMC/NUTS                   & Yes        & Gaussian, lognormal, gamma, binomial, Poisson, negative binomial  & No       & Exponential, Gaussian, Matern family              & Yes                   & Yes       & \url{https://github.com/seananderson/glmmfields}                  \\
-        \bottomrule
-      \end{tabular}
-    \end{scriptsize}
-  \end{minipage}
-  \end{table}
-\end{landscape}
-
-\clearpage
-\nolinenumbers
-\input{response}
 
 \end{document}

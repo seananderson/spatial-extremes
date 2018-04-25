@@ -1,0 +1,364 @@
+\documentclass[12pt,english]{article}
+\usepackage{geometry}
+\geometry{verbose, letterpaper, tmargin = 2.54cm, bmargin = 2.54cm,
+  lmargin = 2.54cm, rmargin = 2.54cm}
+\geometry{letterpaper}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{setspace}
+\usepackage{url}
+\usepackage{lineno}
+\usepackage{xcolor}
+\usepackage{bm}
+\renewcommand\linenumberfont{\normalfont\tiny\sffamily\color{gray}}
+\modulolinenumbers[2]
+\usepackage{booktabs}
+\usepackage{bm}
+\textheight 22.2cm
+
+\providecommand{\tightlist}{%
+\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+%\usepackage[hidelinks]{hyperref}
+\usepackage{nameref}
+
+% Fix line numbering and align environment
+% http://phaseportrait.blogspot.ca/2007/08/lineno-and-amsmath-compatibility.html
+\newcommand*\patchAmsMathEnvironmentForLineno[1]{%
+  \expandafter\let\csname old#1\expandafter\endcsname\csname #1\endcsname
+  \expandafter\let\csname oldend#1\expandafter\endcsname\csname end#1\endcsname
+  \renewenvironment{#1}%
+     {\linenomath\csname old#1\endcsname}%
+     {\csname oldend#1\endcsname\endlinenomath}}%
+\newcommand*\patchBothAmsMathEnvironmentsForLineno[1]{%
+  \patchAmsMathEnvironmentForLineno{#1}%
+  \patchAmsMathEnvironmentForLineno{#1*}}%
+\AtBeginDocument{%
+\patchBothAmsMathEnvironmentsForLineno{equation}%
+\patchBothAmsMathEnvironmentsForLineno{align}%
+\patchBothAmsMathEnvironmentsForLineno{flalign}%
+\patchBothAmsMathEnvironmentsForLineno{alignat}%
+\patchBothAmsMathEnvironmentsForLineno{gather}%
+\patchBothAmsMathEnvironmentsForLineno{multline}%
+}
+
+\hyphenation{glmmfields}
+
+\usepackage{lscape}
+\usepackage{makecell}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\usepackage{ragged2e}
+\setlength{\RaggedRightParindent}{\parindent}
+\usepackage[round,sectionbib]{natbib}
+\bibpunct{(}{)}{,}{a}{}{,}
+\bibliographystyle{ecology}
+
+\usepackage{titlesec}
+\titlespacing*{\section}
+{0pt}{1.5ex plus 1ex minus .2ex}{1.0ex plus .2ex}
+\titlespacing*{\subsection}
+{0pt}{1.5ex plus 1ex minus .2ex}{1.0ex plus .2ex}
+
+% Suppress section numbers
+\makeatletter
+\renewcommand{\@seccntformat}[1]{}
+\makeatother
+
+\title{Appendix S1\\
+\Large{Black swans in space: modelling spatiotemporal\\ processes with extremes}}
+\author{
+Sean C. Anderson$^{1,2\ast}$ and
+Eric J. Ward$^3$
+}
+
+\date{}
+
+\clearpage
+
+\RaggedRight
+\hyphenpenalty=500
+
+\newlabel{sec:testing-recovery}{{2.3}{6}{Testing the recovery of spatial extremeness}{subsection.2.3}{}}
+\newlabel{sec:diagnosing}{{2.4}{7}{Testing the advantage of allowing for extremes}{subsection.2.4}{}}
+\newlabel{sec:beetles-methods}{{2.5}{8}{Mountain pine beetles in the US Pacific Northwest}{subsection.2.5}{}}
+\newlabel{fig:nu}{{1}{18}{}{figure.1}{}}
+\newlabel{fig:sim-performance}{{3}{20}{}{figure.3}{}}
+\newlabel{fig:map-etc}{{4}{21}{}{figure.4}{}}
+\newlabel{fig:beetle-pred}{{5}{22}{}{figure.5}{}}
+\newlabel{fig:recapture}{{2}{19}{}{}{}}
+
+\begin{document}
+
+%\begin{spacing}{1.8}
+
+\maketitle
+
+\renewcommand{\theequation}{S\arabic{equation}}
+% \setcounter{section}{0}
+% \section{Appendix S1}
+
+% \linenumbers
+
+% \setcounter{equation}{0}
+
+\subsection{Posterior and joint distributions}
+
+In this section, for clarity, we use the notation $[a|b]$ to describe the
+conditional distribution of $a$ given $b$. We use bold symbol to refer to vectors or matrices.
+The joint posterior distribution for
+the model in the section \textit{\nameref{sec:testing-recovery}} can be written
+as:
+\begin{equation}
+  [
+  \bm{\gamma}^*,
+  \theta_{\mathrm{GP}},
+  \nu,
+  \mathrm{CV}_\mathrm{obs},
+  \sigma_{\mathrm{GP}}^2
+  |
+  \bm{y}]
+  \propto
+  [\bm{y} | \bm{\gamma}^*, \mathrm{CV}_\mathrm{obs}]
+  [\bm{\gamma}^* | \theta_{\mathrm{GP}}, \nu, \sigma_{\mathrm{GP}}^2]
+  [\theta_{\mathrm{GP}}]
+  [\nu]
+  [\mathrm{CV}_\mathrm{obs}]
+  [\sigma_{\mathrm{GP}}^2],
+\end{equation}
+
+\noindent where the parameters are defined in the main Methods section.
+Importantly, we use parameters with an asterisk (e.g.\ $\bm{\gamma}^*$) to describe
+the random effects at the locations of the unobserved knots, and parameters
+without the asterisk to describe the projected random effects
+at the locations of sampled data (projection equation summarized in main text
+and described in \citet{latimer2009}). The joint
+probability is calculated over points in space $s$, and time $t$. Missing
+observations or replicate observations for given points in space and time may be
+present.
+
+The joint posterior distribution for the model in the section
+\textit{\nameref{sec:diagnosing}} can be written as:
+\begin{equation}
+  [
+  \bm{\gamma}^*,
+  \theta_{\mathrm{GP}},
+  \nu,
+  \sigma^2_{\mathrm{obs}},
+  \sigma_{\mathrm{GP}}^2
+  |
+  \bm{y}]
+  \propto
+  [\bm{y} | \bm{\gamma}^*, \sigma^2_{\mathrm{obs}}]
+  [\bm{\gamma}^* | \theta_{\mathrm{GP}}, \nu, \sigma_{\mathrm{GP}}^2]
+  [\theta_{\mathrm{GP}}]
+  [\nu]
+  [\sigma^2_{\mathrm{obs}}]
+  [\sigma_{\mathrm{GP}}^2],
+\end{equation}
+
+\noindent
+and the joint posterior distribution
+for the model of mountain pine beetle outbreaks can be written as:
+\begin{multline}
+  [
+  \bm{\beta},
+  \bm{\gamma}^*,
+  \phi,
+  \theta_{\mathrm{GP}},
+  \nu,
+  \sigma^2_{\mathrm{obs}},
+  \sigma^2_{\beta},
+  \sigma_{\mathrm{GP}}^2
+  |
+  \bm{y}]
+  \propto \\
+  [\bm{y} | \beta_{t}, \bm{\gamma}^*, \sigma^2_{\mathrm{obs}}] \\
+  \times
+  [\beta_t | \beta_{t-1}, \sigma^2_{\beta}] \\
+  \times
+  [\bm{\gamma}^*_{t} | \bm{\gamma}^*_{t-1}, \phi, \theta_{\mathrm{GP}}, \nu, \sigma_{\mathrm{GP}}^2] \\
+  \times
+  [\beta_{t=1}]
+  [\bm{\gamma}^*_{t=1}]
+  [\phi]
+  [\theta_{\mathrm{GP}}]
+  [\nu]
+  [\sigma^2_{\mathrm{obs}}]
+  [\sigma^2_{\beta}]
+  [\sigma_{\mathrm{GP}}^2].
+\end{multline}
+
+\subsection{Prior distributions}
+
+In the section \emph{\nameref{sec:testing-recovery}}, we placed weakly
+informative priors on $\sigma_{\mathrm{GP}}$, $\theta_{\mathrm{GP}}$, and CV of half-$t$(3, 0, 3) (i.e.
+Student-$t$(3, 0, 3)[0, $\infty$] where the Student-$t$ parameters refer to the
+degrees of freedom parameter, the location parameter, and the scale parameter).
+In the section \emph{\nameref{sec:diagnosing}}, we used these same priors and a
+half-$t$(3,0,3) prior on $\sigma_{\mathrm{obs}}$. In the section
+\emph{\nameref{sec:beetles-methods}}, we fit our models with a normal(0, 10)
+prior on the initial year effect ($B_{t=1}$) (i.e.\ mean $0$ and standard
+  deviation $10$, not variance, following the convention in Stan), half-$t$(3,
+0, 3) priors on all scale parameters, and a normal(0, 0.5)[-1, 1] prior on
+$\phi$.
+
+\subsection{MCMC sampling details}
+
+For the models fit to the simulated datasets, we initially sampled from each
+model with 500 iterations across four chains discarding the first half of the
+iterations as warm-up. If the samples had not converged after this initial run,
+we re-sampled from the model with 2000 iterations across four chains.
+For the models fit to the mountain pine beetle data, we sampled
+2000 iterations, discarding the first half as warm-up. We measured
+convergence as a minimum effective sample size of $\ge 100$ and a maximum
+$\hat{R}$ of $\le 1.05$) across all parameters.
+
+\subsection{Simulation details}
+
+In the section \emph{\nameref{sec:testing-recovery}}, we ran 100 simulations for
+each parameter configuration.
+In the section \emph{\nameref{sec:diagnosing}}, we ran 150 simulations.
+We ran more simulations in the second case to smooth the model
+comparison histograms in Fig.~\ref{fig:sim-performance}.
+
+\subsection{Model comparison}
+
+We compared MVN and MVT models via log predictive density, $\Delta$ LOOIC
+(leave-one-out information criteria), RMSE (root mean squared error), and
+credible interval width. We calculated the log predictive density (lpd) for
+held-out data as:
+
+\begin{equation}
+  \mathrm{lpd} = \sum^{n}_{i=1}{\log  p(y_{i} |
+      \widehat{y_{i}}, \theta)},
+\end{equation}
+
+\noindent where $y_{i}$ represents the observed beetle coverage response value
+for omitted data row $i$ (representing a given point in space and time),
+$\widehat{y_{i}}$ indicates the predicted response value, and $\theta$
+represents estimated parameters. We display the distribution of these quantities
+across MCMC samples.
+
+The Bayesian LOO (leave-one-out) expected out-of-sample
+predictive fit $\mathrm{elpd}_\mathrm{loo}$ is defined as:
+\begin{equation}
+  \mathrm{elpd}_\mathrm{loo} = \sum^{n}_{i=1}{\log  p(y_i | y_{i-1}) },
+\end{equation}
+
+\noindent where
+
+\begin{equation}
+  p(y_i | y_{i-1}) = \int p(y_i | \theta) p (\theta | y_{-i}) d \theta ,
+\end{equation}
+
+\noindent is the predictive density given the data without the $i$th data point
+and $\theta$ represents all estimated parameters
+\citep{vehtari2017}. For computational efficiency, the LOO R package calculates
+LOOIC using an approach called Pareto smoothed importance sampling
+\citep{vehtari2017}. LOOIC is then defined as $-2\ \mathrm{elpd}_\mathrm{loo}$
+so that lower values indicate increased parsimony.
+We calculated $\Delta$LOOIC as $\mathrm{LOOIC}_\mathrm{MVT}
+- \mathrm{LOOIC}_\mathrm{MVN}$.
+
+We calculated the root mean squared error (RMSE) of predictions as:
+
+\begin{equation}
+  \sqrt{ \sum^{T}_{t=1}{ \sum^{S}_{s=1}{ \left( \log(\mu_{s,t}) - \log(\widehat{ \mu_{s,t} }) \right)^2 } } },
+\end{equation}
+
+\noindent where $\widehat{\mu_{s,t}}$ represents the median of the posterior of
+$\mu_{s,t}$. Finally, we calculated the ratio of the credible interval
+widths as:
+
+\begin{equation}
+\frac{
+\mathrm{CI}_\mathrm{MVN}^\mathrm{upper} - \mathrm{CI}_\mathrm{MVN}^\mathrm{lower}
+}{
+\mathrm{CI}_\mathrm{MVT}^\mathrm{upper} -
+\mathrm{CI}_\mathrm{MVT}^\mathrm{lower}
+},
+\end{equation}
+
+\noindent where $\mathrm{CI}_\mathrm{MVN}^\mathrm{upper}$, for example,
+represents the upper 95\% quantile-based credible interval of
+$\widehat{\mu_{s,t}}$ for the model assuming MVN random fields.
+
+\clearpage
+
+%\end{spacing}
+
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thetable}{S\arabic{table}}
+\setcounter{figure}{0}
+\setcounter{table}{0}
+
+\begin{figure}[htb]
+  \begin{center}
+    \includegraphics[width=0.7\textwidth]{../figs/pp-illustration.pdf}
+    \caption{
+      Illustration of the steps to fitting a predictive process model.
+      First we observe spatial data, we select knot locations,
+      and we calculate the covariance between the knots and the observed data.
+      Then we fit the model with the knots and data remaining constant throughout.
+      For each MCMC iteration, values are proposed for the
+      knots, those values are projected from the knots to the locations of the observed data,
+      and the likelihood is evaluated at the locations of the observed data.}
+    \label{fig:didactic}
+  \end{center}
+\end{figure}
+% Might be good to just clarify the values being proposed are values of observed data - not spatial locations
+
+\clearpage
+
+\begin{figure}[htb]
+  \begin{center}
+    \includegraphics[width=0.90\textwidth]{../figs/sim-recapture.pdf}
+    \caption{
+      Full factorial results from the simulation shown in Fig.~\ref{fig:recapture}.
+      Individual dots show the median estimates from individual simulation runs.
+      Polygons indicate probability density of the median estimates of
+      individual simulation runs.
+      The colour scale indicates the true degree of heavy tailedness from
+      yellow (effectively normal) to red (very heavy tailed).
+    }
+    \label{fig:recapture-factorial}
+  \end{center}
+\end{figure}
+
+\renewcommand\theadfont{\scriptsize}
+\renewcommand\theadalign{cl}
+
+\begin{landscape}
+  \begin{table}
+    \begin{minipage}{\textwidth}
+    \caption{
+      Comparison of select R packages for spatiotemporal analysis with random
+      fields. ``Formula interface'' refers to the ability to pass a formula to
+      an R function such as \texttt{y $\sim$ a + b} as is common in many R functions
+      such as \texttt{lm()} or \texttt{glm()}.
+    }
+    \label{tab:packages}
+    \begin{scriptsize}
+      \begin{tabular}{llllL{2cm}lL{2.4cm}lL{2.0cm}llL{2.0cm}}
+        \toprule
+        Package  & \thead[l]{MVT \\ random \\ fields} & \thead[l]{Formula          \\ interface} & \thead[l]{Multi-                                                 \\ variate} & Estimation              & \thead[l]{Simulation \\ function} & \thead[l]{Observation                                      \\ model} & \thead[l]{Maximum \\ likelihood \\ estimation} & \thead[l]{Covariance \\ functions} & \thead[l]{AR Spatial \\ Fields} & \thead[l]{Dynamic \\ Linear \\ Models} & URL \\
+        \midrule
+        spTimer  & No             & Yes     & No      & MCMC                        & No         & Gaussian                                                          & No       & Exponential, Gaussian, Matern family, spherical   & Yes                   & No        & \url{https://CRAN.R-project.org/package=spTimer} \\
+        spate    & No             & No      & No      & MCMC/SPDE                   & Yes        & Gaussian, skewed Tobit                                            & Yes      & Matern family                                     & No                    & No        & \url{https://CRAN.R-project.org/package=spate} \\
+        spBayes  & No             & Yes     & Yes     & MCMC                        & No         & Gaussian, binomial, Poisson                                       & No       & Exponential, Gaussian, Matern family, spherical   & No                    & Yes       & \url{https://CRAN.R-project.org/package=spBayes} \\
+        INLA     & No             & Yes     & Yes     & Approximate posterior/SPDE  & Yes        & Many                                                              & Yes      & Exponential, Gaussian, Matern family, many others & Yes                   & Yes       & \url{http://www.r-inla.org/}                                     \\
+        VAST     & No             & No      & Yes     & Maximum likelihood/SPDE     & Yes        & Gaussian, lognormal, gamma, binomial, Poisson, negative binomial  & Yes      & Exponential, Matern family                                     & Yes                   & Yes        & \url{https://github.com/James-Thorson/VAST}                      \\
+        glmmfields & Yes          & Yes     & No      & MCMC/NUTS                   & Yes        & Gaussian, lognormal, gamma, binomial, Poisson, negative binomial  & No       & Exponential, Gaussian, Matern family              & Yes                   & Yes       & \url{https://github.com/seananderson/glmmfields}                  \\
+        \bottomrule
+      \end{tabular}
+    \end{scriptsize}
+  \end{minipage}
+  \end{table}
+\end{landscape}
+
+\bibliography{spatial-extremes}
+
+%\end{spacing}
+\end{document}
