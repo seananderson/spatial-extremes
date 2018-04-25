@@ -24,17 +24,6 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{nameref}
 
-% Linux Libertine:
-% \usepackage{textcomp}
-% \usepackage[sb]{libertine}
-% \usepackage[varqu,varl]{inconsolata}% sans serif typewriter
-% \usepackage[libertine,bigdelims,vvarbb]{newtxmath} % bb from STIX
-% \usepackage[cal=boondoxo]{mathalfa} % mathcal
-% \useosf % osf for text, not math
-% \usepackage[supstfm=libertinesups,%
-%   supscaled=1.2,%
-%   raised=-.13em]{superiors}
-
 % Fix line numbering and align environment
 % http://phaseportrait.blogspot.ca/2007/08/lineno-and-amsmath-compatibility.html
 \newcommand*\patchAmsMathEnvironmentForLineno[1]{%
@@ -55,24 +44,15 @@
 \patchBothAmsMathEnvironmentsForLineno{multline}%
 }
 
-% remove numbers in front of sections:
-% \makeatletter
-% \renewcommand\@seccntformat[1]{}
-% \makeatother
-
 \newcommand{\R}[1]{\label{#1}\linelabel{#1}}
 \newcommand{\lr}[1]{line~\lineref{#1}}
 
 \hyphenation{glmmfields}
 
-% \usepackage{pdflscape}
 \usepackage{lscape}
 \usepackage{makecell}
 \usepackage{array}
 \newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
-% \usepackage{parskip}
-% \setlength{\parindent}{0pt}
-% \setlength{\parskip}{1\bigskipamount plus \smallskipamount minus \smallskipamount}
 \usepackage{ragged2e}
 \setlength{\RaggedRightParindent}{\parindent}
 \usepackage[round,sectionbib]{natbib}
@@ -90,18 +70,9 @@
 \renewcommand{\@seccntformat}[1]{}
 \makeatother
 
-% \setlength{\abovedisplayskip}{-30pt}
-% \setlength{\belowdisplayskip}{-30pt}
-% \setlength{\abovedisplayshortskip}{-30pt}
-% \setlength{\belowdisplayshortskip}{-30pt}
-
 \title{
-  \vspace{-1.4cm}
-  Black swans in space:
-  % robust
-  modelling
-  % of
-  spatiotemporal processes with extremes}
+\vspace{-1.4cm}
+Black swans in space: modelling spatiotemporal processes with extremes}
 \author{
 Sean C. Anderson$^{1,2\ast}$ and
 Eric J. Ward$^3$
@@ -133,19 +104,13 @@ Nanaimo, BC, V6T 6N7, Canada
 \RaggedRight
 \hyphenpenalty=500
 
-% \begin{spacing}{1.4}
 \begin{spacing}{1.8}
-% \begin{flushleft}
 \linenumbers
 
 \input{sim-values}
 
-
 \begin{abstract}
 
-% Projected trends in climate forcing
-% suggest a need to increasingly focus on
-% variability and extremes in ecological processes.
 In ecological systems, extremes can happen
 in time, such as population crashes,
 or in space, such as rapid range contractions.
@@ -176,17 +141,6 @@ accessible to a wide range of ecologists
 and scientists in other disciplines interested in
 fitting spatiotemporal GLMMs, with and without extremes.
 \end{abstract}
-
-% glmmrf
-% glmrf
-% glmmfields
-% glmfields
-%
-% rrfields
-% rtfields
-% mvtfields
-%
-% cygnus
 
 \section{Introduction}
 
@@ -238,8 +192,6 @@ fields \citep{roislien2007}. Compared to GRFs, MVT random fields allow for
 increased flexibility in the representation of spatial patterns through time
 while converging on the multivariate normal (MVN) GRFs when appropriate
 \citep{roislien2007}.\R{A1}
-% To our knowledge, MVT spatial fields
-% have not been applied in ecology, fisheries, or environmental sciences.
 
 In this paper we introduce the use of robust spatial predictive models using the
 MVT distribution, and provide a user-friendly implementation in our R
@@ -287,7 +239,6 @@ spatial patterns.
 % --- the degree of wiggliness implied by a value of $\theta_{\mathrm{GP}}$
 % depends on the scale of the $\delta_{ij}$.
 The elements of the covariance matrix $\mathbf{\Sigma}$ at the $m$ knot locations are
-% TODO sigma^2?:
 then defined as $\mathbf{\Sigma}_{ij}^* = \sigma_{\mathrm{GP}}^2 \exp \left( -\delta_{ij}^2 / 2 \theta_{\mathrm{GP}}
 \right)$ with the spatial variance parameter $\sigma_{\mathrm{GP}}^2$ scaling the amplitude of the spatial
 deviations and the $*$ denoting a symbol referring to the knot locations as opposed to
@@ -302,9 +253,6 @@ from a multivariate distribution (MVN or MVT) with covariance $\mathbf{\Sigma^*}
 projecting these to the data locations as $\mathbf{\Sigma}_{\left( \mathbf{W},\mathbf{W^{*}} \right)}$:
 $\mathbf{W}=\mathbf{\Sigma}_{\left(\mathbf{W},\mathbf{W^*} \right)}^{'} \mathbf{\Sigma}^{*-1}\mathbf{W^*}$.
 
-
-% Here, we summarize the important features of these models and highlight how
-% our new MVT model differs from the MVN version.
 
 \subsection{MVT random fields}
 
@@ -332,14 +280,6 @@ independent at each time step ($\gamma_{s,t} = W_{s,t}$), or autoregressive so
 that the spatial pattern at time $t$ is dependent on the spatial pattern at time
 $t-1$ to a degree defined by $\phi$, ($\gamma_{s,t} = \phi \gamma_{s,t-1} +
 W_{s,t}$).
-% In the last case, we constrain the spatiotemporal autoregressive process to be
-% centred on zero at each time step to aid interpretation and ensure
-% identifiability ($\gamma_{s,t} = \phi (\gamma_{s,t-1} -
-% \mathbb{E}[\gamma_{t-1}]) + W_{s,t}$). This lets the mean process be defined
-% by the linear predictor ($\bm{X_{s,t}}\bm{\beta}$) while $\gamma_{s,t}$
-% defines the spatial process and how it evolves through time --- potentially
-% letting ``hotspots'' remain hotspots through time while keeping the means of
-% the spatial process $\gamma_{s,t}$ stationary and centred on zero.
 
 Our \textbf{glmmfields} package fits these models in a Bayesian framework. We
 sample from the posterior distribution using the No-U-Turn Sampler, which is an
@@ -363,7 +303,6 @@ recovered under various conditions. Our simulations included 50 data points (15
 knots) collected at the same locations annually for 5, 15, or 25 years. The spatial
 process was independent by year ($\gamma_{s,t} = W_{s,t}$) with $\sigma_{\mathrm{GP}}^2 = 1$
 (the spatial variance) and $\theta_{\mathrm{GP}} = 1$ (the spatial correlation parameter).
-% with spatial data locations drawn with uniform probability from 0 to 10.
 We set the MVT $\nu$ parameter to 2.5 (heavy tails), 5 (moderately heavy tails),
 or 20 (effectively normal tails). We then corrupted the ``true'' spatial process
 with observation error, using a gamma distribution with a log link,
@@ -384,9 +323,6 @@ We attempted to recover $\nu$ by fitting a model that matched the process
 generating the simulated data. We provide a full description of the priors
 and joint probability distributions along with details of the MCMC
 sampling for this and all other models in Appendix S1.
-% TODO: make sure that all priors are listed in the supplement generating the
-% simulated data. We placed weakly informative priors on $\sigma_{\mathrm{GP}}$, $\theta_{\mathrm{GP}}$, and
-% CV of half-$t$(3, 0, 3) (i.e. Student-$t$(3, 0, 3)[0, $\infty$]).
 
 \subsection{Testing the advantage of allowing for extremes}
 \label{sec:diagnosing}
@@ -424,8 +360,6 @@ outbreaks in the US Pacific Northwest from 1994 to 2014
 \citep{usdaforestservice2017}. We rasterized the map into a 500 by 500 grid and
 then aggregated this high-resolution grid into percent cover in a coarser grid
 reduced by a factor of 25.
-% This maintained a reasonable resolution while limiting the data size for rapid
-% model fitting.
 We modelled the proportion of finer grid cells affected by outbreaks per coarser
 grid cell.
 We excluded a small number of coarser cells without outbreaks
@@ -449,14 +383,12 @@ observation model with scale parameter $\sigma_{\mathrm{obs}}$: $y_{s,t} \sim
 \mathrm{lognormal} \left(  \log(\mu_{s,t}), \sigma_{\mathrm{obs}} \right)$.
 
 We used 20 knots to represent the spatial process
-% TODO: make sure knots are correct
 (increasing the number of knots did not substantially affect the results). We
 compared the above MVT model to a Gaussian random field model. To evaluate
 out-of-sample predictive accuracy we withheld 25 randomly selected data points
 per year from the model fitting, for a total of 400 withheld data points, or
 approximately 10\% of the data. We then compared the log predictive density for
 the held-out data and the width of the 95\% CIs
-% from the MVN and MVT models, and the leave-one-out-information-criterion
 (details, including priors in Appendix S1).
 
 \section{Results}
@@ -503,7 +435,6 @@ from the MVT model demonstrate evolving hotspots of pine beetle infestation in
 the US Pacific Northwest, with particularly strong hotspots in 2009--2010
 (Fig.~\ref{fig:beetle-pred}).
 
-
 \section{Discussion}
 
 We have introduced a spatial process model that models random fields through
@@ -533,17 +464,6 @@ extremes in spatial patterns through time. In essence, the MVT random fields
 model allows for unexpected and unmodelled events to occur and have less
 influence on parameter estimates and predictions.
 
-% For example, several weeks of extreme warm water temperatures caused a sudden
-% 100 km range contraction for a brown alga seaweed species off Southern Australia
-%     in 2011 [@smale2013]. In the North sea, a series of abnormally warm winters
-%     around 1990 led to a sudden northward shift in juvenile cod and low
-%     abundance in the southern North Sea since [@rindorf2006]. I think both those
-%     examples for the discussion work well. I was also thinking about climate -
-%     disease interactions as another mechanism. Something like this:
-%     http://ajph.aphapublications.org/doi/abs/10.2105/AJPH.91.8.1194 (it's human
-%     health, but that's probably ok -- there's other examples for animals)
-
-
 For our case study of pine beetle outbreaks, the MVT model provided
 better out-of-sample predictive ability and greater precision compared to the
 same model with a MVN random field. We did not link covariates, such as
@@ -562,11 +482,6 @@ those described so far. For example, \textbf{glmmfields} can be used to fit
 spatial GLMMs for data without a temporal component (Appendix S2). The package
 can fit observation models beyond those included in this paper, such as Poisson,
 negative binomial, or binomial, and can include numeric or factor covariates.
-% In addition to fixed, independent, and random walk temporal processes, the
-% package can fit exchangeable time effects constrained by a Gaussian
-% distribution (i.e. ``random effects''). , and allows for flexibility in how
-% the spatial process evolves (static field, fields modelled as AR1, fields
-% modelled as a random walk, and independent exchangeable fields).
 \textbf{glmmfields} includes familiar R utility functions (e.g.\
 \texttt{predict()}) and plotting functions for model checking. Furthermore, the
 package includes a simulation function that can simulate data from any model the
@@ -601,37 +516,6 @@ accessible to a wide range of ecologists through
 the included R package, and allows us to improve predictions for ecological
 processes with extreme spatial anomalies through time.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-% One of the biggest hurdles in identifying support for MVT spatial fields
-% (small estimated df parameter) is using spatiotemporal data sets that have
-% enough time slices to capture extreme events. [tie into sim results]. The
-% ability to detect spatial anomalies in ecological processes may also be
-% affected by the number or selection of knots, however our results show that
-% spatial extremes can be identified even using a small numbers of knots. Like
-% other state-space models, inference about spatial extremes may be corrupted by
-% observation error (both the observation model, and magnitude). Our results
-% indicate that spatial events can be identified with moderate to high
-% observation error (coefficient of variation ~ 1).
-%
-% As complex spatial models have become more user-friendly, we expect the rapid
-% use of spatiotemporal models to be continued. Examples of possible
-% applications beyond bark beetles include to models of fisheries (cite Thorson
-% ECE paper), applications to climate anomalies
-% (http://www.pnas.org/content/106/Supplement\_2/19723.short), or to other
-% disturbances - wildfires, oil spills, and disease outbreaks.]
-%
-% There are a number of features included in the 'glmmfields' package that may be
-% useful to ecologists, but beyond the scope of this paper. Examples of features
-% include the addition of covariates (numeric or factors), models for temporal
-% processes (random effects), and flexible models for the evolution of the spatial
-% process (a static field shared across time, fields modelled as an AR(1) process,
-% or fields modelled as exchangeable). Like GLMs, we have also provided a range of
-% commonly encountered discrete and continuous observation models to fit a wide
-% range of data types.
-
 \section{Acknowledgements}
 
 We thank T.A. Branch and J.T. Thorson for helpful discussions on the modeling
@@ -651,7 +535,7 @@ The R package \textbf{glmmfields} is available at
 
 \setlength{\bibsep}{0pt plus 0ex}
 
-\bibliography{spatial-extremes}
+\bibliography{spp-refs}
 
 \clearpage
 
