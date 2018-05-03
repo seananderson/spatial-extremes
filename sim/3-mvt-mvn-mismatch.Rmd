@@ -38,9 +38,9 @@ models, make predictions, and then calculate the root mean squared error
 compared to the true values.
 
 ```{r simulate-and-fit-data}
-simulate_and_fit <- function(return_model = FALSE, ITER = 2000, 
+simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
   giveup_thresh = 4) {
-  
+
   print("----------------------------------------------------------")
   print(i+1)
   set.seed(i+1)
@@ -48,12 +48,12 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
     gp_sigma = gp_sigma, sd_obs = sigma, n_knots = nknots)
   d <- s$dat
   d <- mutate(d, withhold = station_id %in% sample(unique(station_id), 10))
-  
+
   ess <- 0
   rhat <- 1e9
   this_ITER <- ITER
   giveup <- FALSE
-  
+
   while((ess <= 100 | rhat > 1.05) & !giveup) {
     m1 <- glmmfields(y ~ 0, data = filter(d, !withhold),
       time = "time",
@@ -63,7 +63,7 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
       prior_gp_sigma = half_t(3, 0, 3),
       prior_sigma = half_t(3, 0, 3),
       control = list(adapt_delta = 0.90))
-    
+
     m_wrong <- glmmfields(y ~ 0, data = filter(d, !withhold),
       time = "time",
       lat = "lat", lon = "lon", nknots = nknots,
@@ -73,17 +73,17 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
       prior_gp_sigma = half_t(3, 0, 3),
       prior_sigma = half_t(3, 0, 3),
       control = list(adapt_delta = 0.90))
-    
+
     diag <- broom::tidy(m1$model, rhat = TRUE, ess = TRUE)
     diagw <- broom::tidy(m_wrong$model, rhat = TRUE, ess = TRUE)
-    
+
     ess <- min(c(diag$ess, diagw$ess))
     rhat <- max(c(diag$rhat, diagw$rhat))
-    
+
     this_ITER <- this_ITER * 2
     if (this_ITER > ITER * giveup_thresh) giveup <- TRUE
   }
-  
+
   p <- predict(m1, interval = "confidence", type = "response",
     newdata = d)
   p_wrong <- predict(m_wrong, interval = "confidence", type = "response",
@@ -128,19 +128,19 @@ if (!file.exists("sim/match-mismatch-rmse.rds")) {
     proj <- reshape2::melt(x$proj)
     names(proj) <- c("time", "pt", "proj")
     proj <- dplyr::arrange_(proj, "time", "pt")
-    
+
     assertthat::assert_that(identical(proj[,1:2], x$dat[,1:2]))
-    
+
     d <- data.frame(x$dat, p)
     d_wrong <- data.frame(x$dat, p_wrong)
     d_combined <- data.frame(d,
       select(d_wrong, estimate, conf_high, conf_low) %>%
         rename(est_wrong = estimate,
           conf_high_wrong = conf_high, conf_low_wrong = conf_low))
-    
+
     assertthat::assert_that(identical(proj[,1:2], d_combined[,1:2]))
     d2 <- data.frame(d_combined, proj = proj$proj)
-    
+
     d2 %>%
       filter(withhold) %>%
       mutate(
@@ -167,7 +167,6 @@ if (!file.exists("sim/match-mismatch-rmse.rds")) {
 What about leave-one-out information criteria?
 
 ```{r}
-library(loo)
 loo <- plyr::ldply(output, function(x) {
   loo_t <- x$loo_t
   loo_n <- x$loo_n
@@ -185,7 +184,7 @@ Extract parameter estimates:
 ```{r}
 CHAINS <- 4
 n_draws <- 20
-i <<- 4 # affects seed 
+i <<- 4 # affects seed
 o <- simulate_and_fit(return_model = TRUE, ITER = 2000)
 o$m_wrong
 o$m
