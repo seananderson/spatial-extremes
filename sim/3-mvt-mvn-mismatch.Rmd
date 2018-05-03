@@ -88,10 +88,10 @@ simulate_and_fit <- function(return_model = FALSE, ITER = 2000,
     newdata = d)
   p_wrong <- predict(m_wrong, interval = "confidence", type = "response",
     newdata = d)
-  
-  loo_t <- loo::loo(loo::extract_log_lik(m1$model))
-  loo_n <- loo::loo(loo::extract_log_lik(m_wrong$model))
-  
+
+  loo_t <- loo(m1)$estimates["looic", "Estimate"]
+  loo_n <- loo(m_wrong)$estimates["looic", "Estimate"]
+
   i <<- i + 1
   r <- list(i = i, dat = d, p = p, p_wrong = p_wrong, ess = ess, rhat = rhat, giveup = giveup,
     loo_t = loo_t, loo_n = loo_n, proj = s$proj)
