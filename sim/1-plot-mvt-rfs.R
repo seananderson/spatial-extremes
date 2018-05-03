@@ -1,6 +1,6 @@
 library(dplyr)
 library(ggplot2)
-library(ggsidekick)
+library(ggsidekick) # devtools::install_github("seananderson/ggsidekick")
 library(glmmfields)
 
 g <- expand.grid(lon = seq(1, 10, 0.5),
