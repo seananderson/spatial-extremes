@@ -11,22 +11,14 @@ library(viridis)
 library(assertthat)
 
 gdb_folder <- "Pacific_Northwest"
-# gdb_folder <- "Northern"
 id <- "mountain-pine-beetle-pnw-raster"
-# id <- "mountain-pine-beetle-northern-raster"
-# id <- "douglas-fir-beetle-northern-raster"
-# id <- "douglas-fir-beetle-pnw-raster"
 beetle <- "mountain pine beetle"
 host <- "pine"
-
-# beetle <- "Douglas-fir beetle"
-# host <- "fir"
 
 ###############
 
 assert_that(rev(strsplit(getwd(), "/")[[1]])[[1]] == "spatiotemporal-extremes")
 
-# 4 hours of my life to discover this is needed:
 # We must be within the directory with the .grb folder
 setwd(file.path("examples", "beetles", gdb_folder))
 
@@ -37,10 +29,6 @@ if (!file.exists(paste0(gdb_folder, ".rda"))) {
 } else {
   load(paste0(gdb_folder, ".rda"))
 }
-
-# head(ids_dat@data)
-# nrow(ids_dat@data)
-# plot(ids_dat[ids_dat$SURVEY_YEAR == 2004, ])
 
 # Conversion to a shapefile container
 # system("ogr2ogr -f 'CSV' temp Pacific_Northwest.gdb")

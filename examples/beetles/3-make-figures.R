@@ -6,8 +6,6 @@ library(viridis)
 library(assertthat)
 library(ggsidekick) # devtools::install_github("seananderson/ggsidekick")
 
-# rm(list = ls())
-
 d <- readRDS("examples/beetles/mountain-pine-beetle-data.rds")
 axis_colour <- "grey45"
 text_colour <- "grey45"
@@ -307,7 +305,6 @@ dp$cover <- NA
 
 # if (!exists("pred")) {
 load("examples/beetles/mountain-pine-beetle-pnw-raster-mvt-lognormal-500x500.rda")
-# load("examples/beetles/mountain-pine-beetle-pnw-raster-mvn-lognormal-500x500.rda")
   pred <- predict(mvt, interval = "confidence", conf_level = 0.95,
     newdata = dp, type = "link")
   pred <- data.frame(pred, dp)
@@ -345,5 +342,3 @@ g <- ggplot(dplyr::filter(pred), # year %in% c(2010)),
 
 ggsave("figs/beetles-mvt-predictions.pdf", width = 5.4, height = 5)
 
-# https://flic.kr/p/rj1GFA
-# https://flic.kr/p/e8SuTi https://creativecommons.org/licenses/by/2.0/
